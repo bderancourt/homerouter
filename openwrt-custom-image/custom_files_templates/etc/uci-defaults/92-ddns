@@ -1,0 +1,24 @@
+#!/bin/sh
+
+[ "$(uci get ddns.myddns_ipv4.enabled)" = "1" ] && exit 0
+
+uci delete ddns.myddns_ipv4
+uci delete ddns.myddns_ipv6
+
+uci set "ddns.$DDNS_UCI_SERVICE"="service"
+uci set "ddns.$DDNS_UCI_SERVICE.interface"="wan"
+uci set "ddns.$DDNS_UCI_SERVICE.ip_source"="network"
+uci set "ddns.$DDNS_UCI_SERVICE.ip_network"="wan"
+uci set "ddns.$DDNS_UCI_SERVICE.enabled"="1"
+uci set "ddns.$DDNS_UCI_SERVICE.use_ipv6"="0"
+uci set "ddns.$DDNS_UCI_SERVICE.service_name"="$DDNS_SERVICE_NAME"
+uci set "ddns.$DDNS_UCI_SERVICE.lookup_host"="$DDNS_LOOKUP_HOST"
+uci set "ddns.$DDNS_UCI_SERVICE.domain"="$DDNS_DOMAIN"
+uci set "ddns.$DDNS_UCI_SERVICE.username"="$DDNS_USERNAME"
+uci set "ddns.$DDNS_UCI_SERVICE.password"="$DDNS_PASSWORD"
+uci set "ddns.$DDNS_UCI_SERVICE.use_https"="1"
+uci set "ddns.$DDNS_UCI_SERVICE.cacert"="/etc/ssl/certs"
+
+uci commit ddns
+
+exit 0

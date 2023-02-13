@@ -1,0 +1,83 @@
+#!/bin/sh
+
+[ "$(uci get network.wan.vendorid)" = "neufbox_NB6VAC-directAccess" ] && exit 0
+
+# Enable DHCP client to wan
+uci set network.wan.vendorid="neufbox_NB6VAC-directAccess"
+uci add_list network.@device[0].ports="eth2"
+uci add_list network.@device[0].ports="eth3"
+uci add_list network.@device[0].ports="eth4"
+uci add_list network.@device[0].ports="eth5"
+uci commit network
+
+# Restrict SSH from LAN only
+uci set dropbear.@dropbear[0].Interface="lan"
+uci commit dropbear
+
+# More log size
+uci set system.@system[0].log_size="2048"
+
+# Timezone settings
+uci set system.@system[0].zonename="Europe/Paris"
+uci set system.@system[0].timezone="CET-1CEST,M3.5.0,M10.5.0/3"
+
+# Enable NTP server and restrict it to LAN only
+# Using time.google.com servers public IPs to avoid a DNS resolution
+# at boot time with potentially a wrong time, causing problem with DNS-over-TLS handshake
+uci set system.ntp.enable_server="1"
+uci set system.ntp.interface="lan"
+uci delete system.ntp.server
+uci add_list system.ntp.server="216.239.35.0"
+uci add_list system.ntp.server="216.239.35.4"
+uci add_list system.ntp.server="216.239.35.8"
+uci add_list system.ntp.server="216.239.35.12"
+uci add_list system.ntp.server="2001:4860:4806::"
+uci add_list system.ntp.server="2001:4860:4806:4::"
+uci add_list system.ntp.server="2001:4860:4806:8::"
+uci add_list system.ntp.server="2001:4860:4806:c::"
+uci commit system
+
+# enable sqm on eth1 (wan/wan6)
+# clean previous config
+while uci delete sqm.@queue[0]; do :; done
+# adding new sqm queue
+uci add sqm queue
+uci set sqm.@queue[-1]=queue
+uci set sqm.@queue[-1].enabled="1"
+uci set sqm.@queue[-1].interface="eth1"
+uci set sqm.@queue[-1].download="900000"
+uci set sqm.@queue[-1].upload="450000"
+uci set sqm.@queue[-1].debug_logging="0"
+uci set sqm.@queue[-1].verbosity="5"
+uci set sqm.@queue[-1].qdisc="cake"
+uci set sqm.@queue[-1].script="piece_of_cake.qos"
+uci set sqm.@queue[-1].linklayer="ethernet"
+uci set sqm.@queue[-1].overhead="44"
+uci commit sqm
+
+# Replaced by a hotplug script
+/etc/init.d/ntpdate disable
+rm /etc/init.d/ntpdate
+
+# Update root password
+passwd root <<EOP
+$ROOT_PASSWORD
+$ROOT_PASSWORD
+EOP
+
+# resize rootfs partition
+BOOT="$(sed -n -e "\|\s/boot\s.*$|{s///p;q}" /etc/mtab)"
+PART="${BOOT##*[^0-9]}"
+DISK="${BOOT%${PART}}"
+ROOT="${DISK}$((PART+1))"
+UUID="$(lsblk -n -o PARTUUID ${ROOT})"
+LOOP="$(losetup -f)"
+
+echo fix | parted -l ---pretend-input-tty
+parted -s ${DISK%p} resizepart $((PART+1)) 100%
+sed -i -r -e "s|(PARTUUID=)\S+|\1${UUID}|g" /boot/grub/grub.cfg
+losetup ${LOOP} ${ROOT}
+resize2fs -f ${LOOP}
+opkg remove --autoremove lsblk losetup resize2fs parted
+
+exit 0

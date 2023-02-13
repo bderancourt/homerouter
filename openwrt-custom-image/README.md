@@ -1,4 +1,4 @@
-# home-router
+# Custom OpenWRT image for Topton N5105 6xi226 NICs
 
 # How to use
 

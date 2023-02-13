@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# List of variables to substitute in custom files
+# This is a example, copy this file to custom_files_envs in project's root and fill it
+
+# shellcheck disable=SC2034
+ROOT_PASSWORD=
+DDNS_UCI_SERVICE=
+DDNS_SERVICE_NAME=
+DDNS_LOOKUP_HOST=
+DDNS_DOMAIN=
+DDNS_USERNAME=
+DDNS_PASSWORD=
