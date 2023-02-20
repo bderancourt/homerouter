@@ -1,7 +1,0 @@
-#!/bin/sh
-
-# https://openwrt.org/docs/guide-user/services/ntp/client-server#troubleshooting
-
-# shellcheck disable=SC2154
-[ "$ACTION" = "step" ]    && logger -t ntpd "Time set, stratum=$stratum interval=$poll_interval offset=$offset"
-[ "$ACTION" = "stratum" ] && logger -t ntpd "Stratum change, stratum=$stratum interval=$poll_interval offset=$offset"

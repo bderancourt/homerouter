@@ -1,0 +1,34 @@
+---
+- name: Setup DDNS, cleanup default myddns_ipv4 config
+  notify: Apply
+  uci:
+    command: absent
+    key: ddns.myddns_ipv4
+
+- name: Setup DDNS, cleanup default myddns_ipv6 config
+  notify: Apply
+  uci:
+    command: absent
+    key: ddns.myddns_ipv6
+
+- name: Setup DDNS, adding configuration {{ ddns_uci_service }}
+  notify: Apply
+  uci:
+    command: section
+    config: ddns
+    name: "{{ ddns_uci_service }}"
+    type: service
+    value:
+      interface: wan
+      ip_source: network
+      ip_network: wan
+      enabled: 1
+      use_ipv6: 0
+      service_name: "{{ ddns_service_name }}"
+      lookup_host: "{{ ddns_lookup_host }}"
+      domain: "{{ ddns_domain }}"
+      username: "{{ ddns_username }}"
+      password: "{{ ddns_password }}"
+      use_https: 1
+      cacert: /etc/ssl/certs
+    replace: true

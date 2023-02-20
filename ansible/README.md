@@ -11,7 +11,7 @@ Then restart to ensure $HOME/.local/bin is well sourced
 
 Install the dependencies:
 ```
-ansible-galaxy collection install -r requirements.yml
+ansible-galaxy install -r requirements.yml
 ```
 
 To run the playbook you need to have your own ssh keypair, or generate a new one
@@ -52,11 +52,6 @@ unset env
 
 Then run the playbook:
 
-First time
-```
-ansible-playbook proxmox-playbook.yml -k
-```
-Then
 ```
 ansible-playbook playbook.yml
 ```

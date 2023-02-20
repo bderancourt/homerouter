@@ -1,0 +1,32 @@
+---
+- name: Setup network, add LAN ports
+  notify: Apply
+  uci:
+    command: set
+    key: network.@device[0]
+    value:
+      ports:
+        - eth0
+        - eth2
+        - eth3
+        - eth4
+        - eth5
+
+- name: Setup network, use local DNS instead of ISP DNS on wan
+  notify: Apply
+  uci:
+    command: set
+    key: network.wan
+    value:
+      peerdns: 0
+      dns: 127.0.0.1
+      vendorid: neufbox_NB6VAC-directAccess
+
+- name: Setup network, use local DNS instead of ISP DNS on wan6
+  notify: Apply
+  uci:
+    command: set
+    key: network.wan6
+    value:
+      peerdns: 0
+      dns: 0::1

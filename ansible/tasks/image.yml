@@ -1,0 +1,20 @@
+---
+- name: Copy openwrt image
+  ansible.builtin.copy:
+    src: ../openwrt-custom-image/output/openwrt-22.03.3-x86-64-generic-ext4-combined-efi.img
+    dest: /tmp/openwrt.img
+    owner: root
+    group: root
+    mode: u=rw,g=,o=
+    force: false
+
+- name: Install OpenWRT image
+  ansible.builtin.command: dd if=/tmp/openwrt.img bs=1M of=/dev/nvme0n1
+  register: _dd_result
+  changed_when: _dd_result.rc == 0
+  notify:
+    - Reboot
+    - Wait for reboot
+
+- name: Reboot after flashing image
+  ansible.builtin.meta: flush_handlers

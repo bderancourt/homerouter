@@ -1,0 +1,44 @@
+---
+- name: Change root password
+  ansible.builtin.shell: |
+    passwd root <<EOP
+    {{ root_password }}
+    {{ root_password }}
+    EOP
+  register: _passwd_result
+  changed_when: _passwd_result.rc == 0
+
+- name: Change log size + timezone
+  notify: Apply
+  uci:
+    command: section
+    config: system
+    name: '@system[0]'
+    type: system
+    value:
+      hostname: openwrt
+      timezone: CET-1CEST,M3.5.0,M10.5.0/3
+      zonename: Europe/Paris
+      log_size: 2048
+
+
+- name: Setup NTP
+  notify: Apply
+  uci:
+    command: section
+    config: system
+    name: ntp
+    type: timeserver
+    value:
+      enabled: 1
+      enable_server: 1
+      interface: lan
+      server:
+        - '216.239.35.0'
+        - '216.239.35.4'
+        - '216.239.35.8'
+        - '216.239.35.12'
+        - '2001:4860:4806::'
+        - '2001:4860:4806:4::'
+        - '2001:4860:4806:8::'
+        - '2001:4860:4806:c::'

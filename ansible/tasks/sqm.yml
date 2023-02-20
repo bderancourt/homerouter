@@ -1,0 +1,22 @@
+---
+- name: Setup SQM, updating eth1 (wan) configuration
+  notify: Apply
+  uci:
+    command: section
+    config: sqm
+    name: eth1
+    type: queue
+    value:
+      enabled: 1
+      interface: eth1
+      download: 900000
+      upload: 450000
+      debug_logging: 0
+      verbosity: 5
+      qdisc: cake
+      script: piece_of_cake.qos
+      linklayer: ethernet
+      overhead: 44
+      qdisc_advanced: 0
+      qdisc_really_really_advanced: 0
+    replace: true

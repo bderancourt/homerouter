@@ -33,43 +33,19 @@ else
     tar -Jxf "$IMAGEBUILDER_FILENAME"
 fi
 
-# copy custom files templates folder to tmp dir
-tmpdir=$(mktemp -d)
-echo "tmpdir=$tmpdir"
-cp -rv custom_files_templates/* "$tmpdir"
+# copy custom files to impage builder 'files' path
+cp -rv custom_files/* "$IMAGEBUILDER_PATH/files"
 
-# source custom_files_envs to process the 'custom files templates' files
-set -a
-# shellcheck disable=SC1091
-source custom_files_envs
-set +a
-
-# prepare all the variables in custom_files_envs for the env substitute command
-# shellcheck disable=SC2016
-env_to_substitute=$(sed 's/[=#].*//' custom_files_envs | awk NF | xargs printf '${%s} ')
-echo $env_to_substitute
-
-# for each 'custom files templates' file, replace the variables
-find "$tmpdir" -type f -print0 | while IFS= read -r -d '' file
-do
-    dirname=$(dirname "$file")
-    basename=$(basename "$file")
-    ( cd "$dirname" && envsubst "$env_to_substitute" < "$basename" | sponge "$basename")
-done
-
-# copy custom files templates to impage builder 'files' path
-cp -rv "$tmpdir" "$IMAGEBUILDER_PATH/files"
-rm -rf "$tmpdir"
+mkdir -p "$IMAGEBUILDER_PATH/files/etc/dropbear"
+cp ~/.ssh/id_rsa.pub "$IMAGEBUILDER_PATH/files/etc/dropbear/authorized_keys"
 
 # update rootfs partition size to 256
 sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=.*/CONFIG_TARGET_ROOTFS_PARTSIZE=512/g" "$IMAGEBUILDER_PATH/.config"
 
-# don't build squashfs images
-sed -i "s/CONFIG_TARGET_ROOTFS_SQUASHFS=.*/CONFIG_TARGET_ROOTFS_SQUASHFS=n/g" "$IMAGEBUILDER_PATH/.config"
-
 # build custom image
 (cd "$IMAGEBUILDER_PATH" && make image PROFILE=generic FILES="files" PACKAGES="\
-htop vim less usbutils dmesg ip-full ifstat luci ntpdate pciutils lm-sensors \
+htop vim less usbutils dmesg ip-full ifstat luci pciutils lm-sensors smartmontools \
+coreutils-base64 coreutils-md5sum coreutils-sha1sum \
 lsblk losetup resize2fs parted \
 curl drill luci-app-ddns \
 dnsmasq-full stubby -dnsmasq \
@@ -80,6 +56,8 @@ luci-app-sqm sqm-scripts \
 -kmod-forcedeth -kmod-igb -kmod-ixgbe -kmod-r8169 -kmod-tg3")
 
 # move generated images to output dir
-mv "$IMAGEBUILDER_PATH"/bin/targets/x86/64/*combined-efi.img.gz* "$OUTPUT"
+mv "$IMAGEBUILDER_PATH"/bin/targets/x86/64/* "$OUTPUT"
+gunzip "$OUTPUT"/openwrt-22.03.3-x86-64-generic-squashfs-combined-efi.img.gz
 gunzip "$OUTPUT"/openwrt-22.03.3-x86-64-generic-ext4-combined-efi.img.gz
-#sudo dd if=openwrt-rockchip-armv8-friendlyarm_nanopi-r4s-ext4-sysupgrade.img of=/dev/sdc bs=32M
+qemu-img convert -f raw -O vmdk "$OUTPUT"/openwrt-22.03.3-x86-64-generic-squashfs-combined-efi.img \
+ "$OUTPUT"/openwrt-22.03.3-x86-64-generic-squashfs-combined-efi.vmdk

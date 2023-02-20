@@ -1,0 +1,12 @@
+---
+- name: Restrict SSH
+  notify: Apply
+  uci:
+    command: section
+    config: dropbear
+    name: '@dropbear[0]'
+    type: dropbear
+    value:
+      Interface: lan
+      PasswordAuth: 'off'
+      RootPasswordAuth: 'off'
