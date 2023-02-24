@@ -1,4 +1,4 @@
-# INIT-SSH PLAYBOOK
+# HOMEROUTER PLAYBOOK
 A simple playbook to deploy SSK public key to an host
 
 ## Usage
