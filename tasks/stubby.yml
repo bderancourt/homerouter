@@ -25,7 +25,7 @@
       triggerdelay: 10
     replace: true
 
-- name: "Setup stubby, add resolvers"
+- name: "Setup stubby, add resolver {{ item.0.tls_auth_name + ' : ' + item.1 }}"
   notify: Apply
   uci:
     command: section
@@ -33,26 +33,22 @@
     name: "@resolver[{{ index }}]"
     type: resolver
     value:
-      tls_auth_name: "{{ item.tls_auth_name }}"
-      address: "{{ item.address }}"
-  loop: "{{ resolvers }}"
+      tls_auth_name: "{{ item.0.tls_auth_name }}"
+      address: "{{ item.1 }}"
+  loop: "{{ resolvers | subelements('address') }}"
   loop_control:
     index_var: index
   vars:
     resolvers:
       - tls_auth_name: cloudflare-dns.com
-        address: '2606:4700:4700::1111'
-      - tls_auth_name: cloudflare-dns.com
-        address: '2606:4700:4700::1001'
-      - tls_auth_name: cloudflare-dns.com
-        address: '1.1.1.1'
-      - tls_auth_name: cloudflare-dns.com
-        address: '1.0.0.1'
+        address:
+          - '2606:4700:4700::1111'
+          - '2606:4700:4700::1001'
+          - '1.1.1.1'
+          - '1.0.0.1'
       - tls_auth_name: dns.opendns.com
-        address: '2620:119:35::35'
-      - tls_auth_name: dns.opendns.com
-        address: '620:119:53::53'
-      - tls_auth_name: dns.opendns.com
-        address: '208.67.222.222'
-      - tls_auth_name: dns.opendns.com
-        address: '208.67.220.220'
+        address:
+          - '2620:119:35::35'
+          - '620:119:53::53'
+          - '208.67.222.222'
+          - '208.67.220.220'

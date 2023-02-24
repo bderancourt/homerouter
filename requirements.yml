@@ -1,0 +1,7 @@
+---
+collections:
+  - name: community.general
+
+roles:
+  - name: gekmihesg.openwrt
+    src: https://github.com/gekmihesg/ansible-openwrt

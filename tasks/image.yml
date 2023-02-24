@@ -1,0 +1,122 @@
+---
+- name: Install image, download imagebuilder
+  ansible.builtin.get_url:
+    url: "{{ imagebuilder_url }}"
+    dest: "/tmp/{{ imagebuilder_url | basename }}"
+    checksum: "{{ imagebuilder_checksum }}"
+    mode: u=rw,g=r,o=r
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, unarchive imagebuilder
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ imagebuilder_url | basename }}"
+    dest: /tmp
+    creates: "/tmp/{{ imagebuilder_dir }}"
+    remote_src: true
+  delegate_to: 127.0.0.1
+  become: false
+
+# - name: Install image, make clean
+#   community.general.make:
+#     chdir: "/tmp/{{ imagebuilder_dir }}"
+#     target: clean
+#   delegate_to: 127.0.0.1
+#   become: false
+
+- name: Install image, replace .config with original one
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ imagebuilder_url | basename }}"
+    dest: /tmp
+    include: "{{ imagebuilder_dir }}/.config"
+    remote_src: true
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, increase rootfs partition size to 512M
+  ansible.builtin.lineinfile:
+    path: "/tmp/{{ imagebuilder_dir }}/.config"
+    regexp: '^CONFIG_TARGET_ROOTFS_PARTSIZE='
+    line: 'CONFIG_TARGET_ROOTFS_PARTSIZE=512'
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, copy custom uci-defaults script
+  ansible.builtin.copy:
+    src: "files/imagebuilder/etc/uci-defaults/99-custom"
+    dest: "/tmp/{{ imagebuilder_dir }}/files/etc/uci-defaults/"
+    mode: u=rw,g=r,o=r
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, make image
+  community.general.make:
+    chdir: "/tmp/{{ imagebuilder_dir }}"
+    target: image
+    params:
+      PROFILE="generic"
+      FILES="files"
+      PACKAGES="\
+      htop vim less usbutils dmesg ip-full ifstat luci pciutils lm-sensors smartmontools \
+      coreutils-base64 coreutils-md5sum coreutils-sha1sum \
+      lsblk losetup resize2fs parted \
+      curl drill luci-app-ddns \
+      dnsmasq-full stubby -dnsmasq \
+      docker dockerd luci-app-dockerman docker-compose kmod-macvlan kmod-ipvlan \
+      luci-app-sqm sqm-scripts \
+      -ppp -ppp-mod-pppoe \
+      -kmod-amazon-ena -kmod-amd-xgbe -kmod-bnx2 -kmod-e1000e -kmod-e1000 \
+      -kmod-forcedeth -kmod-igb -kmod-ixgbe -kmod-r8169 -kmod-tg3"
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, copy image to tmp
+  ansible.builtin.copy:
+    src: "/tmp/{{ imagebuilder_dir }}/bin/targets/x86/64/{{ imagebuilder_image }}"
+    dest: /tmp/openwrt.img.gz
+    mode: u=rw,g=r,o=r
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, uncompress image
+  ansible.builtin.command: gunzip -k /tmp/openwrt.img.gz
+  register: _uncompress_result
+  changed_when: |
+    _uncompress_result.rc == 0 or
+    _uncompress_result.stderr.find('already exists') == -1
+  failed_when: |
+    _uncompress_result.rc > 0 and
+    _uncompress_result.stderr.find('decompression OK') == -1 and
+    _uncompress_result.stderr.find('already exists') == -1
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, check if a vmdk image already exist
+  ansible.builtin.shell: "[ -f /tmp/openwrt.vmdk ] || exit 1"
+  register: _vmdk_exist_result
+  changed_when: false
+  failed_when: false
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, convert image to virtualbox hard drive
+  ansible.builtin.command: "qemu-img convert -f raw -O vmdk /tmp/openwrt.img /tmp/openwrt.vmdk"
+  when: _vmdk_exist_result.rc == 1
+  register: _convert_vmdk_result
+  changed_when: _convert_vmdk_result.rc == 0
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install image, copy image to router
+  ansible.builtin.copy:
+    src: "/tmp/{{ imagebuilder_dir }}/bin/targets/x86/64/{{ imagebuilder_image }}"
+    dest: /tmp/openwrt.img.gz
+    mode: u=rw,g=r,o=r
+
+- name: Install image, start sysupgrade process
+  nohup:
+    command: sysupgrade -n /tmp/openwrt.img.gz
+  notify: Wait for reboot
+
+- name: Trigger wait for reboot
+  ansible.builtin.meta: flush_handlers

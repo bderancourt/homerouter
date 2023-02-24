@@ -1,3 +1,1 @@
-openwrt-imagebuilder*
-output
-vars.yml
+overrided_vars.yml

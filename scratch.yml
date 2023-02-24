@@ -1,0 +1,27 @@
+# It's just a scratch playbook to help manipulating variables
+
+- name: OpenWRT custom setup playbook
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+#  debugger: on_failed
+
+  tasks:
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "address: {{ item.1 }}  tls_auth_name: {{ item.0.tls_auth_name }}"
+      loop: "{{ resolvers | subelements('address') }}"
+      vars:
+        resolvers:
+          - tls_auth_name: cloudflare-dns.com
+            address:
+              - '2606:4700:4700::1111'
+              - '2606:4700:4700::1001'
+              - '1.1.1.1'
+              - '1.0.0.1'
+          - tls_auth_name: dns.opendns.com
+            address:
+              - '2620:119:35::35'
+              - '620:119:53::53'
+              - '208.67.222.222'
+              - '208.67.220.220'

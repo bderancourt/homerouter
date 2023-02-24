@@ -1,4 +1,10 @@
 ---
+- name: Setup SSH, copy authorized keys
+  ansible.builtin.copy:
+    src: ~/.ssh/id_rsa.pub
+    dest: /etc/dropbear/authorized_keys
+    mode: u=rw,g=,o=
+
 - name: Restrict SSH
   notify: Apply
   uci:

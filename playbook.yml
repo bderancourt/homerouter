@@ -2,17 +2,17 @@
   hosts: openwrt
   remote_user: root
   vars:
-    install_image: false
+    install_image: true
     install_system: true
     install_ssh: true
-    install_network: false
+    install_network: true
     install_sqm: true
     install_ddns: true
     install_dhcp: true
     install_stubby: true
     install_firewall: true
   vars_files:
-    - vars.yml
+    - overrided_vars.yml
 
   roles:
     - gekmihesg.openwrt
