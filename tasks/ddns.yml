@@ -1,4 +1,14 @@
 ---
+- name: Setup DDNS, install packages
+  opkg:
+    name: "{{ packages | join(',') }}"
+    state: present
+  vars:
+    packages:
+      - curl
+      - drill
+      - luci-app-ddns
+
 - name: Setup DDNS, cleanup default myddns_ipv4 config
   notify: Apply
   uci:

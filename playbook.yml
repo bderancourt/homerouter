@@ -2,15 +2,16 @@
   hosts: openwrt
   remote_user: root
   vars:
-    install_image: true
-    install_system: true
-    install_ssh: true
-    install_network: true
-    install_sqm: true
-    install_ddns: true
-    install_dhcp: true
-    install_stubby: true
-    install_firewall: true
+    install_image: false
+    install_resize: true
+    install_ssh: false
+    install_system: false
+    install_network: false
+    install_sqm: false
+    install_ddns: false
+    install_dhcp: false
+    install_stubby: false
+    install_firewall: false
   vars_files:
     - overrided_vars.yml
 
@@ -22,37 +23,41 @@
       ansible.builtin.include_tasks: tasks/image.yml
       when: install_image
 
-    - name: Include install system tasks
-      ansible.builtin.include_tasks: tasks/system.yml
-      when: install_system
+    - name: Include install resize tasks
+      ansible.builtin.include_tasks: tasks/resize.yml
+      when: install_resize
 
-    - name: Include install ssh tasks
-      ansible.builtin.include_tasks: tasks/ssh.yml
-      when: install_ssh
+    # - name: Include install ssh tasks
+    #   ansible.builtin.include_tasks: tasks/ssh.yml
+    #   when: install_ssh
 
-    - name: Include install network tasks
-      ansible.builtin.include_tasks: tasks/network.yml
-      when: install_network
+    # - name: Include install system tasks
+    #   ansible.builtin.include_tasks: tasks/system.yml
+    #   when: install_system
 
-    - name: Include install sqm tasks
-      ansible.builtin.include_tasks: tasks/sqm.yml
-      when: install_sqm
+    # - name: Include install network tasks
+    #   ansible.builtin.include_tasks: tasks/network.yml
+    #   when: install_network
 
-    - name: Include install ddns tasks
-      ansible.builtin.include_tasks: tasks/ddns.yml
-      when: install_ddns
+    # - name: Include install sqm tasks
+    #   ansible.builtin.include_tasks: tasks/sqm.yml
+    #   when: install_sqm
 
-    - name: Include install dhcp tasks
-      ansible.builtin.include_tasks: tasks/dhcp.yml
-      when: install_dhcp
+    # - name: Include install ddns tasks
+    #   ansible.builtin.include_tasks: tasks/ddns.yml
+    #   when: install_ddns
 
-    - name: Include install stubby tasks
-      ansible.builtin.include_tasks: tasks/stubby.yml
-      when: install_stubby
+    # - name: Include install dhcp tasks
+    #   ansible.builtin.include_tasks: tasks/dhcp.yml
+    #   when: install_dhcp
 
-    - name: Include install firewall tasks
-      ansible.builtin.include_tasks: tasks/firewall.yml
-      when: install_firewall
+    # - name: Include install stubby tasks
+    #   ansible.builtin.include_tasks: tasks/stubby.yml
+    #   when: install_stubby
+
+    # - name: Include install firewall tasks
+    #   ansible.builtin.include_tasks: tasks/firewall.yml
+    #   when: install_firewall
 
   handlers:
     - name: Import handlers

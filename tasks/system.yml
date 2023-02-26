@@ -21,7 +21,6 @@
       zonename: Europe/Paris
       log_size: 2048
 
-
 - name: Setup NTP
   notify: Apply
   uci:

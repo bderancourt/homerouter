@@ -1,4 +1,18 @@
 ---
+- name: Setup stubby, remove dnsmasq package
+  community.general.opkg:
+    name: dnsmasq
+    state: absent
+
+- name: Setup stubby, install stubby & dnsmasq-full packages
+  community.general.:
+    name: "{{ packages | join(',') }}"
+    state: present
+  vars:
+    packages:
+      - dnsmasq-full
+      - stubby
+
 - name: Setup stubby, global configuration
   notify: Apply
   uci:

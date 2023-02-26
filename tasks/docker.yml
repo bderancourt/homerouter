@@ -1,0 +1,12 @@
+---
+- name: Setup docker, install packages
+  opkg:
+    name: "{{ packages | join(',') }}"
+    state: present
+  vars:
+    packages:
+      - docker
+      - dockerd
+      - luci-app-dockerman
+      - docker-compose
+      - kmod-macvlan

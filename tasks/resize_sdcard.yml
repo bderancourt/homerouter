@@ -1,0 +1,93 @@
+---
+# https://openwrt.org/docs/guide-user/installation/installation_methods/sd_card#expanding_the_filesystem
+
+- name: Resize root partition, initial list of packages to install
+  ansible.builtin.set_fact:
+    _resize_packages:
+      - lsblk
+      - losetup
+      - resize2fs
+      - parted
+
+- name: Resize root partition, install needed packages
+  community.general.opkg:
+    name: "{{ _resize_packages | join(',') }}"
+    state: present
+
+- name: Resize root partition, get boot device
+  ansible.builtin.command: sed -n -e "\|\s/boot\s.*$|{s///p;q}" /etc/mtab
+  changed_when: false
+  register: _get_boot_result
+
+- name: Resize root partition, set fact resize_boot
+  ansible.builtin.set_fact:
+    resize_boot: "{{ _get_boot_result.stdout }}"
+
+- name: Resize root partition, set fact resize_part and resize_disk
+  ansible.builtin.set_fact:
+    resize_part: "{{ resize_boot[-1] }}"
+    resize_disk: "{{ resize_boot[:-1] }}"
+
+- name: Resize root partition, set fact resize_root
+  ansible.builtin.set_fact:
+    resize_root: "{{ resize_disk }}{{ (resize_part | int + 1) | string }}"
+
+- name: Resize root partition, get root partition uuid
+  ansible.builtin.command: "lsblk -n -o PARTUUID {{ resize_root }}"
+  register: _get_rootuuid_result
+  changed_when: false
+
+- name: Resize root partition, set fact resize_uuid
+  ansible.builtin.set_fact:
+    resize_uuid: "{{ _get_rootuuid_result.stdout }}"
+
+- name: Resize root partition, get loop partition
+  ansible.builtin.command: losetup -f
+  register: _get_loop_result
+  changed_when: false
+
+- name: Resize root partition, set fact resize_loop
+  ansible.builtin.set_fact:
+    resize_loop: "{{ _get_loop_result.stdout }}"
+
+- debug:
+    var: resize_boot
+
+- debug:
+    var: resize_part
+
+- debug:
+    var: resize_disk
+
+- debug:
+    var: resize_root
+
+- debug:
+    var: resize_uuid
+
+- debug:
+    var: resize_loop
+
+#   nohup:
+#     shell: |
+#       echo fix | parted -l ---pretend-input-tty
+#       parted -s ${DISK%p} resizepart $((PART+1)) 100%
+#       sed -i -r -e "s|(PARTUUID=)\S+|\1${UUID}|g" /boot/grub/grub.cfg
+#       losetup ${LOOP} ${ROOT}
+#       resize2fs -f ${LOOP}
+#   notify:
+#     - Reboot
+#     - Wait for reboot
+
+# - name: Reboot
+#   ansible.builtin.meta: flush_handlers
+
+# - name: Resize root partition, remove previously installed packages
+#   opkg:
+#     name: "{{ item }}"
+#     state: absent
+#     autoremove: true
+#   register: _resize_remove_packages_result
+#   loop: "{{ _resize_packages }}"
+#   changed_when: _resize_remove_packages_result.msg is not defined or _resize_remove_packages_result.msg.find("No packages removed") > 0
+#   failed_when: _resize_remove_packages_result.msg is defined and _resize_remove_packages_result.msg.find("No packages removed") == -1

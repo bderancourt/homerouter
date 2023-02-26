@@ -1,4 +1,13 @@
 ---
+- name: Setup SQM, install packages
+  community.general.:
+    name: "{{ packages | join(',') }}"
+    state: present
+  vars:
+    packages:
+      - luci-app-sqm
+      - sqm-scripts
+
 - name: Setup SQM, updating eth1 (wan) configuration
   notify: Apply
   uci:

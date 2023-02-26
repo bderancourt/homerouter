@@ -1,0 +1,18 @@
+---
+- name: Setup docker, install packages
+  opkg:
+    name: "{{ packages | join(',') }}"
+    state: present
+  vars:
+    packages:
+      - htop
+      - vim
+      - less
+      - usbutils
+      - dmesg
+      - ip-full
+      - ifstat
+      - luci
+      - pciutils
+      - lm-sensors
+      - smartmontools
