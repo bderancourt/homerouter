@@ -1,0 +1,52 @@
+---
+- name: Install firmware, download firmware
+  ansible.builtin.get_url:
+    url: "{{ firmware_url }}"
+    dest: "/tmp/{{ firmware_url | basename }}"
+    checksum: "{{ firmware_checksum }}"
+    mode: u=rw,g=r,o=r
+  delegate_to: 127.0.0.1
+  become: false
+
+- name: Install firmware, copy image to router
+  ansible.builtin.copy:
+    src: "/tmp/{{ firmware_url | basename }}"
+    dest: /tmp/openwrt.img.gz
+    mode: u=rw,g=r,o=r
+
+- name: Install firmware, start sysupgrade process
+  nohup:
+    command: sysupgrade -n /tmp/openwrt.img.gz
+  notify: Wait for connection
+
+- name: Trigger wait for connection
+  ansible.builtin.meta: flush_handlers
+
+- name: Install firmware, uci set wan vendorid option
+  uci:
+    command: set
+    key: network.wan
+    value:
+      vendorid: neufbox_NB6VAC-directAccess
+
+- name: Install firmware, uci commit network
+  uci:
+    command: commit
+    key: network
+
+- name: Install firmware, restart network service
+  ansible.builtin.service:
+    name: network
+    state: restarted
+
+- name: Waiting for internet access
+  ansible.builtin.wait_for:
+    host: 8.8.8.8
+    port: 53
+  delegate_to: 127.0.0.1
+
+- name: Re-install gekmihesg.openwrt role
+  ansible.builtin.include_role:
+    name: gekmihesg.openwrt
+  vars:
+    openwrt_install_recommended_packages: true

@@ -1,6 +1,6 @@
 ---
 - name: Setup DDNS, install packages
-  opkg:
+  community.general.opkg:
     name: "{{ packages | join(',') }}"
     state: present
   vars:

@@ -1,6 +1,6 @@
 ---
 - name: Setup SQM, install packages
-  community.general.:
+  community.general.opkg:
     name: "{{ packages | join(',') }}"
     state: present
   vars:

@@ -2,7 +2,7 @@
   hosts: openwrt
   remote_user: root
   vars:
-    install_image: false
+    install_firmware: false
     install_resize: true
     install_ssh: false
     install_system: false
@@ -19,12 +19,12 @@
     - gekmihesg.openwrt
 
   tasks:
-    - name: Include install image tasks
-      ansible.builtin.include_tasks: tasks/image.yml
-      when: install_image
+    - name: Include install firmware tasks
+      ansible.builtin.include_tasks: tasks/firmware.yml
+      when: install_firmware
 
     - name: Include install resize tasks
-      ansible.builtin.include_tasks: tasks/resize.yml
+      ansible.builtin.include_tasks: tasks/resize_x86.yml
       when: install_resize
 
     # - name: Include install ssh tasks

@@ -9,7 +9,7 @@
     command: reboot
   listen: Apply
 
-- name: Wait for reboot
+- name: Wait for connection
   ansible.builtin.wait_for_connection:
     timeout: 300
     delay: 20

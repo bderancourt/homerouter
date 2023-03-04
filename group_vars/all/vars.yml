@@ -1,10 +1,5 @@
-imagebuilder_profile: generic
-imagebuilder_target: x86
-imagebuilder_subtarget: '64'
-# let imagebuilder_version empty for snapshot
-imagebuilder_version: '22.03.3'
-imagebuilder_imagetype: ext4-combined-efi
-imagebuilder_checksum: "sha256:ca9477887625447b4cca042baa6831d46027629bf924341b685bacad09b7aee7"
+firmware_url: https://downloads.openwrt.org/releases/22.03.3/targets/x86/64/openwrt-22.03.3-x86-64-generic-ext4-combined-efi.img.gz
+firmware_checksum: "sha256:3db31fb34ef3c343ea012b0ab548db9f38bd2e529cd82121df78e516f6286bdb"
 
 root_password: changeme
 ddns_uci_service: ddns_uci_service_defaut_var

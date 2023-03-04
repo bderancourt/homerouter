@@ -5,7 +5,7 @@
     state: absent
 
 - name: Setup stubby, install stubby & dnsmasq-full packages
-  community.general.:
+  community.general.opkg:
     name: "{{ packages | join(',') }}"
     state: present
   vars:

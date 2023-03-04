@@ -108,7 +108,7 @@
 - name: Install image, start sysupgrade process
   nohup:
     command: sysupgrade -n /tmp/openwrt.img.gz
-  notify: Wait for reboot
+  notify: Wait for connection
 
-- name: Trigger wait for reboot
+- name: Trigger wait for connection
   ansible.builtin.meta: flush_handlers
