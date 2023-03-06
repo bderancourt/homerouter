@@ -4,13 +4,28 @@
     command: commit
   listen: Apply
 
-- name: Reboot
+- name: Trigger reboot
   nohup:
     command: reboot
-  listen: Apply
+  listen:
+    - Apply
+    - Reboot
 
 - name: Wait for connection
   ansible.builtin.wait_for_connection:
     timeout: 300
     delay: 20
-  listen: Apply
+  listen:
+    - Apply
+    - Reboot
+
+- name: Update opkg cache
+  community.general.opkg:
+    name: opkg
+    update_cache: true
+  register: _update
+  failed_when: _update.failed
+  changed_when: not _update.failed
+  listen:
+    - Apply
+    - Reboot

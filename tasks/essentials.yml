@@ -1,18 +1,16 @@
 ---
-- name: Setup docker, install packages
+- name: Setup essentials, install packages
   community.general.opkg:
     name: "{{ packages | join(',') }}"
     state: present
   vars:
     packages:
+      - luci
       - htop
       - vim
       - less
-      - usbutils
       - dmesg
-      - ip-full
-      - ifstat
-      - luci
+      - usbutils
       - pciutils
       - lm-sensors
       - smartmontools

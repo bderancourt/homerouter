@@ -1,5 +1,5 @@
 ---
-- name: Setup docker, install packages
+- name: Install docker, install packages
   community.general.opkg:
     name: "{{ packages | join(',') }}"
     state: present
@@ -10,3 +10,11 @@
       - luci-app-dockerman
       - docker-compose
       - kmod-macvlan
+  notify: Apply
+
+- name: Install docker, reboot
+  ansible.builtin.meta: flush_handlers
+
+- name: Install docker, create lan macvlan network
+  ansible.builtin.command: |
+    docker network create -d macvlan --subnet 192.168.1.0/24 --gateway 192.168.1.1 --ip-range 192.168.1.253/32 -o parent=br-lan lan-macvlan

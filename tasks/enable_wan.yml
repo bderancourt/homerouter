@@ -1,0 +1,33 @@
+---
+# Minimal configuration to have internet after upgrade
+- name: Enable WAN, uci set wan vendorid option
+  uci:
+    command: set
+    key: network.wan
+    value:
+      vendorid: neufbox_NB6VAC-directAccess
+
+- name: Enable WAN, uci commit network
+  uci:
+    command: commit
+    key: network
+
+- name: Enable WAN, restart network service
+  ansible.builtin.service:
+    name: network
+    state: restarted
+
+- name: Enable WAN, waiting for internet access
+  ansible.builtin.wait_for:
+    host: 8.8.8.8
+    port: 53
+    delay: 1
+  delegate_to: 127.0.0.1
+
+# Needed to update opkg and ensure mandatory packages for
+# ekmihesg.openwrt role to work are installed
+- name: Enable WAN, re-install gekmihesg.openwrt role
+  ansible.builtin.include_role:
+    name: gekmihesg.openwrt
+  vars:
+    openwrt_install_recommended_packages: true
