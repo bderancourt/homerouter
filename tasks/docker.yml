@@ -12,9 +12,68 @@
       - kmod-macvlan
   notify: Apply
 
+- name: Install docker, adding macvlan interface
+  notify: Apply
+  uci:
+    command: section
+    config: network
+    name: macvlan
+    type: interface
+    value:
+      proto: static
+      defaultroute: 0
+      netmask: 255.255.255.255
+      device: br-lan.20
+      ipaddr: 192.168.1.2
+
+- name: Install docker, adding macvlan device
+  notify: Apply
+  uci:
+    command: section
+    config: network
+    type: device
+    value:
+      type: macvlan
+      ifname: br-lan
+      mode: bridge
+      name: br-lan.20
+      acceptlocal: 1
+
+- name: Install docker, adding macvlan route
+  notify: Apply
+  uci:
+    command: section
+    config: network
+    type: route
+    value:
+      interface: macvlan
+      target: 192.168.1.3
+      netmask: 255.255.255.255
+
+- name: Install docker, adding macvlan route
+  notify: Apply
+  uci:
+    command: section
+    config: firewall
+    type: zone
+    find_by:
+      name: lan
+    value:
+      network:
+        - lan
+        - macvlan
+
 - name: Install docker, reboot
   ansible.builtin.meta: flush_handlers
 
-- name: Install docker, create lan macvlan network
+- name: Install docker, check lan network
   ansible.builtin.command: |
-    docker network create -d macvlan --subnet 192.168.1.0/24 --gateway 192.168.1.1 --ip-range 192.168.1.253/32 -o parent=br-lan lan-macvlan
+    docker network inspect lan
+  register: _docker_lan_inspect_result
+  changed_when: false
+  failed_when: false
+
+- name: Install docker, create lan network
+  ansible.builtin.command: |
+    docker network create -d macvlan --subnet 192.168.1.0/24 --gateway 192.168.1.1 --ip-range 192.168.1.253/32 -o parent=br-lan.20 lan
+  when: _docker_lan_inspect_result.rc != 0

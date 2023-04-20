@@ -23,7 +23,7 @@
   ansible.builtin.wait_for:
     host: downloads.openwrt.org
     port: 443
-    delay: 1
+    delay: 5
   delegate_to: 127.0.0.1
   listen:
     - Apply

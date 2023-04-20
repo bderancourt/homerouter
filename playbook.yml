@@ -2,16 +2,16 @@
   hosts: openwrt
   remote_user: root
   vars:
-    install_firmware: true
-    install_resize: true
-    install_essentials: true
-    install_ssh: true
-    install_system: true
-    install_network: true
-    install_sqm: true
-    install_ddns: true
-    install_stubby: true
-    install_firewall: true
+    install_firmware: false
+    install_resize: false
+    install_essentials: false
+    install_ssh: false
+    install_system: false
+    install_network: false
+    install_sqm: false
+    install_ddns: false
+    install_stubby: false
+    install_firewall: false
     install_docker: true
   vars_files:
     - overrided_vars.yml
