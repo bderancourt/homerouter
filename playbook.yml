@@ -68,8 +68,6 @@
       ansible.builtin.include_tasks: tasks/docker.yml
       when: install_docker
 
-
-
   handlers:
     - name: Import handlers
       ansible.builtin.import_tasks:

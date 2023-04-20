@@ -110,5 +110,5 @@
     command: sysupgrade -n /tmp/openwrt.img.gz
   notify: Wait for connection
 
-- name: Trigger wait for connection
+- name: Install image, trigger wait for connection
   ansible.builtin.meta: flush_handlers

@@ -19,6 +19,16 @@
     - Apply
     - Reboot
 
+- name: Wait for internet access
+  ansible.builtin.wait_for:
+    host: downloads.openwrt.org
+    port: 443
+    delay: 1
+  delegate_to: 127.0.0.1
+  listen:
+    - Apply
+    - Reboot
+
 - name: Update opkg cache
   community.general.opkg:
     name: opkg

@@ -16,13 +16,10 @@
   ansible.builtin.service:
     name: network
     state: restarted
+  notify: Wait for internet access
 
-- name: Enable WAN, waiting for internet access
-  ansible.builtin.wait_for:
-    host: 8.8.8.8
-    port: 53
-    delay: 1
-  delegate_to: 127.0.0.1
+- name: Enable WAN, wait for internet access
+  ansible.builtin.meta: flush_handlers
 
 # Needed to update opkg and ensure mandatory packages for
 # ekmihesg.openwrt role to work are installed
