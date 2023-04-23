@@ -2,17 +2,17 @@
   hosts: openwrt
   remote_user: root
   vars:
-    install_firmware: false
-    install_resize: false
-    install_essentials: false
-    install_ssh: false
-    install_system: false
-    install_network: false
-    install_sqm: false
-    install_ddns: false
-    install_stubby: false
-    install_firewall: false
-    install_docker: true
+    include_firmware: false
+    include_resize: true
+    include_essentials: true
+    include_ssh: true
+    include_system: true
+    include_network: true
+    include_sqm: true
+    include_ddns: true
+    include_stubby: true
+    include_firewall: true
+    include_docker_setup: true
   vars_files:
     - overrided_vars.yml
 
@@ -20,53 +20,57 @@
     - gekmihesg.openwrt
 
   tasks:
-    - name: Include install firmware tasks
+    - name: Include firmware tasks
       ansible.builtin.include_tasks: tasks/firmware.yml
-      when: install_firmware
+      when: include_firmware
 
-    - name: Include install enable WAN tasks
-      ansible.builtin.include_tasks: tasks/enable_wan.yml
-      when: install_firmware
-
-    - name: Include install resize tasks
+    - name: Include resize tasks
       ansible.builtin.include_tasks: tasks/resize.yml
-      when: install_resize
+      when: include_resize
 
-    - name: Include install essentials tasks
+    - name: Include essentials tasks
       ansible.builtin.include_tasks: tasks/essentials.yml
-      when: install_essentials
+      when: include_essentials
 
-    - name: Include install ssh tasks
+    - name: Include ssh tasks
       ansible.builtin.include_tasks: tasks/ssh.yml
-      when: install_ssh
+      when: include_ssh
 
-    - name: Include install system tasks
+    - name: Include system tasks
       ansible.builtin.include_tasks: tasks/system.yml
-      when: install_system
+      when: include_system
 
-    - name: Include install network tasks
+    - name: Include network tasks
       ansible.builtin.include_tasks: tasks/network.yml
-      when: install_network
+      when: include_network
 
-    - name: Include install sqm tasks
+    - name: Include sqm tasks
       ansible.builtin.include_tasks: tasks/sqm.yml
-      when: install_sqm
+      when: include_sqm
 
-    - name: Include install ddns tasks
+    - name: Include ddns tasks
       ansible.builtin.include_tasks: tasks/ddns.yml
-      when: install_ddns
+      when: include_ddns
 
-    - name: Include install stubby tasks
-      ansible.builtin.include_tasks: tasks/stubby.yml
-      when: install_stubby
+    # - name: Include stubby tasks
+    #   ansible.builtin.include_tasks: tasks/stubby.yml
+    #   when: include_stubby
 
-    - name: Include install firewall tasks
-      ansible.builtin.include_tasks: tasks/firewall.yml
-      when: install_firewall
+    # - name: Include firewall tasks
+    #   ansible.builtin.include_tasks: tasks/firewall.yml
+    #   when: include_firewall
 
-    - name: Include install docker tasks
-      ansible.builtin.include_tasks: tasks/docker.yml
-      when: install_docker
+    - name: Include docker/setup tasks
+      ansible.builtin.include_tasks: tasks/docker/setup.yml
+      when: include_docker_setup
+
+    - name: Include docker/unificontroller tasks
+      ansible.builtin.include_tasks: tasks/docker/unificontroller.yml
+      when: include_docker_setup
+
+    - name: Include docker/adguardhome tasks
+      ansible.builtin.include_tasks: tasks/docker/adguardhome.yml
+      when: include_docker_setup
 
   handlers:
     - name: Import handlers

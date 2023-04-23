@@ -1,5 +1,5 @@
-firmware_url: https://downloads.openwrt.org/releases/22.03.3/targets/x86/64/openwrt-22.03.3-x86-64-generic-ext4-combined-efi.img.gz
-firmware_checksum: "sha256:3db31fb34ef3c343ea012b0ab548db9f38bd2e529cd82121df78e516f6286bdb"
+firmware_url: https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/openwrt-22.03.4-x86-64-generic-ext4-combined-efi.img.gz
+firmware_checksum: "sha256:935e9d35d4a99ab8ddddbd57d3b11bf42a5f13215ba7a0005bfa90c95f558208"
 
 root_password: changeme
 ddns_uci_service: ddns_uci_service_defaut_var

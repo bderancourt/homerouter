@@ -27,7 +27,7 @@
   ansible.builtin.shell: |
     set -o pipefail
     lsblk -p -J |
-    jsonfilter -e '$.blockdevices[@.children[@.mountpoints[*]="{{ resize_rom_mountpoint }}"]].name'
+    jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_rom_mountpoint }}"]].name'
   register: _resize_root_device_result
   changed_when: false
 
@@ -41,7 +41,7 @@
   ansible.builtin.shell: |
     set -o pipefail
     lsblk -p -J |
-    jsonfilter -e '$.blockdevices[*].children[@.mountpoints[*]="{{ resize_rom_mountpoint }}"].name'
+    jsonfilter -e '$.blockdevices[*].children[@.mountpoints[-1]="{{ resize_rom_mountpoint }}"].name'
   register: _resize_root_partition_result
   changed_when: false
 
@@ -59,9 +59,9 @@
 - name: Resize rootfs, get root disk unallocated space in bytes
   ansible.builtin.shell: |
     set -o pipefail
-    ROOT_DISK_SIZE=$(lsblk -b -J | jsonfilter -e '$.blockdevices[@.children[@.mountpoints[*]="{{ resize_rom_mountpoint }}"]].size')
+    ROOT_DISK_SIZE=$(lsblk -b -J | jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_rom_mountpoint }}"]].size')
     ROOT_DISK_PARTITIONS_SIZE=$(lsblk -b -J | \
-      jsonfilter -e '$.blockdevices[@.children[@.mountpoints[*]="{{ resize_rom_mountpoint }}"]].children[*].size' | awk '{s+=$1} END {print s}')
+      jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_rom_mountpoint }}"]].children[*].size' | awk '{s+=$1} END {print s}')
     echo $(($ROOT_DISK_SIZE - $ROOT_DISK_PARTITIONS_SIZE))
   register: _resize_root_disk_unallocated_size_result
   changed_when: false
@@ -90,7 +90,6 @@
   register: _resize_fix_resize_partition_result
   changed_when: _resize_fix_resize_partition_result.rc == 0
   when: resize_has_free_space
-  notify: Reboot
 
 # abeae232-5289-82a1-0e57-2f2fe899f402
 - name: Resize rootfs, get root partition uuid
@@ -116,8 +115,9 @@
     - "{{ resize_uuid }}"
   when: resize_has_free_space
 
-- name: Resize rootfs, reboot to take in account partition resizing
-  ansible.builtin.meta: flush_handlers
+- name: Reboot
+  ansible.builtin.include_tasks: reboot.yml
+  when: resize_has_free_space and _resize_fix_resize_partition_result.changed
 
 # /dev/loop0
 - name: Resize rootfs, get loop partition
@@ -152,10 +152,10 @@
   register: _resize_rootfs_result
   changed_when: _resize_rootfs_result.rc == 0
   when: resize_has_free_space
-  notify: Reboot
 
-- name: Resize rootfs, reboot to take in account filesystem resizing
-  ansible.builtin.meta: flush_handlers
+- name: Reboot
+  ansible.builtin.include_tasks: reboot.yml
+  when: resize_has_free_space and _resize_rootfs_result.changed
 
 - name: Resize rootfs, remove resize packages
   community.general.opkg:

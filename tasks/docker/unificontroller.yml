@@ -1,0 +1,32 @@
+---
+- name: Install docker Unifi controller, create container
+  community.docker.docker_container:
+    name: unifi-controller
+    image: lscr.io/linuxserver/unifi-controller:7.3.83
+    state: started
+    detach: true
+    restart_policy: unless-stopped
+    env:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Europe/Paris
+    volumes:
+      - unifi-controller_config:/config
+    networks:
+      - name: lan20
+        ipv4_address: 192.168.20.10
+
+- name: Install docker Unifi controller, create DNS entry
+  uci:
+    command: section
+    config: dhcp
+    type: domain
+    find-by:
+      name: unifi
+    value:
+      ip: 192.168.20.10
+
+- name: Install docker Unifi controller, commit
+  uci:
+    command: commit
+    key: dhcp

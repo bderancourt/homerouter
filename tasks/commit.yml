@@ -1,0 +1,17 @@
+---
+- name: Commit {{ item }}
+  uci:
+    command: commit
+    key: "{{ item }}"
+
+- name: Reload config
+  ansible.builtin.command: reload_config
+  changed_when: false
+
+- name: Wait for internet access
+  ansible.builtin.wait_for:
+    host: downloads.openwrt.org
+    port: 443
+    delay: 0
+  delegate_to: 127.0.0.1
+  when: item == "network"

@@ -5,8 +5,7 @@
     dest: /etc/dropbear/authorized_keys
     mode: u=rw,g=,o=
 
-- name: Restrict SSH
-  notify: Apply
+- name: Setup SSH, restrict SSH
   uci:
     command: section
     config: dropbear
@@ -16,3 +15,8 @@
       Interface: lan
       PasswordAuth: 'off'
       RootPasswordAuth: 'off'
+
+- name: Setup SSH, commit
+  ansible.builtin.include_tasks: commit.yml
+  loop:
+    - dropbear

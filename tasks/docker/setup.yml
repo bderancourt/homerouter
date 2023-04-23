@@ -1,0 +1,97 @@
+---
+- name: Install docker, install packages
+  community.general.opkg:
+    name: "{{ packages | join(',') }}"
+    state: present
+  vars:
+    packages:
+      - docker
+      - dockerd
+      - luci-app-dockerman
+      - docker-compose
+      - kmod-macvlan
+      - python3-requests
+#  notify: Remove python
+
+- name: Install docker, deactivate iptable support
+  uci:
+    command: section
+    config: dockerd
+    name: globals
+    type: globals
+    value:
+      iptables: 0
+
+- name: Install docker, remove firewall default rules
+  uci:
+    command: absent
+    config: dockerd
+    section: firewall
+
+- name: Install docker, adding macvlan interface
+  uci:
+    command: section
+    config: network
+    name: vlan20
+    type: interface
+    value:
+      proto: static
+      ipaddr: 192.168.20.1
+      netmask: 255.255.255.0
+      device: br-lan.20
+
+- name: Install docker, adding macvlan device
+  uci:
+    command: section
+    config: network
+    type: device
+    find-by:
+      name: br-lan.20
+    value:
+      type: macvlan
+      ifname: br-lan
+      mode: bridge
+      acceptlocal: 1
+      ipv6: 0
+
+- name: Install docker, adding vlan20 firewall zone
+  uci:
+    command: section
+    config: firewall
+    type: zone
+    name: vlan20
+    value:
+      name: vlan20
+      network:
+        - vlan20
+      input: ACCEPT
+      output: ACCEPT
+      forward: ACCEPT
+
+- name: Install docker, adding lan to vlan20 firewall forwarding
+  uci:
+    command: section
+    config: firewall
+    type: forwarding
+    find-by:
+      src: lan
+      dest: vlan20
+
+- name: Install docker, commit
+  ansible.builtin.include_tasks: ../commit.yml
+  loop:
+    - dockerd
+    - network
+    - firewall
+
+- name: Create lan20 network
+  community.docker.docker_network:
+    name: lan20
+    state: present
+    driver: macvlan
+    driver_options:
+      parent: br-lan.20
+    ipam_config:
+      - subnet: 192.168.20.0/24
+        gateway: 192.168.20.1
+        iprange: 192.168.20.253/32

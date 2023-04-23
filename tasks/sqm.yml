@@ -9,7 +9,6 @@
       - sqm-scripts
 
 - name: Setup SQM, updating eth1 (wan) configuration
-  notify: Apply
   uci:
     command: section
     config: sqm
@@ -29,3 +28,8 @@
       qdisc_advanced: 0
       qdisc_really_really_advanced: 0
     replace: true
+
+- name: Setup SSH, commit
+  ansible.builtin.include_tasks: commit.yml
+  loop:
+    - sqm

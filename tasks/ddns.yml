@@ -10,19 +10,16 @@
       - luci-app-ddns
 
 - name: Setup DDNS, cleanup default myddns_ipv4 config
-  notify: Apply
   uci:
     command: absent
     key: ddns.myddns_ipv4
 
 - name: Setup DDNS, cleanup default myddns_ipv6 config
-  notify: Apply
   uci:
     command: absent
     key: ddns.myddns_ipv6
 
 - name: Setup DDNS, adding configuration {{ ddns_uci_service }}
-  notify: Apply
   uci:
     command: section
     config: ddns
@@ -42,3 +39,8 @@
       use_https: 1
       cacert: /etc/ssl/certs
     replace: true
+
+- name: Setup DDNS, commit
+  ansible.builtin.include_tasks: commit.yml
+  loop:
+    - ddns
