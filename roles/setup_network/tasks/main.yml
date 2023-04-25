@@ -1,0 +1,32 @@
+- name: Configure br-lan ports
+  uci:
+    command: section
+    config: network
+    type: device
+    find-by:
+      name: br-lan
+    value:
+      ports: "{{ network_brlan_ports }}"
+
+- name: Commit
+  uci:
+    command: commit
+    key: network
+
+- name: Reload config
+  ansible.builtin.command: reload_config
+  changed_when: false
+
+- name: Wait for internet access
+  ansible.builtin.get_url:
+    url: https://downloads.openwrt.org/releases/22.03.4/packages/x86_64/packages/Packages.asc
+    dest: /tmp/Packages.asc
+    mode: u=rw,g=r,o=r
+    timeout: 5
+  changed_when: false
+  register: _geturl_packages_result
+  retries: 12
+  delay: 0
+  until: _geturl_packages_result.msg.find("OK") == 0
+  delegate_to: localhost
+  become: false

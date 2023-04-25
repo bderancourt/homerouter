@@ -1,0 +1,36 @@
+---
+- name: Create Unifi controller container
+  community.docker.docker_container:
+    name: unifi-controller
+    image: lscr.io/linuxserver/unifi-controller:7.3.83
+    state: started
+    detach: true
+    restart_policy: unless-stopped
+    env:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Europe/Paris
+    volumes:
+      - unifi-controller_config:/config
+    networks:
+      - name: lan20
+        ipv4_address: 192.168.20.10
+
+- name: Create Unifi DNS entry
+  uci:
+    command: section
+    config: dhcp
+    type: domain
+    find-by:
+      name: unifi
+    value:
+      ip: 192.168.20.10
+
+- name: Commit dhcp
+  uci:
+    command: commit
+    key: dhcp
+
+- name: Reload config
+  ansible.builtin.command: reload_config
+  changed_when: false

@@ -1,0 +1,22 @@
+---
+# if build_image_version is not set, snapshot is used
+build_image_version: 22.03.4
+build_image_target: x86
+build_image_subtarget: 64
+build_image_profile: generic
+build_image_packages_exclude:
+  - ppp
+  - ppp-mod-pppoe
+build_image_packages_include:
+  - luci-nginx
+  - htop
+  - vim
+  - less
+  - dmesg
+  - usbutils
+  - pciutils
+  - lm-sensors
+  - smartmontools
+  - coreutils-base64
+  - coreutils-md5sum
+  - coreutils-sha1sum

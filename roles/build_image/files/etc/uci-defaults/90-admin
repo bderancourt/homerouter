@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Enable DHCP client to wan
+uci set network.wan.vendorid="neufbox_NB6VAC-directAccess"
+uci commit network
+
+exit 0

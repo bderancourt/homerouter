@@ -1,0 +1,34 @@
+---
+- name: Download firmware
+  ansible.builtin.get_url:
+    url: "{{ install_firmware_uri }}"
+    dest: "/tmp/{{ install_firmware_uri | basename }}"
+    checksum: "{{ install_firmware_checksum }}"
+    mode: u=rw,g=r,o=r
+  when: install_firmware_uri.startswith('http')
+  delegate_to: localhost
+  become: false
+
+- name: Set firmware path
+  ansible.builtin.set_fact:
+    install_firmware_path: >-
+      {{
+        '/tmp/' + ( install_firmware_uri | basename )
+        if install_firmware_uri.startswith('http')
+        else install_firmware_uri
+      }}
+
+- name: Copy image to router
+  ansible.builtin.copy:
+    src: "{{ install_firmware_path }}"
+    dest: /tmp/openwrt.img.gz
+    mode: u=rw,g=r,o=r
+
+- name: Start sysupgrade process
+  nohup:
+    command: sysupgrade -n /tmp/openwrt.img.gz
+
+- name: Wait for connection
+  ansible.builtin.wait_for_connection:
+    timeout: 60
+    delay: 5

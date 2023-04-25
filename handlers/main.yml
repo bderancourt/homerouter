@@ -1,6 +1,0 @@
----
-- name: Remove python
-  community.general.opkg:
-    name: python3-requests
-    state: absent
-    autoremove: true

@@ -1,0 +1,31 @@
+---
+- name: Trigger reboot
+  nohup:
+    command: reboot
+
+- name: Wait for connection
+  ansible.builtin.wait_for_connection:
+    timeout: 60
+    delay: 0
+
+- name: Wait for internet access
+  ansible.builtin.get_url:
+    url: https://downloads.openwrt.org/releases/22.03.4/packages/x86_64/packages/Packages.asc
+    dest: /tmp/Packages.asc
+    mode: u=rw,g=r,o=r
+    timeout: 5
+  changed_when: false
+  register: _geturl_packages_result
+  retries: 12
+  delay: 0
+  until: _geturl_packages_result.msg.find("OK") == 0
+  delegate_to: localhost
+  become: false
+
+- name: Update opkg cache
+  community.general.opkg:
+    name: opkg
+    update_cache: true
+  register: _opkg_update
+  failed_when: _opkg_update.failed
+  changed_when: not _opkg_update.failed

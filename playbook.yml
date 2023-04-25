@@ -1,78 +1,33 @@
 - name: OpenWRT custom setup playbook
   hosts: openwrt
   remote_user: root
-  vars:
-    include_firmware: false
-    include_resize: true
-    include_essentials: true
-    include_ssh: true
-    include_system: true
-    include_network: true
-    include_sqm: true
-    include_ddns: true
-    include_stubby: true
-    include_firewall: true
-    include_docker_setup: true
   vars_files:
     - overrided_vars.yml
+  vars:
+    network_brlan_ports:
+      - eth0
+    install_firmware_uri: >-
+      /tmp/openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64/bin/targets/x86/64/openwrt-22.03.4-x86-64-generic-ext4-combined-efi.img.gz
 
   roles:
     - gekmihesg.openwrt
+#    - build_image
+    - install_firmware
+    - enable_wan
+    - resize_disk
+    - essential_packages
+    - secure_ssh
+    - setup_system
+    - setup_network
+    - install_sqm
+    - install_ddns
+    - install_docker
+    - install_docker_unifi
+    - install_adguardhome
 
   tasks:
-    - name: Include firmware tasks
-      ansible.builtin.include_tasks: tasks/firmware.yml
-      when: include_firmware
-
-    - name: Include resize tasks
-      ansible.builtin.include_tasks: tasks/resize.yml
-      when: include_resize
-
-    - name: Include essentials tasks
-      ansible.builtin.include_tasks: tasks/essentials.yml
-      when: include_essentials
-
-    - name: Include ssh tasks
-      ansible.builtin.include_tasks: tasks/ssh.yml
-      when: include_ssh
-
-    - name: Include system tasks
-      ansible.builtin.include_tasks: tasks/system.yml
-      when: include_system
-
-    - name: Include network tasks
-      ansible.builtin.include_tasks: tasks/network.yml
-      when: include_network
-
-    - name: Include sqm tasks
-      ansible.builtin.include_tasks: tasks/sqm.yml
-      when: include_sqm
-
-    - name: Include ddns tasks
-      ansible.builtin.include_tasks: tasks/ddns.yml
-      when: include_ddns
-
-    # - name: Include stubby tasks
-    #   ansible.builtin.include_tasks: tasks/stubby.yml
-    #   when: include_stubby
-
-    # - name: Include firewall tasks
-    #   ansible.builtin.include_tasks: tasks/firewall.yml
-    #   when: include_firewall
-
-    - name: Include docker/setup tasks
-      ansible.builtin.include_tasks: tasks/docker/setup.yml
-      when: include_docker_setup
-
-    - name: Include docker/unificontroller tasks
-      ansible.builtin.include_tasks: tasks/docker/unificontroller.yml
-      when: include_docker_setup
-
-    - name: Include docker/adguardhome tasks
-      ansible.builtin.include_tasks: tasks/docker/adguardhome.yml
-      when: include_docker_setup
-
-  handlers:
-    - name: Import handlers
-      ansible.builtin.import_tasks:
-        file: handlers/main.yml
+    - name: Remove python
+      community.general.opkg:
+        name: python3-requests
+        state: absent
+        autoremove: true

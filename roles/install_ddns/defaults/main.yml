@@ -1,0 +1,7 @@
+---
+ddns_uci_service: ddns_uci_service_defaut_var
+ddns_service_name: ddns_service_name_defaut_var
+ddns_lookup_host: ddns_lookup_host_defaut_var
+ddns_domain: ddns_domain_defaut_var
+ddns_username: ddns_username_defaut_var
+ddns_password: ddns_password_defaut_var
