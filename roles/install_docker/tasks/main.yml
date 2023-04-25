@@ -11,7 +11,6 @@
       - docker-compose
       - kmod-macvlan
       - python3-requests
-  notify: Remove python
 
 - name: Disable iptable support
   uci:

@@ -156,9 +156,3 @@
 - name: Reboot
   ansible.builtin.include_tasks: reboot.yml
   when: resize_has_free_space and _resize_rootfs_result.changed
-
-- name: Remove resize packages
-  community.general.opkg:
-    name: losetup,resize2fs,parted,fdisk
-    state: absent
-    autoremove: true

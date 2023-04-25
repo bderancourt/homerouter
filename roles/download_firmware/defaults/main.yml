@@ -1,0 +1,7 @@
+---
+firmware_version: 22.03.4
+firmware_target: x86
+firmware_subtarget: 64
+firmware_profile: generic
+firmware_image: ext4-combined-efi
+firmware_output: /tmp/firmware.img.gz

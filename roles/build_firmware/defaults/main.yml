@@ -1,0 +1,49 @@
+---
+# if firmware_version is not set, snapshot is used
+firmware_version: 22.03.4
+firmware_target: x86
+firmware_subtarget: 64
+firmware_profile: generic
+firmware_image: ext4-combined-efi
+firmware_output: /tmp/firmware.img.gz
+firmware_packages_exclude:
+  - ppp
+  - ppp-mod-pppoe
+firmware_packages_include:
+  # essential packages
+  - wget-ssl
+  - luci-nginx
+  - htop
+  - vim
+  - less
+  - dmesg
+  - usbutils
+  - pciutils
+  - lm-sensors
+  - smartmontools
+  # Needed for the gekmihesg.openwrt role
+  - coreutils-base64
+  - coreutils-md5sum
+  - coreutils-sha1sum
+  # resize disk
+  - lsblk
+  - losetup
+  - resize2fs
+  - parted
+  - fdisk
+  # sqm
+  - luci-app-sqm
+  - sqm-scripts
+  # install ddns
+  - curl
+  - drill
+  - luci-app-ddns
+  # install docker
+  - docker
+  - dockerd
+  - luci-app-dockerman
+  - docker-compose
+  - kmod-macvlan
+  - python3-requests
+  # install adguard home
+  - adguardhome

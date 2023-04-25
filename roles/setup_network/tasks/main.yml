@@ -19,8 +19,8 @@
 
 - name: Wait for internet access
   ansible.builtin.get_url:
-    url: https://downloads.openwrt.org/releases/22.03.4/packages/x86_64/packages/Packages.asc
-    dest: /tmp/Packages.asc
+    url: https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/packages/Packages.gz
+    dest: /tmp/Packages.gz
     mode: u=rw,g=r,o=r
     timeout: 5
   changed_when: false

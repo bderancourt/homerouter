@@ -7,7 +7,7 @@
     type: interface
     name: wan
     value:
-      vendorid: neufbox_NB6VAC-directAccess
+      vendorid: "{{ wan_vendorid }}"
 
 - name: Commit network
   uci:
@@ -19,18 +19,12 @@
   changed_when: false
 
 - name: Wait for internet access
-  ansible.builtin.get_url:
-    url: https://downloads.openwrt.org/releases/22.03.4/packages/x86_64/packages/Packages.asc
-    dest: /tmp/Packages.asc
-    mode: u=rw,g=r,o=r
-    timeout: 5
+  ansible.builtin.command:
+    cmd: wget --timeout=5 --spider https://downloads.openwrt.org/snapshots/targets/x86/64/packages/Packages.gz
   changed_when: false
-  register: _geturl_packages_result
+  register: _wget_packages_result
   retries: 12
-  delay: 0
-  until: _geturl_packages_result.msg.find("OK") == 0
-  delegate_to: localhost
-  become: false
+  until: _wget_packages_result.rc == 0
 
 # Needed to update opkg and ensure mandatory packages for
 # ekmihesg.openwrt role to work are installed
