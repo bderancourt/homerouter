@@ -34,3 +34,17 @@
 - name: Reload config
   ansible.builtin.command: reload_config
   changed_when: false
+
+- name: Copy nginx reverse proxy configuration to expose unifi at https://openwrt.lan/unifi/
+  ansible.builtin.copy:
+    src: files/unifi.locations
+    dest: /etc/nginx/conf.d/unifi.locations
+    owner: root
+    group: root
+    mode: u=rw,g=,o=
+
+
+- name: Restart nginx service
+  ansible.builtin.service:
+    name: nginx
+    state: restarted

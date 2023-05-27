@@ -6,6 +6,7 @@
 - name: Wait for connection
   ansible.builtin.wait_for_connection:
     timeout: 60
+    delay: 10
 
 - name: Wait for internet access
   ansible.builtin.command:

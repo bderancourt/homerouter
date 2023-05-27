@@ -15,7 +15,7 @@
     name: '@system[0]'
     type: system
     value:
-      hostname: openwrt
+      hostname: OpenWrt
       timezone: CET-1CEST,M3.5.0,M10.5.0/3
       zonename: Europe/Paris
       log_size: 2048

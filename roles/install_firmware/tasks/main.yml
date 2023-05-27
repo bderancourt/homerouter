@@ -1,7 +1,7 @@
 ---
 - name: Copy image to router
   ansible.builtin.copy:
-    src: "{{ install_firmware_path }}"
+    src: "{{ firmware_local_file }}"
     dest: /tmp/openwrt.img.gz
     mode: u=rw,g=r,o=r
 

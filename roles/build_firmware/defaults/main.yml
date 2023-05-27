@@ -1,18 +1,18 @@
 ---
 # if firmware_version is not set, snapshot is used
-firmware_version: 22.03.4
+firmware_version: 22.03.5
 firmware_target: x86
 firmware_subtarget: 64
 firmware_profile: generic
 firmware_image: ext4-combined-efi
-firmware_output: /tmp/firmware.img.gz
+firmware_local_file: /tmp/firmware.img.gz
 firmware_packages_exclude:
   - ppp
   - ppp-mod-pppoe
 firmware_packages_include:
   # essential packages
   - wget-ssl
-  - luci-nginx
+  - luci-ssl-nginx
   - htop
   - vim
   - less

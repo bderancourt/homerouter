@@ -5,6 +5,34 @@
     name: adguardhome
     state: present
 
+- name: Generate adguardhome password hash
+  ansible.builtin.command:
+    cmd: htpasswd -B -n -b {{ adguardhome_user }} {{ adguardhome_password }}
+  register: _adguardhome_pwdhash_result
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Set adguardhome password hash
+  ansible.builtin.set_fact:
+    adguardhome_pwdhash: "{{ _adguardhome_pwdhash_result.stdout | split(':') | last }}"
+
+- name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml
+  ansible.builtin.template:
+    src: templates/adguardhome.yaml.j2
+    dest: /etc/adguardhome.yaml
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+
+- name: Copy nginx reverse proxy configuration to expose ADH at https://openwrt.lan/adh/
+  ansible.builtin.copy:
+    src: files/adguardhome.locations
+    dest: /etc/nginx/conf.d/adguardhome.locations
+    owner: root
+    group: root
+    mode: u=rw,g=,o=
+
 - name: Get the router IPv4 address
   ansible.builtin.shell: |
     set -o pipefail
@@ -95,7 +123,7 @@
       dest_port: 53
       family: any
 
-- name: Commit {{ item }}
+- name: Commit
   uci:
     command: commit
     key: "{{ item }}"
@@ -107,3 +135,14 @@
 - name: Reload config
   ansible.builtin.command: reload_config
   changed_when: false
+
+- name: Restart services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - network
+    - firewall
+    - dnsmasq
+    - adguardhome
+    - nginx

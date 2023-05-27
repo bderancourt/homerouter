@@ -1,2 +1,2 @@
 ---
-install_firmware_path: /tmp/firmware.img.gz
+firmware_local_file: /tmp/firmware.img.gz
