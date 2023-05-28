@@ -1,0 +1,2 @@
+docker_unifi_ip: 192.168.20.10
+docker_unifi_config_volume_name: unifi-controller-config

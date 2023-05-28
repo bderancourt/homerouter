@@ -21,6 +21,7 @@ firmware_packages_include:
   - pciutils
   - lm-sensors
   - smartmontools
+  - openssh-sftp-server
   # Needed for the gekmihesg.openwrt role
   - coreutils-base64
   - coreutils-md5sum

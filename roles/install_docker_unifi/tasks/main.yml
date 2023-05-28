@@ -11,10 +11,30 @@
       PGID: "1000"
       TZ: Europe/Paris
     volumes:
-      - unifi-controller_config:/config
+      - "{{ docker_unifi_config_volume_name }}:/config"
     networks:
       - name: lan20
-        ipv4_address: 192.168.20.10
+        ipv4_address: "{{ docker_unifi_ip }}"
+
+- name: Get infos on volume "{{ docker_unifi_config_volume_name }}"
+  community.docker.docker_volume_info:
+    name: "{{ docker_unifi_config_volume_name }}"
+  register: docker_unifi_volume_info_result
+
+- name: Print unifi system.properties file path
+  ansible.builtin.debug:
+    msg: "{{ docker_unifi_volume_info_result.volume.Mountpoint + '/data/system.properties' }}"
+
+- name: Change controller UI https port to 443
+  ansible.builtin.lineinfile:
+    path: "{{ docker_unifi_volume_info_result.volume.Mountpoint + '/data/system.properties' }}"
+    line: unifi.https.port=443
+
+- name: Create Unifi controller container
+  community.docker.docker_container:
+    name: unifi-controller
+    state: started
+    restart: true
 
 - name: Create Unifi DNS entry
   uci:
@@ -24,7 +44,7 @@
     find-by:
       name: unifi
     value:
-      ip: 192.168.20.10
+      ip: "{{ docker_unifi_ip }}"
 
 - name: Commit dhcp
   uci:
@@ -35,16 +55,4 @@
   ansible.builtin.command: reload_config
   changed_when: false
 
-- name: Copy nginx reverse proxy configuration to expose unifi at https://openwrt.lan/unifi/
-  ansible.builtin.copy:
-    src: files/unifi.locations
-    dest: /etc/nginx/conf.d/unifi.locations
-    owner: root
-    group: root
-    mode: u=rw,g=,o=
 
-
-- name: Restart nginx service
-  ansible.builtin.service:
-    name: nginx
-    state: restarted

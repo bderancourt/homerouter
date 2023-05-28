@@ -9,28 +9,29 @@
 
   roles:
     - gekmihesg.openwrt
-    - build_firmware
-    - install_firmware
-    - resize_disk
-    - secure_ssh
-    - setup_system
-    - setup_network
-    - install_sqm
-    - install_ddns
-    - install_docker
+    # - build_firmware
+    # - install_firmware
+    # - resize_disk
+    # - secure_ssh
+    # - setup_system
+    # - setup_network
+    # - install_sqm
+    # - install_ddns
+    # - install_docker
     - install_docker_unifi
-    - install_adguardhome
+    # - install_adguardhome
 
   tasks:
-    - name: Remove python
+    # opkg install python3-requests losetup parted fdisk resize2fs
+    - name: Remove unused packages
       community.general.opkg:
-        name: "{{ packages | join(',') }}"
+        name: "{{ item }}"
         state: absent
         autoremove: true
-      vars:
-        packages:
-          - python3-requests
-          - losetup
-          - resize2fs
-          - parted
-          - fdisk
+      loop:
+        - python3-requests
+        - losetup
+        - parted
+        - fdisk
+        - resize2fs
+      when: false
