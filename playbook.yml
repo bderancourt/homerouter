@@ -9,17 +9,17 @@
 
   roles:
     - gekmihesg.openwrt
-    # - build_firmware
-    # - install_firmware
-    # - resize_disk
-    # - secure_ssh
-    # - setup_system
-    # - setup_network
-    # - install_sqm
-    # - install_ddns
-    # - install_docker
+    - build_firmware
+    - install_firmware
+    - resize_disk
+    - secure_ssh
+    - setup_system
+    - setup_network
+    - install_sqm
+    - install_ddns
+    - install_docker
     - install_docker_unifi
-    # - install_adguardhome
+    - install_adguardhome
 
   tasks:
     # opkg install python3-requests losetup parted fdisk resize2fs
