@@ -114,7 +114,9 @@
     params: >
       PROFILE="{{ firmware_profile }}"
       FILES="files"
-      PACKAGES="{{ (firmware_packages_exclude + firmware_packages_include) | join(' ') }}"
+      PACKAGES="{{
+        ((firmware_packages_exclude | map('regex_replace', '^(.*)$', '-\1')) + firmware_packages_include)
+        | join(' ') }}"
   delegate_to: localhost
   become: false
 

@@ -1,13 +1,12 @@
 ---
 - name: Install DDNS packages
   community.general.opkg:
-    name: "{{ packages | join(',') }}"
+    name: "{{ item }}"
     state: present
-  vars:
-    packages:
-      - curl
-      - drill
-      - luci-app-ddns
+  loop:
+    - curl
+    - drill
+    - luci-app-ddns
 
 - name: Cleanup default myddns_ipv4 config
   uci:

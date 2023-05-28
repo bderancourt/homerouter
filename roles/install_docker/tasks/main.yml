@@ -1,16 +1,15 @@
 ---
 - name: Install docker packages
   community.general.opkg:
-    name: "{{ packages | join(',') }}"
+    name: "{{ item }}"
     state: present
-  vars:
-    packages:
-      - docker
-      - dockerd
-      - luci-app-dockerman
-      - docker-compose
-      - kmod-macvlan
-      - python3-requests
+  loop:
+    - docker
+    - dockerd
+    - luci-app-dockerman
+    - docker-compose
+    - kmod-macvlan
+    - python3-requests
 
 - name: Disable iptable support
   uci:

@@ -3,9 +3,6 @@
   remote_user: root
   vars_files:
     - overrided_vars.yml
-  vars:
-    network_brlan_ports:
-      - eth0
 
   roles:
     - gekmihesg.openwrt
@@ -20,18 +17,4 @@
     - install_docker
     - install_docker_unifi
     - install_adguardhome
-
-  tasks:
-    # opkg install python3-requests losetup parted fdisk resize2fs
-    - name: Remove unused packages
-      community.general.opkg:
-        name: "{{ item }}"
-        state: absent
-        autoremove: true
-      loop:
-        - python3-requests
-        - losetup
-        - parted
-        - fdisk
-        - resize2fs
-      when: false
+    - post_install

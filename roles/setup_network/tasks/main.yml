@@ -18,15 +18,5 @@
   changed_when: false
 
 - name: Wait for internet access
-  ansible.builtin.get_url:
-    url: https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/packages/Packages.gz
-    dest: /tmp/Packages.gz
-    mode: u=rw,g=r,o=r
-    timeout: 5
-  changed_when: false
-  register: _geturl_packages_result
-  retries: 12
-  delay: 0
-  until: _geturl_packages_result.msg.find("OK") == 0
-  delegate_to: localhost
-  become: false
+  ansible.builtin.include_role:
+    name: wait_internet

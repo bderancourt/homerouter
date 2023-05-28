@@ -1,8 +1,11 @@
 ---
 - name: Install SQM packages
   community.general.opkg:
-    name: luci-app-sqm,sqm-scripts
+    name: "{{ item }}"
     state: present
+  loop:
+    - luci-app-sqm
+    - sqm-scripts
 
 - name: Update eth1 (wan) configuration
   uci:

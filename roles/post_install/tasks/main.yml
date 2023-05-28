@@ -1,0 +1,17 @@
+---
+# opkg install python3-requests
+- name: Remove unused packages
+  community.general.opkg:
+    name: "{{ item }}"
+    state: absent
+    autoremove: true
+  loop:
+    - python3-requests
+    - losetup
+    - parted
+    - fdisk
+    - resize2fs
+
+- name: Reboot
+  ansible.builtin.include_role:
+    name: reboot
