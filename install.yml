@@ -1,0 +1,11 @@
+- name: OpenWRT custom setup playbook
+  hosts: openwrt
+  remote_user: root
+  gather_facts: false
+  vars:
+    firmware_local_file: "{{ playbook_dir }}/build/firmware.img.gz"
+
+  roles:
+    - gekmihesg.openwrt
+    - install_firmware
+    - resize_disk

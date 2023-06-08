@@ -1,4 +1,71 @@
 ---
+- name: Install Python3 package to be able to use community.docker
+  community.general.opkg:
+    name: python3-requests
+    state: present
+
+- name: Adding macvlan interface
+  uci:
+    command: section
+    config: network
+    name: dockerlan
+    type: interface
+    value:
+      proto: static
+      ipaddr: 192.168.20.1
+      netmask: 255.255.255.0
+      device: br-lan.20
+
+- name: Adding macvlan device
+  uci:
+    command: section
+    config: network
+    type: device
+    find-by:
+      name: br-lan.20
+    value:
+      type: macvlan
+      ifname: br-lan
+      mode: bridge
+      acceptlocal: 1
+      ipv6: 0
+
+- name: Adding dockerlan firewall zone
+  uci:
+    command: section
+    config: firewall
+    type: zone
+    find-by:
+      name: lan
+    value:
+      network:
+        - dockerlan
+
+- name: Commit {{ item }}
+  uci:
+    command: commit
+    key: "{{ item }}"
+  loop:
+    - dockerd
+    - network
+    - firewall
+
+- name: Reload config
+  ansible.builtin.command: reload_config
+  changed_when: false
+
+- name: Create dockerlan network
+  community.docker.docker_network:
+    name: dockerlan
+    state: present
+    driver: macvlan
+    driver_options:
+      parent: br-lan.20
+    ipam_config:
+      - subnet: 192.168.20.0/24
+        gateway: 192.168.20.1
+        iprange: 192.168.20.253/32
+
 - name: Create Unifi controller container
   community.docker.docker_container:
     name: unifi-controller
@@ -13,28 +80,30 @@
     volumes:
       - "{{ docker_unifi_config_volume_name }}:/config"
     networks:
-      - name: lan20
+      - name: dockerlan
         ipv4_address: "{{ docker_unifi_ip }}"
 
 - name: Get infos on volume "{{ docker_unifi_config_volume_name }}"
   community.docker.docker_volume_info:
     name: "{{ docker_unifi_config_volume_name }}"
-  register: docker_unifi_volume_info_result
+  register: install_docker_unifi_volume_info_result
 
 - name: Print unifi system.properties file path
   ansible.builtin.debug:
-    msg: "{{ docker_unifi_volume_info_result.volume.Mountpoint + '/data/system.properties' }}"
+    msg: "{{ install_docker_unifi_volume_info_result.volume.Mountpoint + '/data/system.properties' }}"
 
 - name: Change controller UI https port to 443
   ansible.builtin.lineinfile:
-    path: "{{ docker_unifi_volume_info_result.volume.Mountpoint + '/data/system.properties' }}"
+    path: "{{ install_docker_unifi_volume_info_result.volume.Mountpoint + '/data/system.properties' }}"
     line: unifi.https.port=443
+  register: install_docker_unifi_change_ui_port_result
 
-- name: Create Unifi controller container
+- name: Restart Unifi controller container
   community.docker.docker_container:
     name: unifi-controller
     state: started
     restart: true
+  changed_when: install_docker_unifi_change_ui_port_result.changed
 
 - name: Create Unifi DNS entry
   uci:

@@ -5,8 +5,8 @@
     {{ root_password }}
     {{ root_password }}
     EOP
-  register: _passwd_result
-  changed_when: _passwd_result.rc == 0
+  register: setup_system_passwd_result
+  changed_when: setup_system_passwd_result.rc == 0
 
 - name: Change log size + timezone
   uci:

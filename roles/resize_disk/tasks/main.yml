@@ -13,159 +13,174 @@
   ansible.builtin.shell: |
     set -o pipefail
     df -Th / | awk 'NR==2 {print $2}'
-  register: _resize_partition_type_result
+  register: resize_disk_partition_type_result
   changed_when: false
 
-# resize_root_partition_type = ext4 or squashfs
+# resize_disk_root_partition_type = ext4 or squashfs
 - name: Set root partition type
   ansible.builtin.set_fact:
-    resize_root_partition_type: "{{ 'ext4' if _resize_partition_type_result.stdout == 'ext4' else 'squashfs' }}"
-    resize_rom_mountpoint: "{{ '/' if _resize_partition_type_result.stdout == 'ext4' else '/rom' }}"
+    resize_disk_root_partition_type: "{{ 'ext4' if resize_disk_partition_type_result.stdout == 'ext4' else 'squashfs' }}"
+    resize_disk_rom_mountpoint: "{{ '/' if resize_disk_partition_type_result.stdout == 'ext4' else '/rom' }}"
 
 # /dev/nvme0n1
 - name: Get root device
   ansible.builtin.shell: |
     set -o pipefail
     lsblk -p -J |
-    jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_rom_mountpoint }}"]].name'
-  register: _resize_root_device_result
+    jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_disk_rom_mountpoint }}"]].name'
+  register: resize_disk_root_device_result
   changed_when: false
 
-# resize_root_device = /dev/nvme0n1
+# resize_disk_root_device = /dev/nvme0n1
 - name: Set root device
   ansible.builtin.set_fact:
-    resize_root_device: "{{ _resize_root_device_result.stdout }}"
+    resize_disk_root_device: "{{ resize_disk_root_device_result.stdout }}"
 
 # /dev/nvme0n1p2
 - name: Get root partition
   ansible.builtin.shell: |
     set -o pipefail
     lsblk -p -J |
-    jsonfilter -e '$.blockdevices[*].children[@.mountpoints[-1]="{{ resize_rom_mountpoint }}"].name'
-  register: _resize_root_partition_result
+    jsonfilter -e '$.blockdevices[*].children[@.mountpoints[-1]="{{ resize_disk_rom_mountpoint }}"].name'
+  register: resize_disk_root_partition_result
   changed_when: false
 
-# resize_root_partition = /dev/nvme0n1p2
+# resize_disk_root_partition = /dev/nvme0n1p2
 - name: Set root partition
   ansible.builtin.set_fact:
-    resize_root_partition: "{{ _resize_root_partition_result.stdout }}"
+    resize_disk_root_partition: "{{ resize_disk_root_partition_result.stdout }}"
 
-# resize_root_partition_number = 2
+# resize_disk_root_partition_number = 2
 - name: Set root partition number
   ansible.builtin.set_fact:
-    resize_root_partition_number: 
-      "{{ resize_root_partition | split(resize_root_device) | last | regex_replace('^p(.*)$', '\\1') }}"
+    resize_disk_root_partition_number:
+      "{{ resize_disk_root_partition | split(resize_disk_root_device) | last | regex_replace('^p(.*)$', '\\1') }}"
 
 # root disk unallocated space in bytes
 - name: Set root disk unallocated space in bytes
   ansible.builtin.shell: |
     set -o pipefail
     ROOT_DISK_SIZE=$(lsblk -b -J | \
-      jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_rom_mountpoint }}"]].size')
+      jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_disk_rom_mountpoint }}"]].size')
     ROOT_DISK_PARTITIONS_SIZE=$(lsblk -b -J | \
-      jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_rom_mountpoint }}"]].children[*].size' | \
+      jsonfilter -e '$.blockdevices[@.children[@.mountpoints[-1]="{{ resize_disk_rom_mountpoint }}"]].children[*].size' | \
       awk '{s+=$1} END {print s}')
     echo $(($ROOT_DISK_SIZE - $ROOT_DISK_PARTITIONS_SIZE))
-  register: _resize_root_disk_unallocated_size_result
+  register: resize_disk_root_disk_unallocated_size_result
   changed_when: false
 
-# resize_has_free_space = true if root disk has free space (more than 100kB)
+# resize_disk_has_free_space = true if root disk has free space (more than 100kB)
 - name: Set has free space
   ansible.builtin.set_fact:
-    resize_has_free_space: "{{ (_resize_root_disk_unallocated_size_result.stdout | int) > 100000 }}"
+    resize_disk_has_free_space: "{{ (resize_disk_root_disk_unallocated_size_result.stdout | int) > 100000 }}"
 
 - name: Install needed packages
   community.general.opkg:
     name: "{{ item }}"
     state: present
-  loop: 
+  loop:
     - losetup
     - resize2fs
     - parted
     - fdisk
-  when: resize_has_free_space
+  when: resize_disk_has_free_space
 
 - name: Fix partition table
   ansible.builtin.shell: |
    set -o pipefail
-   printf "w" | fdisk {{ resize_root_device }}
-  register: _resize_fix_partition_table_result
-  changed_when: _resize_fix_partition_table_result.rc == 0
-  when: resize_has_free_space
+   printf "w" | fdisk {{ resize_disk_root_device }}
+  register: resize_disk_fix_partition_table_result
+  changed_when: resize_disk_fix_partition_table_result.rc == 0
+  when: resize_disk_has_free_space
 
 - name: Resize root partition
-  ansible.builtin.command: parted -s {{ resize_root_device }} resizepart {{ resize_root_partition_number }} 100%
-  register: _resize_fix_resize_partition_result
-  changed_when: _resize_fix_resize_partition_result.rc == 0
-  when: resize_has_free_space
+  ansible.builtin.command: parted -s {{ resize_disk_root_device }} resizepart {{ resize_disk_root_partition_number }} 100%
+  register: resize_disk_fix_resize_partition_result
+  changed_when: resize_disk_fix_resize_partition_result.rc == 0
+  when: resize_disk_has_free_space
 
 # abeae232-5289-82a1-0e57-2f2fe899f402
 - name: Get root partition uuid
-  ansible.builtin.command: "lsblk -n -o PARTUUID {{ resize_root_partition }}"
-  register: _resize_get_rootuuid_result
+  ansible.builtin.command: "lsblk -n -o PARTUUID {{ resize_disk_root_partition }}"
+  register: resize_disk_get_rootuuid_result
   changed_when: false
-  when: resize_has_free_space
+  when: resize_disk_has_free_space
 
-# resize_uuid = abeae232-5289-82a1-0e57-2f2fe899f402
+# resize_disk_uuid = abeae232-5289-82a1-0e57-2f2fe899f402
 - name: Set root partition uuid
   ansible.builtin.set_fact:
-    resize_uuid: "{{ _resize_get_rootuuid_result.stdout }}"
-  when: resize_has_free_space
+    resize_disk_uuid: "{{ resize_disk_get_rootuuid_result.stdout }}"
+  when: resize_disk_has_free_space
 
 - name: Update grub boot partition uuid
   ansible.builtin.lineinfile:
     path: /boot/grub/grub.cfg
-    regexp: ^(.*PARTUUID=)(?!{{ resize_uuid }})[^ ]+( .*)$
+    regexp: ^(.*PARTUUID=)(?!{{ resize_disk_uuid }})[^ ]+( .*)$
     line: \1{{ item }}\2
     backrefs: true
   loop:
-    - "{{ resize_uuid }}"
-    - "{{ resize_uuid }}"
-  when: resize_has_free_space
+    - "{{ resize_disk_uuid }}"
+    - "{{ resize_disk_uuid }}"
+  when: resize_disk_has_free_space
 
 - name: Reboot
   ansible.builtin.include_role:
     name: reboot
-  when: resize_has_free_space and _resize_fix_resize_partition_result.changed
+  when: resize_disk_has_free_space and resize_disk_fix_resize_partition_result.changed
 
 # /dev/loop0
 - name: Get loop partition
   ansible.builtin.command: losetup -f
-  register: _resize_get_loop_ext4_result
+  register: resize_disk_get_loop_ext4_result
   changed_when: false
-  when: resize_has_free_space and resize_root_partition_type == 'ext4'
+  when: resize_disk_has_free_space and resize_disk_root_partition_type == 'ext4'
 
 # /dev/loop0
 - name: Get loop partition
   ansible.builtin.shell: |
     set -o pipefail
-    losetup -n -l | sed -n -e "\|\s.*\s{{ resize_root_partition | split('/dev') | last }}\s.*$|{s///p;q}"
-  register: _resize_get_loop_squashfs_result
+    losetup -n -l | sed -n -e "\|\s.*\s{{ resize_disk_root_partition | split('/dev') | last }}\s.*$|{s///p;q}"
+  register: resize_disk_get_loop_squashfs_result
   changed_when: false
-  when: resize_has_free_space and resize_root_partition_type == 'squashfs'
+  when: resize_disk_has_free_space and resize_disk_root_partition_type == 'squashfs'
 
-# resize_loop = /dev/loop0
+# resize_disk_loop = /dev/loop0
 - name: Set loop partition
   ansible.builtin.set_fact:
-    resize_loop: >-
-      "{{ _resize_get_loop_ext4_result.stdout 
-          if resize_root_partition_type == 'ext4'
-          else _resize_get_loop_squashfs_result.stdout }}"
-  when: resize_has_free_space
+    resize_disk_loop: >-
+      "{{ resize_disk_get_loop_ext4_result.stdout
+          if resize_disk_root_partition_type == 'ext4'
+          else resize_disk_get_loop_squashfs_result.stdout }}"
+  when: resize_disk_has_free_space
 
 - name: Invert loop root
-  ansible.builtin.command: losetup {{ resize_loop }} {{ resize_root_partition }}
-  register: _resize_invert_loop_result
-  changed_when: _resize_invert_loop_result.rc == 0
-  when: resize_has_free_space and resize_root_partition_type == 'ext4'
+  ansible.builtin.command: losetup {{ resize_disk_loop }} {{ resize_disk_root_partition }}
+  register: resize_disk_invert_loop_result
+  changed_when: resize_disk_invert_loop_result.rc == 0
+  when: resize_disk_has_free_space and resize_disk_root_partition_type == 'ext4'
 
 - name: Resize root filesystem
-  ansible.builtin.command: resize2fs -f {{ resize_loop }}
-  register: _resize_rootfs_result
-  changed_when: _resize_rootfs_result.rc == 0
-  when: resize_has_free_space
+  ansible.builtin.command: resize2fs -f {{ resize_disk_loop }}
+  register: resize_disk_rootfs_result
+  changed_when: resize_disk_rootfs_result.rc == 0
+  when: resize_disk_has_free_space
 
 - name: Reboot
   ansible.builtin.include_role:
     name: reboot
-  when: resize_has_free_space and _resize_rootfs_result.changed
+  when: resize_disk_has_free_space and resize_disk_rootfs_result.changed
+
+- name: Remove unused packages
+  community.general.opkg:
+    name: "{{ item }}"
+    state: absent
+    autoremove: true
+  loop:
+    - losetup
+    - parted
+    - fdisk
+
+- name: Remove resize2fs package without autoremove
+  community.general.opkg:
+    name: resize2fs
+    state: absent

@@ -1,0 +1,14 @@
+- name: OpenWRT custom setup playbook
+  hosts: openwrt
+  remote_user: root
+  gather_facts: false
+  vars:
+    firmware_version: 22.03.5
+    firmware_target: x86
+    firmware_subtarget: 64
+    firmware_profile: generic
+    firmware_image: ext4-combined-efi
+    firmware_local_file: "{{ playbook_dir }}/build/firmware.img.gz"
+
+  roles:
+    - build_firmware

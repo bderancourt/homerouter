@@ -8,14 +8,14 @@
 - name: Generate adguardhome password hash
   ansible.builtin.command:
     cmd: htpasswd -B -n -b {{ adguardhome_user }} {{ adguardhome_password }}
-  register: _adguardhome_pwdhash_result
+  register: install_adguardhome_pwdhash_result
   changed_when: false
   delegate_to: localhost
   become: false
 
 - name: Set adguardhome password hash
   ansible.builtin.set_fact:
-    adguardhome_pwdhash: "{{ _adguardhome_pwdhash_result.stdout | split(':') | last }}"
+    install_adguardhome_pwdhash: "{{ install_adguardhome_pwdhash_result.stdout | split(':') | last }}"
 
 - name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml
   ansible.builtin.template:
@@ -38,7 +38,7 @@
     set -o pipefail
     /sbin/ip -o -4 addr list br-lan |
     awk 'NR==1{ split($4, ip_addr, "/"); print ip_addr[1] }'
-  register: _adguardhome_router_ipv4_result
+  register: install_adguardhome_router_ipv4_result
   changed_when: false
 
 - name: Get the router IPv6 addresses
@@ -46,13 +46,13 @@
     set -o pipefail
     /sbin/ip -o -6 addr list br-lan scope global |
     awk 'NR==1{ split($4, ip_addr, "/"); print ip_addr[1] }'
-  register: _adguardhome_router_ipv6_result
+  register: install_adguardhome_router_ipv6_result
   changed_when: false
 
 - name: Set router IPv4 & IPv6 addresses
   ansible.builtin.set_fact:
-    router_ipv4_addr: "{{ _adguardhome_router_ipv4_result.stdout }}"
-    router_ipv6_addr: "{{ _adguardhome_router_ipv6_result.stdout }}"
+    install_adguardhome_router_ipv4_addr: "{{ install_adguardhome_router_ipv4_result.stdout }}"
+    install_adguardhome_router_ipv6_addr: "{{ install_adguardhome_router_ipv6_result.stdout }}"
 
 # 1. Enable dnsmasq to do PTR requests.
 # 2. Reduce dnsmasq cache size as it will only provide PTR/rDNS info.
@@ -74,7 +74,7 @@
       rebind_protection: 0
       port: 54
       server:
-        - "{{ router_ipv4_addr }}"
+        - "{{ install_adguardhome_router_ipv4_addr }}"
 
 - name: Configure DHCP DNS options
   uci:
@@ -85,11 +85,11 @@
     value:
       dhcp_option:
         # DHCP option 6: which DNS (Domain Name Server) to include in the IP configuration for name resolution
-        - "6,{{ router_ipv4_addr }}"
+        - "6,{{ install_adguardhome_router_ipv4_addr }}"
         # DHCP option 3: default router or last resort gateway for this interface
-        - "3,{{ router_ipv4_addr }}"
+        - "3,{{ install_adguardhome_router_ipv4_addr }}"
       dns:
-        - "{{ router_ipv6_addr }}"
+        - "{{ install_adguardhome_router_ipv6_addr }}"
 
 - name: Use local DNS instead of ISP DNS on wan
   uci:
