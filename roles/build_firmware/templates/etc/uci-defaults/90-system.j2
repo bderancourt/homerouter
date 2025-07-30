@@ -1,0 +1,12 @@
+#!/bin/sh
+
+#######################################
+# change root password
+#######################################
+
+passwd root <<EOP
+{{ root_password }}
+{{ root_password }}
+EOP
+
+echo {{ ssh_key }} >> /etc/dropbear/authorized_keys

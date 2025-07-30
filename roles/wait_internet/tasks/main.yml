@@ -1,7 +1,7 @@
 ---
 - name: Wait for internet access
   ansible.builtin.command:
-    cmd: wget --timeout=5 --spider https://downloads.openwrt.org/snapshots/targets/x86/64/packages/Packages.gz
+    cmd: wget --timeout=5 --spider https://downloads.openwrt.org/releases/23.05.5/targets/x86/64/packages//Packages.gz
   changed_when: false
   register: _wget_packages_result
   retries: 12

@@ -1,7 +1,10 @@
 ---
-- name: Trigger reboot
-  nohup:
-    command: reboot
+- name: Trigger reboot (non-blocking)
+  ansible.builtin.command: "reboot &"
+  async: 1
+  poll: 0
+  changed_when: true
+  failed_when: false
 
 - name: Wait for connection
   ansible.builtin.wait_for_connection:

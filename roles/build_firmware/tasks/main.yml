@@ -1,11 +1,7 @@
 ---
-- name: Set tempdir
-  ansible.builtin.set_fact:
-    build_firmware_tempdir: "{{ firmware_local_file | dirname }}/"
-
-- name: Creates tempdir
+- name: Creates build dir
   ansible.builtin.file:
-    path: "{{ build_firmware_tempdir }}"
+    path: "{{ firmware_build_dir }}"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
   delegate_to: localhost
@@ -23,17 +19,17 @@
 
 - name: Set imagebuilder url
   ansible.builtin.set_fact:
-    # https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-imagebuilder-x86-64.Linux-x86_64.tar.xz
-    # https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64.tar.xz
+    # https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-imagebuilder-x86-64.Linux-x86_64.tar.zst
+    # https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64.tar.zst
     build_firmware_imagebuilder_url: >-
       {{ build_firmware_download_url }}openwrt-imagebuilder{{
       '-' + firmware_version if firmware_version }}-{{
       firmware_target }}-{{
-      firmware_subtarget }}.Linux-x86_64.tar.xz
+      firmware_subtarget }}.Linux-x86_64.tar.zst
 
 - name: Set imagebuilder archive filename
   ansible.builtin.set_fact:
-    # openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64.tar.xz
+    # openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64.tar.zst
     build_firmware_imagebuilder_archive: "{{ build_firmware_imagebuilder_url | basename }}"
 
 - name: Set imagebuilder uncompressed archive dirname
@@ -44,12 +40,12 @@
 - name: Set working dir
   ansible.builtin.set_fact:
     # /tmp/openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64
-    build_firmware_build_dir: "{{ build_firmware_tempdir + build_firmware_dirname }}"
+    build_firmware_extracted_dir: "{{ firmware_build_dir + build_firmware_dirname }}"
 
 - name: Download sha256sums file
   ansible.builtin.get_url:
     url: "{{ build_firmware_download_url }}sha256sums"
-    dest: "{{ build_firmware_tempdir }}sha256sums"
+    dest: "{{ firmware_build_dir }}sha256sums"
     mode: u=rw,g=r,o=r
   delegate_to: localhost
   become: false
@@ -59,7 +55,7 @@
     build_firmware_imagebuilder_checksum: >-
       {{ 'sha256:' +
         (
-          lookup('file', build_firmware_tempdir + 'sha256sums') |
+          lookup('file', firmware_build_dir + 'sha256sums') |
           regex_search('([a-zA-Z0-9]+) \*' + build_firmware_imagebuilder_archive.replace('.', '\.'), '\1') |
           first
         )
@@ -68,95 +64,88 @@
 - name: Download imagebuilder
   ansible.builtin.get_url:
     url: "{{ build_firmware_imagebuilder_url }}"
-    dest: "{{ build_firmware_tempdir + build_firmware_imagebuilder_archive }}"
+    dest: "{{ firmware_build_dir + build_firmware_imagebuilder_archive }}"
     checksum: "{{ build_firmware_imagebuilder_checksum }}"
     mode: u=rw,g=r,o=r
   delegate_to: localhost
   become: false
 
+- name: Delete extracted imagebuilder
+  ansible.builtin.file:
+    path: "{{ build_firmware_extracted_dir }}"
+    state: absent
+  delegate_to: localhost
+  become: false
+
 - name: Unarchive imagebuilder
   ansible.builtin.unarchive:
-    src: "{{ build_firmware_tempdir + build_firmware_imagebuilder_archive }}"
-    dest: "{{ build_firmware_tempdir }}"
-    creates: "{{ build_firmware_build_dir }}"
+    src: "{{ firmware_build_dir + build_firmware_imagebuilder_archive }}"
+    dest: "{{ firmware_build_dir }}"
+    creates: "{{ build_firmware_extracted_dir }}"
     remote_src: true
   delegate_to: localhost
   become: false
 
-- name: Make clean
-  community.general.make:
-    chdir: "{{ build_firmware_build_dir }}"
-    target: clean
-  delegate_to: localhost
-  become: false
-
-- name: Replace .config with original one
-  ansible.builtin.unarchive:
-    src: "{{ build_firmware_tempdir + build_firmware_imagebuilder_archive }}"
-    dest: "{{ build_firmware_tempdir }}"
-    include: "{{ build_firmware_dirname }}/.config"
-    remote_src: true
-  delegate_to: localhost
-  become: false
-
-- name: Increase rootfs partition size to 768M
+- name: Increase rootfs partition size to 2048M
   ansible.builtin.lineinfile:
-    path: "{{ build_firmware_build_dir }}/.config"
+    path: "{{ build_firmware_extracted_dir }}/.config"
     regexp: '^CONFIG_TARGET_ROOTFS_PARTSIZE='
-    line: 'CONFIG_TARGET_ROOTFS_PARTSIZE=768'
+    line: 'CONFIG_TARGET_ROOTFS_PARTSIZE=2048'
   delegate_to: localhost
   become: false
 
 - name: Setting grub timeout to 0s to speedup boot
   ansible.builtin.lineinfile:
-    path: "{{ build_firmware_build_dir }}/.config"
+    path: "{{ build_firmware_extracted_dir }}/.config"
     regexp: '^CONFIG_GRUB_TIMEOUT='
     line: 'CONFIG_GRUB_TIMEOUT="0"'
   delegate_to: localhost
   become: false
 
-- name: Delete custom files directory in firmware build dir
-  ansible.builtin.file:
-    path: "{{ build_firmware_build_dir }}/files"
-    state: absent
+- name: "Download luci-app-temp-status package"
+  ansible.builtin.get_url:
+    url: "https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-app-temp-status_0.7.1-r2_all.ipk"
+    dest: "{{ build_firmware_extracted_dir }}/packages/"
+    validate_certs: false
+    mode: u=rw,g=r,o=r
   delegate_to: localhost
   become: false
 
 - name: Copy custom files
   ansible.builtin.copy:
     src: "files/"
-    dest: "{{ build_firmware_build_dir }}/files"
+    dest: "{{ build_firmware_extracted_dir }}/files"
     mode: u=rw,g=r,o=r
   delegate_to: localhost
   become: false
 
-- name: Copy /lib/preinit/80_mount_root file
-  ansible.builtin.copy:
-    src: >-
-      {{ build_firmware_build_dir
-        ~ '/build_dir/target-'
-        ~ firmware_target
-        ~ '_'
-        ~ firmware_subtarget
-        ~ '_musl/root.orig-'
-        ~ firmware_target
-        ~ '/lib/preinit/80_mount_root' }}
-    dest: "{{ build_firmware_build_dir }}/files/lib/preinit/"
-    mode: u=rw,g=r,o=r
+- name: Ensure uci-defaults directory exists
+  ansible.builtin.file:
+    path: "{{ build_firmware_extracted_dir }}/files/etc/uci-defaults"
+    state: directory
+    mode: u=rwx,g=rx,o=rx
   delegate_to: localhost
   become: false
 
-- name: Customize /files/lib/preinit/80_mount_root
-  ansible.builtin.replace:
-    path: "{{ build_firmware_build_dir }}/files/lib/preinit/80_mount_root"
-    regexp: '^(do_mount_root\(\) \{)$'
-    replace: |-
-      do_mount_root() {
-          root_disk=$(lsblk -p -J | jsonfilter -e '$.blockdevices[*].children[@.mountpoints[-1]="/"].name')
-          /usr/sbin/e2fsck -y $root_disk
+- name: Recursively process all templates using filetree
+  ansible.builtin.template:
+    # 'item.path' is the full path to the source template file.
+    src: '{{ template_file.src }}'
+    # The destination path is built by removing the 'templates/' prefix and the '.j2' suffix.
+    dest: "{{ build_firmware_extracted_dir }}/files/{{ template_file.path | splitext | first }}"
+    mode: u=rw,g=r,o=r
+  # Use the filetree query to recursively find all files.
+  # Use the powerful `filetree` lookup instead of `fileglob`
+  loop: "{{ query('community.general.filetree', role_path ~ '/templates') }}"
+  # Rename the loop variable for better readability
+  loop_control:
+    loop_var: template_file
+  # Only process items that are files AND match the regex for ending in '.j2'.
+  when:
+    - template_file.state == 'file'
+    - template_file.path.endswith('.j2')
   delegate_to: localhost
   become: false
-  when: firmware_image.startswith('ext4')
 
 - name: Set make image params
   ansible.builtin.set_fact:
@@ -167,41 +156,14 @@
         ((firmware_packages_exclude | map('regex_replace', '^(.*)$', '-\1')) + firmware_packages_include)
         | join(' ') }}"
 
-- name: Print build_firmware_make_image_params
+- name: Show build_firmware_make_image_params vars_files
   ansible.builtin.debug:
     var: build_firmware_make_image_params
 
 - name: Make image
   community.general.make:
-    chdir: "{{ build_firmware_build_dir }}"
+    chdir: "{{ build_firmware_extracted_dir }}"
     target: image
     params: "{{ build_firmware_make_image_params }}"
-  delegate_to: localhost
-  become: false
-
-- name: Copy downloaded packages to packages folder to avoid re-downloading them in a future build
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ build_firmware_build_dir }}/packages"
-    mode: u=rw,g=r,o=r
-  with_fileglob:
-    - "{{ build_firmware_build_dir }}/dl/*.ipk"
-  delegate_to: localhost
-  become: false
-
-- name: Copy firmware to output path
-  ansible.builtin.copy:
-    src: >-
-      {{ build_firmware_build_dir }}/bin/targets/{{
-      firmware_target }}/{{
-      firmware_subtarget }}/openwrt-{{
-      firmware_version if firmware_version else 'snapshot' }}-{{
-      firmware_target }}-{{
-      firmware_subtarget }}-{{
-      firmware_profile }}-{{
-      firmware_image }}.img.gz
-    dest: "{{ firmware_local_file }}"
-    mode: u=rw,g=r,o=r
-    force: true
   delegate_to: localhost
   become: false

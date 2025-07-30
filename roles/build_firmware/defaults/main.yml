@@ -1,50 +1,42 @@
 ---
+lan_ports:
+  - eth0
+  - eth3
+  - eth2
+wan_port: eth3
+
 # if firmware_version is not set, snapshot is used
-firmware_version: 22.03.5
+firmware_version: 24.10.2
 firmware_target: x86
 firmware_subtarget: 64
 firmware_profile: generic
 firmware_image: ext4-combined-efi
-firmware_local_file: /tmp/firmware.img.gz
+firmware_build_dir: "{{ playbook_dir }}/build/"
+
 firmware_packages_exclude:
   - ppp
   - ppp-mod-pppoe
 firmware_packages_include:
   # essential packages
-  - wget-ssl
-  - luci-ssl-nginx
-  - htop
-  - vim
+  - vim-runtime
+  - btop
   - less
   - dmesg
   - usbutils
   - pciutils
+  - wget-ssl
+  - rng-tools
   - lm-sensors
   - smartmontools
+  - luci-ssl-nginx
+  - intel-microcode
   - openssh-sftp-server
-  # Needed for the gekmihesg.openwrt role
-  - coreutils-base64
-  - coreutils-md5sum
-  - coreutils-sha1sum
-  # resize disk
-  - lsblk
-  - losetup
-  - resize2fs
-  - parted
-  - fdisk
-  # sqm
-  - luci-app-sqm
-  - sqm-scripts
-  # install ddns
-  - curl
-  - drill
-  - luci-app-ddns
-  # install docker
-  - docker
-  - dockerd
-  - luci-app-dockerman
-  - docker-compose
-  - kmod-macvlan
-  - python3-requests
-  # install adguard home
-  - adguardhome
+  - python3-light
+  - python3-logging
+  - python3-urllib
+  - python3-multiprocessing
+  - kmod-atlantic
+  - powertop
+  - luci-app-statistics
+  - collectd-mod-sensors
+  - luci-app-temp-status

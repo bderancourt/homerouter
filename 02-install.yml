@@ -1,0 +1,9 @@
+- name: OpenWRT custom setup playbook
+  hosts: all
+  remote_user: root
+  gather_facts: false
+  vars_files:
+    - secrets.yml
+
+  roles:
+    - install_firmware

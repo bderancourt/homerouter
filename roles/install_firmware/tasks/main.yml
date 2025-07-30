@@ -5,9 +5,12 @@
     dest: /tmp/openwrt.img.gz
     mode: u=rw,g=r,o=r
 
-- name: Start sysupgrade process
-  nohup:
-    command: sysupgrade -n /tmp/openwrt.img.gz
+- name: Start sysupgrade process (non-blocking)
+  ansible.builtin.command: "sysupgrade -n /tmp/openwrt.img.gz &"
+  async: 1
+  poll: 0
+  changed_when: true
+  failed_when: false
 
 - name: Wait for connection
   ansible.builtin.wait_for_connection:
