@@ -5,7 +5,7 @@
 #######################################
 
 uci delete network.@device[0].ports
-{% for lan_port in lan_ports %}
+{% for lan_port in build_firmware_lan_ports %}
 uci add_list network.@device[0].ports='{{ lan_port }}'
 {% endfor %}
 

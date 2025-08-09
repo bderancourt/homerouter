@@ -1,22 +1,22 @@
 ---
-lan_ports:
+build_firmware_lan_ports:
   - eth0
   - eth3
   - eth2
-wan_port: eth3
+build_firmware_wan_port: eth3
 
-# if firmware_version is not set, snapshot is used
-firmware_version: 24.10.2
-firmware_target: x86
-firmware_subtarget: 64
-firmware_profile: generic
-firmware_image: ext4-combined-efi
-firmware_build_dir: "{{ playbook_dir }}/build/"
+# if build_firmware_version is not set, snapshot is used
+build_firmware_version: 24.10.2
+build_firmware_target: x86
+build_firmware_subtarget: 64
+build_firmware_profile: generic
+build_firmware_image: ext4-combined-efi
+build_firmware_build_dir: "{{ playbook_dir }}/build/"
 
-firmware_packages_exclude:
+build_firmware_packages_exclude:
   - ppp
   - ppp-mod-pppoe
-firmware_packages_include:
+build_firmware_packages_include:
   # essential packages
   - vim-runtime
   - btop
@@ -35,6 +35,7 @@ firmware_packages_include:
   - python3-logging
   - python3-urllib
   - python3-multiprocessing
+  - python3-decimal
   - kmod-atlantic
   - powertop
   - luci-app-statistics

@@ -19,6 +19,6 @@
   community.general.opkg:
     name: opkg
     update_cache: true
-  register: _opkg_update
-  failed_when: _opkg_update.failed
-  changed_when: not _opkg_update.failed
+  register: reboot_opkg_update
+  failed_when: reboot_opkg_update.failed
+  changed_when: not reboot_opkg_update.failed
