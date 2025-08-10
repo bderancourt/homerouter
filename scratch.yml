@@ -1,59 +1,17 @@
 # It's just a scratch playbook to help manipulating variables
 
 - name: OpenWRT custom setup playbook
-  hosts: 127.0.0.1
-  connection: local
+  hosts: all
+  # connection: local
   gather_facts: false
-#  debugger: on_failed
+  # debugger: on_failed
 
   tasks:
-    - name: Customize /lib/preinit/80_mount_root
-      ansible.builtin.replace:
-        # path: >-
-        #   {{ build_firmware_build_dir
-        #     ~ '/build_dir/target-'
-        #     ~ firmware_target
-        #     ~ '_'
-        #     ~ firmware_subtarget
-        #     ~ '_musl/root-'
-        #     ~ firmware_target
-        #     ~ '/lib/preinit/80_mount_root' }}
-        path: 80_mount_root
-        regexp: '(.+)do_mount_root$'
-        replace: |-
-          \1
-          if [ -x '/usr/sbin/fsck.ext4' ]; then
-            if [ -e '/dev/nvme0n1p1' ]; then
-                    echo "Checking disk /dev/nvme0n1p1...."
-                    /usr/sbin/fsck.ext4 -y /dev/nvme0n1p1
-            fi
-          fi
-          do_mount_root
-
-
-    # - name: Resize rootfs, update grub boot partition uuid
-    #   debug:
-    #     msg: >
-    #       "{{ ((firmware_packages_exclude | map('regex_replace', '^(.*)$', '-\1'))
-    #       + firmware_packages_include) | join(' ') }}"
-    #   vars:
-    #     firmware_packages_exclude:
-    #       - ppp
-    #       - pppoe
-    #     firmware_packages_include:
-    #       - luci
-    #       - nginx
-
-    # - name: Resize rootfs, update grub boot partition uuid
-    #   ansible.builtin.lineinfile:
-    #     path: grub.cfg
-    #     regexp: ^(.*PARTUUID=)(?!toto)[^ ]+( .*)$
-    #     line: \1{{ item }}\2
-    #     backrefs: true
-    #   loop:
-    #     - "toto"
-    #     - "toto"
-
+    - name: Debug
+      ansible.builtin.debug:
+        var: hostvars
+      delegate_to: localhost
+      become: false
 
   # tasks:
   #   - name: Debug

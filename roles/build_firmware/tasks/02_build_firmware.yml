@@ -1,0 +1,74 @@
+---
+- name: Increase rootfs partition size to 2048M
+  ansible.builtin.lineinfile:
+    path: "{{ build_firmware_extracted_dir }}/.config"
+    regexp: '^CONFIG_TARGET_ROOTFS_PARTSIZE='
+    line: 'CONFIG_TARGET_ROOTFS_PARTSIZE=2048'
+  delegate_to: localhost
+  become: false
+
+- name: Setting grub timeout to 0s to speedup boot
+  ansible.builtin.lineinfile:
+    path: "{{ build_firmware_extracted_dir }}/.config"
+    regexp: '^CONFIG_GRUB_TIMEOUT='
+    line: 'CONFIG_GRUB_TIMEOUT="0"'
+  delegate_to: localhost
+  become: false
+
+- name: "Download luci-app-temp-status package"
+  ansible.builtin.get_url:
+    url: "https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-app-temp-status_0.7.1-r2_all.ipk"
+    dest: "{{ build_firmware_extracted_dir }}/packages/"
+    validate_certs: false
+    mode: u=rw,g=r,o=r
+  delegate_to: localhost
+  become: false
+
+- name: Ensure uci-defaults directory exists
+  ansible.builtin.file:
+    path: "{{ build_firmware_extracted_dir }}/files/etc/uci-defaults"
+    state: directory
+    mode: u=rwx,g=rx,o=rx
+  delegate_to: localhost
+  become: false
+
+- name: Recursively process all templates using filetree
+  ansible.builtin.template:
+    # 'item.path' is the full path to the source template file.
+    src: '{{ template_file.src }}'
+    # The destination path is built by removing the 'templates/' prefix and the '.j2' suffix.
+    dest: "{{ build_firmware_extracted_dir }}/files/{{ template_file.path | splitext | first }}"
+    mode: u=rw,g=r,o=r
+  # Use the filetree query to recursively find all files.
+  # Use the powerful `filetree` lookup instead of `fileglob`
+  loop: "{{ query('community.general.filetree', role_path ~ '/templates') }}"
+  # Rename the loop variable for better readability
+  loop_control:
+    loop_var: template_file
+  # Only process items that are files AND match the regex for ending in '.j2'.
+  when:
+    - template_file.state == 'file'
+    - template_file.path.endswith('.j2')
+  delegate_to: localhost
+  become: false
+
+- name: Set make image params
+  ansible.builtin.set_fact:
+    build_firmware_make_image_params: >
+      PROFILE="{{ build_firmware_profile }}"
+      FILES="files"
+      PACKAGES="{{
+        ((build_firmware_packages_exclude | map('regex_replace', '^(.*)$', '-\1')) + build_firmware_packages_include)
+        | join(' ') }}"
+
+- name: Show build_firmware_make_image_params vars_files
+  ansible.builtin.debug:
+    var: build_firmware_make_image_params
+
+- name: Make image
+  community.general.make:
+    chdir: "{{ build_firmware_extracted_dir }}"
+    target: image
+    params: "{{ build_firmware_make_image_params }}"
+  delegate_to: localhost
+  become: false

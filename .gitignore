@@ -1,4 +1,3 @@
-secrets.yml
 .vscode
 build
-.ansible/.lock
+.ansible

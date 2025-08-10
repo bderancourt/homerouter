@@ -1,7 +1,12 @@
 ---
+# iKoolCore R2 Max
+# Interface: eth0 -> PCI: 02:00.0 Ethernet controller [0200]: Intel Corporation Ethernet Controller I226-V [8086:125c] (rev 04)
+# Interface: eth1 -> PCI: 03:00.0 Ethernet controller [0200]: Intel Corporation Ethernet Controller I226-V [8086:125c] (rev 04)
+# Interface: eth2 -> PCI: 04:00.0 Ethernet controller [0200]: Aquantia Corp. AQC113C NBase-T/IEEE 802.3an Ethernet Controller [1d6a:14c0] (rev 03)
+# Interface: eth3 -> PCI: 05:00.0 Ethernet controller [0200]: Aquantia Corp. AQC113C NBase-T/IEEE 802.3an Ethernet Controller [1d6a:14c0] (rev 03)
 build_firmware_lan_ports:
   - eth0
-  - eth3
+  - eth1
   - eth2
 build_firmware_wan_port: eth3
 
@@ -17,7 +22,6 @@ build_firmware_packages_exclude:
   - ppp
   - ppp-mod-pppoe
 build_firmware_packages_include:
-  # essential packages
   - vim-runtime
   - btop
   - less
