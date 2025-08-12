@@ -1,0 +1,76 @@
+---
+- name: Install lsblk package
+  community.general.opkg:
+    name: lsblk
+    state: present
+    update_cache: true
+
+- name: Get lsblk info
+  ansible.builtin.command: lsblk -O -J -b
+  register: lsblk_raw_output
+  changed_when: false
+
+- name: Parse lsblk JSON
+  ansible.builtin.set_fact:
+    lsblk_data: "{{ lsblk_raw_output.stdout | from_json }}"
+
+- name: Identify the root disk object
+  ansible.builtin.set_fact:
+    # Find the top-level block device (type 'disk') that has a child partition mounted at '/'
+    root_disk: >-
+      {{ lsblk_data | json_query("blockdevices[?type == 'disk' && children[?mountpoint == '/']]") | first }}
+
+- name: Identify the root partition object
+  ansible.builtin.set_fact:
+    # From the root disk's children, find the partition mounted at '/'
+    root_partition: >-
+      {{ (root_disk.children | default([])) | json_query("[?mountpoint == '/']") | first }}
+
+- name: Debug identified root disk and partition details
+  ansible.builtin.debug:
+    msg: |
+      --- Root Disk Details ---
+      Name: {{ root_disk.name | default('N/A') }}
+      Path: {{ root_disk.path | default('N/A') }}
+      Size: {{ (root_disk.size | default(0) / (1024 * 1024 * 1024)) | round(2) }} GB
+
+      --- Root Partition Details ---
+      Name: {{ root_partition.name | default('N/A') }}
+      Path: {{ root_partition.path | default('N/A') }}
+      Size: {{ (root_partition.size | default(0) / (1024 * 1024)) | round(2) }} MB
+      FS size: {{ (root_partition.fssize | default(0) / (1024 * 1024)) | round(2) }} MB
+      Mountpoint: {{ root_partition.mountpoint | default('N/A') }}
+      Partition Number (partn): {{ root_partition.partn | default('N/A') }}
+
+- name: Set root disk partitions size
+  ansible.builtin.set_fact:
+    root_disk_partitions_size: "{{ root_disk.children | json_query(\"[?fssize != `null`].fssize\") | sum }}"
+
+- name: Set root disk unallocated space
+  ansible.builtin.set_fact:
+    root_disk_unallocated_space: "{{ root_disk.size | int - root_disk_partitions_size | int }}"
+
+- name: Set root disk unallocated space percentage
+  ansible.builtin.set_fact:
+    root_disk_unallocated_space_percentage: >-
+      {{
+        (
+          root_disk_unallocated_space | int
+          / root_disk.size | int
+          * 100
+        ) | round(2)
+      }}
+
+- name: Display unallocated space on the root disk
+  ansible.builtin.debug:
+    msg: |
+      Total size of {{ root_disk.name }}: {{ (root_disk.size | int / (1024 * 1024 * 1024)) | round(2) }} GB
+      Total size of filesystems on {{ root_disk.name }}: {{ (root_disk_partitions_size | int / (1024 * 1024 * 1024)) | round(2) }} GB
+      Unallocated space on {{ root_disk.name }}: {{ (root_disk_unallocated_space | int / (1024 * 1024)) | round(2) }} MB
+      Percentage of unallocated space on {{ root_disk.name }}: {{ (root_disk_unallocated_space_percentage | float) }}%
+      Is there unallocated space? {{ root_disk_unallocated_space_percentage | float > 3 }}
+
+# is_free_space = true if root disk has less than 3% of unallocated space by filesystem
+- name: Set is free space
+  ansible.builtin.set_fact:
+    is_free_space: "{{ root_disk_unallocated_space_percentage | float > 3 }}"

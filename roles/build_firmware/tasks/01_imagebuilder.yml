@@ -1,7 +1,7 @@
 ---
 - name: Creates build dir
   ansible.builtin.file:
-    path: "{{ build_firmware_build_dir }}"
+    path: "{{ firmware_build_dir }}"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
   delegate_to: localhost
@@ -11,77 +11,77 @@
   ansible.builtin.set_fact:
     # https://downloads.openwrt.org/snapshots/targets/x86/64/
     # https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/
-    build_firmware_download_url: >-
+    firmware_download_url: >-
       https://downloads.openwrt.org/{{
-      'releases/' + build_firmware_version if build_firmware_version else 'snapshots'
-      }}/targets/{{ build_firmware_target }}/{{
-      build_firmware_subtarget }}/
+      'releases/' + firmware_version if firmware_version else 'snapshots'
+      }}/targets/{{ firmware_target }}/{{
+      firmware_subtarget }}/
 
 - name: Set imagebuilder url
   ansible.builtin.set_fact:
     # https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-imagebuilder-x86-64.Linux-x86_64.tar.zst
     # https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64.tar.zst
-    build_firmware_imagebuilder_url: >-
-      {{ build_firmware_download_url }}openwrt-imagebuilder{{
-      '-' + build_firmware_version if build_firmware_version }}-{{
-      build_firmware_target }}-{{
-      build_firmware_subtarget }}.Linux-x86_64.tar.zst
+    firmware_imagebuilder_url: >-
+      {{ firmware_download_url }}openwrt-imagebuilder{{
+      '-' + firmware_version if firmware_version }}-{{
+      firmware_target }}-{{
+      firmware_subtarget }}.Linux-x86_64.tar.zst
 
 - name: Set imagebuilder archive filename
   ansible.builtin.set_fact:
     # openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64.tar.zst
-    build_firmware_imagebuilder_archive: "{{ build_firmware_imagebuilder_url | basename }}"
+    firmware_imagebuilder_archive: "{{ firmware_imagebuilder_url | basename }}"
 
 - name: Set imagebuilder uncompressed archive dirname
   ansible.builtin.set_fact:
     # openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64
-    build_firmware_dirname: "{{ build_firmware_imagebuilder_archive | splitext | first | splitext | first }}"
+    firmware_dirname: "{{ firmware_imagebuilder_archive | splitext | first | splitext | first }}"
 
 - name: Set working dir
   ansible.builtin.set_fact:
     # /tmp/openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64
-    build_firmware_extracted_dir: "{{ build_firmware_build_dir + build_firmware_dirname }}"
+    firmware_extracted_dir: "{{ firmware_build_dir + firmware_dirname }}"
 
 - name: Download sha256sums file
   ansible.builtin.get_url:
-    url: "{{ build_firmware_download_url }}sha256sums"
-    dest: "{{ build_firmware_build_dir }}sha256sums"
+    url: "{{ firmware_download_url }}sha256sums"
+    dest: "{{ firmware_build_dir }}sha256sums"
     mode: u=rw,g=r,o=r
   delegate_to: localhost
   become: false
 
 - name: Set imagebuilder archive sha256
   ansible.builtin.set_fact:
-    build_firmware_imagebuilder_checksum: >-
+    firmware_imagebuilder_checksum: >-
       {{ 'sha256:' +
         (
-          lookup('file', build_firmware_build_dir + 'sha256sums') |
-          regex_search('([a-zA-Z0-9]+) \*' + build_firmware_imagebuilder_archive.replace('.', '\.'), '\1') |
+          lookup('file', firmware_build_dir + 'sha256sums') |
+          regex_search('([a-zA-Z0-9]+) \*' + firmware_imagebuilder_archive.replace('.', '\.'), '\1') |
           first
         )
       }}
 
 - name: Download imagebuilder
   ansible.builtin.get_url:
-    url: "{{ build_firmware_imagebuilder_url }}"
-    dest: "{{ build_firmware_build_dir + build_firmware_imagebuilder_archive }}"
-    checksum: "{{ build_firmware_imagebuilder_checksum }}"
+    url: "{{ firmware_imagebuilder_url }}"
+    dest: "{{ firmware_build_dir + firmware_imagebuilder_archive }}"
+    checksum: "{{ firmware_imagebuilder_checksum }}"
     mode: u=rw,g=r,o=r
   delegate_to: localhost
   become: false
 
 - name: Delete extracted imagebuilder
   ansible.builtin.file:
-    path: "{{ build_firmware_extracted_dir }}"
+    path: "{{ firmware_extracted_dir }}"
     state: absent
   delegate_to: localhost
   become: false
 
 - name: Unarchive imagebuilder
   ansible.builtin.unarchive:
-    src: "{{ build_firmware_build_dir + build_firmware_imagebuilder_archive }}"
-    dest: "{{ build_firmware_build_dir }}"
-    creates: "{{ build_firmware_extracted_dir }}"
+    src: "{{ firmware_build_dir + firmware_imagebuilder_archive }}"
+    dest: "{{ firmware_build_dir }}"
+    creates: "{{ firmware_extracted_dir }}"
     remote_src: true
   delegate_to: localhost
   become: false

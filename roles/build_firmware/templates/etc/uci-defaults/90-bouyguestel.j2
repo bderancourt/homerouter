@@ -28,24 +28,28 @@
 # network.wan6.device='eth1'
 # network.wan6.proto='dhcpv6'
 
-uci set network.lan.ipaddr='{{ inventory_hostname }}'
 
-{% if not inventory_hostname.endswith('56.2') %}
+uci set network.globals.packet_steering '1'
+
+
 # Set WAN port mac address to the one from the Bouygtel box on the physical interface
 uci add network device
-uci set network.@device[1].name='{{ build_firmware_wan_port }}'
+uci set network.@device[1].name='{{ wan_port }}'
 uci set network.@device[1].macaddr='{{ bbox_mac }}'
 
 # Create VLAN 100 on wan interface, used by Bouygtel, set the MAC interface
 uci add network device
-uci set network.@device[2].name='{{ build_firmware_wan_port }}.100'
+uci set network.@device[2].name='{{ wan_port }}.100'
 uci set network.@device[2].type='8021q'
-uci set network.@device[2].ifname='{{ build_firmware_wan_port }}'
+uci set network.@device[2].ifname='{{ wan_port }}'
 uci set network.@device[2].vid='100'
 uci set network.@device[2].macaddr='{{ bbox_mac }}'
+uci add_list network.@device[2].egress_qos_mapping='1:0'
+uci add_list network.@device[2].egress_qos_mapping='0:6'
+uci add_list network.@device[2].egress_qos_mapping='6:6'
 
 # WAN interface configuration
-uci set network.wan.device='{{ build_firmware_wan_port }}.100'
+uci set network.wan.device='{{ wan_port }}.100'
 uci set network.wan.vendorid='BYGTELIAD'
 uci set network.wan.norelease='1'
 uci set network.wan.delegate='0'
@@ -56,4 +60,9 @@ uci set network.wan6.device='@wan'
 uci set network.wan6.norelease='1'
 uci set network.wan6.reqaddress='none'
 uci set network.wan6.reqprefix='60'
-{% endif %}
+uci set network.wan6.ip6assign='64'
+uci set network.wan6.ip6ifaceid='::1'
+
+
+uci set network.lan.ip6ifaceid '::e1'
+uci set network.lan.ip6assign '64'

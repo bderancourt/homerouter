@@ -1,0 +1,12 @@
+### Force ASPM on pci devices
+python3 /root/autoaspm.py
+
+# Optimize power management
+powertop --auto-tune
+
+# Revert power management for Intel i226V NICs (set to 'on')
+for pci in $(lspci | grep 'I226-V' | awk '{print $1}'); do
+    echo on > /sys/bus/pci/devices/0000:${pci}/power/control
+done
+
+exit 0

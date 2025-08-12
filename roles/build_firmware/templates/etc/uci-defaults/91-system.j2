@@ -10,3 +10,5 @@ passwd root <<EOP
 EOP
 
 echo {{ ssh_key }} >> /etc/dropbear/authorized_keys
+
+chmod u=rwx,g=,o= /root/checkaspm.sh

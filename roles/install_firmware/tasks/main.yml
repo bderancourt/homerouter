@@ -1,7 +1,11 @@
 ---
+- name: Debug local file path
+  ansible.builtin.debug:
+    var: install_firmware_local_file
+
 - name: Copy image to router
   ansible.builtin.copy:
-    src: "{{ firmware_local_file }}"
+    src: "{{ install_firmware_local_file }}"
     dest: /tmp/openwrt.img.gz
     mode: u=rw,g=r,o=r
 
