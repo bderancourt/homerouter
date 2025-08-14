@@ -1,9 +1,0 @@
----
-- name: OpenWRT full source build playbook
-  hosts: localhost
-  remote_user: root
-  gather_facts: false
-  vars_files:
-    - secrets.yml
-  roles:
-    - build_source_firmware

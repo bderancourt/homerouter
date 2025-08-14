@@ -1,9 +1,0 @@
----
-- name: OpenWRT ImageBuilder build playbook
-  hosts: localhost
-  remote_user: root
-  gather_facts: false
-  vars_files:
-    - secrets.yml
-  roles:
-    - build_firmware
