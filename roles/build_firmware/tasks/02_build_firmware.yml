@@ -32,11 +32,14 @@
   delegate_to: localhost
   become: false
 
-- name: Ensure uci-defaults directory exists
+- name: Ensure config directories exist
   ansible.builtin.file:
-    path: "{{ firmware_extracted_dir }}/files/etc/uci-defaults"
+    path: "{{ firmware_extracted_dir }}/files{{ item }}"
     state: directory
     mode: u=rwx,g=rx,o=rx
+  loop:
+    - /etc/uci-defaults
+    - /etc/config
   delegate_to: localhost
   become: false
 

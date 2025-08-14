@@ -2,13 +2,13 @@
 openwrt:
   hosts:
     # iKoolCore specific
-    # 192.168.1.1:
-    #   ansible_python_interpreter: /usr/bin/python3.11
-    #   lan_ports:
-    #     - eth0
-    #     - eth1
-    #     - eth2
-    #   wan_port: eth3
-    # VirtualBox specific
-    192.168.56.2:
+    192.168.1.1:
       ansible_python_interpreter: /usr/bin/python3.11
+      lan_ports:
+        - eth0
+        - eth1
+        - eth2
+      wan_port: eth3
+    # VirtualBox specific
+    # 192.168.56.2:
+    #   ansible_python_interpreter: /usr/bin/python3.11

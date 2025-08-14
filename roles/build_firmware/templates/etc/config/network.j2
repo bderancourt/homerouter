@@ -1,0 +1,57 @@
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config device
+	option name 'br-lan'
+	option type 'bridge'
+{% for lan_port in lan_ports %}
+	list ports '{{ lan_port }}'
+{% endfor %}
+
+config device
+	option name '{{ wan_port }}'
+	option macaddr '{{ bbox_mac }}'
+
+config device
+	option name '{{ wan_port }}.100'
+	option type '8021q'
+	option ifname '{{ wan_port }}'
+	option vid '100'
+	option macaddr '{{ bbox_mac }}'
+	list egress_qos_mapping '1:0'
+	list egress_qos_mapping '0:6'
+	list egress_qos_mapping '6:6'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '{{ inventory_hostname }}'
+	option netmask '255.255.255.0'
+	option ip6assign '60'
+
+config interface 'wan'
+	option device '{{ wan_port }}.100'
+	option proto 'dhcp'
+	option vendorid 'BYGTELIAD'
+	option norelease '1'
+	option delegate '0'
+	option hostname '*'
+	option peerdns '0'
+	list dns '1.1.1.1'
+	list dns '1.0.0.1'
+
+config interface 'wan6'
+	option device '@wan'
+	option proto 'dhcpv6'
+	option norelease '1'
+	option reqaddress 'none'
+	option reqprefix '60'
+	option ip6assign '64'
+	option ip6ifaceid '::1'
+	option peerdns '0'
+	list dns '2606:4700:4700::1111'
+	list dns '2606:4700:4700::1001'
