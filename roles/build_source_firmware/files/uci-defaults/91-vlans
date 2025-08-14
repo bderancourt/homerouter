@@ -1,0 +1,159 @@
+#!/bin/sh
+# Create LAN (VLAN10), GUEST (VLAN20), IOT (VLAN30) on bridge br-lan with vlan_filtering
+
+BR=br-lan
+PHYS='eth1 eth2 eth3' # adjust as needed
+
+apply_vlan() {
+  VID="$1"; SHIFT="$2"; TAGPORTS="$3"; UNTAGPORTS="$4"; NAME="$5"; ZONE="$6"; DHCP="$7"; NET="$8"; MASK="$9"; GW="${10}"; DNS="${11}"; IP="${12}";
+  # Device section
+  uci -q add network bridge-vlan > /dev/null
+  IDX=$(( $(uci show network | grep -c '=bridge-vlan') ))
+  SEC="@bridge-vlan[$((IDX-1))]"
+  uci set network.${SEC}.device="${BR}"
+  uci set network.${SEC}.vlan="${VID}"
+  [ -n "${TAGPORTS}" ] && uci set network.${SEC}.ports="${TAGPORTS}${UNPORTS:+ }${UNPORTS}"
+  # Interface
+  IFSECTION="${NAME}"
+  uci set network.${IFSECTION}=interface
+  uci set network.${IFSECTION}.device="${BR}.${VID}"
+  uci set network.${IFSECTION}.proto='static'
+  uci set network.${IFSECTION}.ipaddr="${IP}"
+  uci set network.${IFSECTION}.netmask="${MASK}"
+  # Firewall
+  uci -q set firewall.${ZONE}=zone
+  uci set firewall.${ZONE}.name="${ZONE}"
+  uci set firewall.${ZONE}.input='ACCEPT'
+  uci set firewall.${ZONE}.output='ACCEPT'
+  uci set firewall.${ZONE}.forward='REJECT'
+  # DHCP
+  if [ "${DHCP}" = 1 ]; then
+    uci -q set dhcp.${IFSECTION}=dhcp
+    uci set dhcp.${IFSECTION}.interface="${IFSECTION}"
+    uci set dhcp.${IFSECTION}.start='100'
+    uci set dhcp.${IFSECTION}.limit='150'
+    uci set dhcp.${IFSECTION}.leasetime='12h'
+  fi
+}
+
+# Ensure bridge exists (if not already created by base system)
+if ! uci -q get network.${BR} >/dev/null; then
+  uci set network.${BR}=device
+  uci set network.${BR}.name='br-lan'
+  uci set network.${BR}.type='bridge'
+  uci set network.${BR}.ports="${PHYS}"
+  uci set network.${BR}.stp='0'
+  uci set network.${BR}.forward_delay='0'
+fi
+uci set network.${BR}.vlan_filtering='1'
+
+# Example minimal application (adjust per your environment):
+# LAN
+uci set network.lan=interface
+uci set network.lan.device='br-lan.10'
+uci set network.lan.proto='static'
+uci set network.lan.ipaddr='192.168.10.1'
+uci set network.lan.netmask='255.255.255.0'
+
+# Guest
+uci set network.guest=interface
+uci set network.guest.device='br-lan.20'
+uci set network.guest.proto='static'
+uci set network.guest.ipaddr='192.168.20.1'
+uci set network.guest.netmask='255.255.255.0'
+
+# IOT
+uci set network.iot=interface
+uci set network.iot.device='br-lan.30'
+uci set network.iot.proto='static'
+uci set network.iot.ipaddr='192.168.30.1'
+uci set network.iot.netmask='255.255.255.0'
+
+# Bridge VLAN definitions
+uci add network bridge-vlan
+uci set network.@bridge-vlan[-1].device='br-lan'
+uci set network.@bridge-vlan[-1].vlan='10'
+uci set network.@bridge-vlan[-1].ports='eth1:u* eth2:u* eth3:u*'
+
+uci add network bridge-vlan
+uci set network.@bridge-vlan[-1].device='br-lan'
+uci set network.@bridge-vlan[-1].vlan='20'
+uci set network.@bridge-vlan[-1].ports='eth1:t eth2:t eth3:t'
+
+uci add network bridge-vlan
+uci set network.@bridge-vlan[-1].device='br-lan'
+uci set network.@bridge-vlan[-1].vlan='30'
+uci set network.@bridge-vlan[-1].ports='eth1:t eth2:t eth3:t'
+
+# Firewall zones
+uci set firewall.lan=zone
+uci set firewall.lan.name='lan'
+uci set firewall.lan.input='ACCEPT'
+uci set firewall.lan.output='ACCEPT'
+uci set firewall.lan.forward='ACCEPT'
+uci add_list firewall.lan.network='lan'
+
+uci set firewall.guest=zone
+uci set firewall.guest.name='guest'
+uci set firewall.guest.input='REJECT'
+uci set firewall.guest.output='ACCEPT'
+uci set firewall.guest.forward='REJECT'
+uci add_list firewall.guest.network='guest'
+uci add firewall rule
+uci set firewall.@rule[-1].name='Guest-DNS-DHCP'
+uci set firewall.@rule[-1].src='guest'
+uci set firewall.@rule[-1].dest_port='53 67 68'
+uci set firewall.@rule[-1].proto='tcpudp'
+uci set firewall.@rule[-1].target='ACCEPT'
+
+uci set firewall.iot=zone
+uci set firewall.iot.name='iot'
+uci set firewall.iot.input='REJECT'
+uci set firewall.iot.output='ACCEPT'
+uci set firewall.iot.forward='REJECT'
+uci add_list firewall.iot.network='iot'
+
+# Inter-zone forwardings (guest & iot -> wan only)
+uci set firewall.wan=zone
+uci set firewall.wan.name='wan'
+uci set firewall.wan.network='wan'
+uci set firewall.wan.input='REJECT'
+uci set firewall.wan.output='ACCEPT'
+uci set firewall.wan.forward='REJECT'
+uci set firewall.wan.masq='1'
+uci set firewall.wan.mtu_fix='1'
+
+uci add firewall forwarding
+uci set firewall.@forwarding[-1].src='lan'
+uci set firewall.@forwarding[-1].dest='wan'
+
+uci add firewall forwarding
+uci set firewall.@forwarding[-1].src='guest'
+uci set firewall.@forwarding[-1].dest='wan'
+
+uci add firewall forwarding
+uci set firewall.@forwarding[-1].src='iot'
+uci set firewall.@forwarding[-1].dest='wan'
+
+# DHCP servers
+uci set dhcp.lan=dhcp
+uci set dhcp.lan.interface='lan'
+uci set dhcp.lan.start='100'
+uci set dhcp.lan.limit='150'
+uci set dhcp.lan.leasetime='12h'
+
+uci set dhcp.guest=dhcp
+uci set dhcp.guest.interface='guest'
+uci set dhcp.guest.start='100'
+uci set dhcp.guest.limit='100'
+
+uci set dhcp.iot=dhcp
+uci set dhcp.iot.interface='iot'
+uci set dhcp.iot.start='100'
+uci set dhcp.iot.limit='100'
+
+uci commit network
+uci commit firewall
+uci commit dhcp
+
+exit 0
