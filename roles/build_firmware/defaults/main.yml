@@ -54,6 +54,8 @@ firmware_packages_include:
   - collectd-mod-sensors
   - luci-app-temp-status
   - luci-app-ddns
+  - luci-app-sqm
+  - drill
 
 # Extra kernel command line parameters (applied on first boot via uci-defaults script patching /boot/grub/grub.cfg)
 firmware_kernel_extra_cmdline: "pcie_aspm=force intel_idle.max_cstate=9 microcode.force_minrev=0"

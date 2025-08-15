@@ -1,4 +1,0 @@
----
-- name: Reboot
-  ansible.builtin.include_role:
-    name: reboot
