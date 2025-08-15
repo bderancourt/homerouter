@@ -4,8 +4,6 @@
     path: "{{ firmware_build_dir }}"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
-  delegate_to: localhost
-  become: false
 
 - name: Set OpenWRT download url
   ansible.builtin.set_fact:
@@ -47,8 +45,6 @@
     url: "{{ firmware_download_url }}sha256sums"
     dest: "{{ firmware_build_dir }}sha256sums"
     mode: u=rw,g=r,o=r
-  delegate_to: localhost
-  become: false
 
 - name: Set imagebuilder archive sha256
   ansible.builtin.set_fact:
@@ -67,15 +63,11 @@
     dest: "{{ firmware_build_dir + firmware_imagebuilder_archive }}"
     checksum: "{{ firmware_imagebuilder_checksum }}"
     mode: u=rw,g=r,o=r
-  delegate_to: localhost
-  become: false
 
 - name: Delete extracted imagebuilder
   ansible.builtin.file:
     path: "{{ firmware_extracted_dir }}"
     state: absent
-  delegate_to: localhost
-  become: false
 
 - name: Unarchive imagebuilder
   ansible.builtin.unarchive:
@@ -83,5 +75,3 @@
     dest: "{{ firmware_build_dir }}"
     creates: "{{ firmware_extracted_dir }}"
     remote_src: true
-  delegate_to: localhost
-  become: false

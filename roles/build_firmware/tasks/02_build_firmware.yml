@@ -4,16 +4,12 @@
     path: "{{ firmware_extracted_dir }}/.config"
     regexp: '^CONFIG_TARGET_ROOTFS_PARTSIZE='
     line: 'CONFIG_TARGET_ROOTFS_PARTSIZE=2048'
-  delegate_to: localhost
-  become: false
 
 - name: Setting grub timeout to 0s to speedup boot
   ansible.builtin.lineinfile:
     path: "{{ firmware_extracted_dir }}/.config"
     regexp: '^CONFIG_GRUB_TIMEOUT='
     line: 'CONFIG_GRUB_TIMEOUT="0"'
-  delegate_to: localhost
-  become: false
 
 - name: "Download luci-app-temp-status package"
   ansible.builtin.get_url:
@@ -21,16 +17,12 @@
     dest: "{{ firmware_extracted_dir }}/packages/"
     validate_certs: false
     mode: u=rw,g=r,o=r
-  delegate_to: localhost
-  become: false
 
 - name: Copy custom files
   ansible.builtin.copy:
     src: "files/"
     dest: "{{ firmware_extracted_dir }}/files"
     mode: u=rw,g=r,o=r
-  delegate_to: localhost
-  become: false
 
 - name: Ensure config directories exist
   ansible.builtin.file:
@@ -40,8 +32,6 @@
   loop:
     - /etc/uci-defaults
     - /etc/config
-  delegate_to: localhost
-  become: false
 
 - name: Recursively process all templates using filetree
   ansible.builtin.template:
@@ -60,8 +50,6 @@
   when:
     - template_file.state == 'file'
     - template_file.path.endswith('.j2')
-  delegate_to: localhost
-  become: false
 
 - name: Set make image params
   ansible.builtin.set_fact:
@@ -81,5 +69,3 @@
     chdir: "{{ firmware_extracted_dir }}"
     target: image
     params: "{{ firmware_make_image_params }}"
-  delegate_to: localhost
-  become: false

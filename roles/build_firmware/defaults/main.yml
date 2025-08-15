@@ -7,6 +7,13 @@
 lan_ports:
   - eth0
 wan_port: eth1
+system_hostname: openwrt
+
+ddns_service_name:
+ddns_lookup_host:
+ddns_domain:
+ddns_username:
+ddns_password:
 
 # if firmware_version is not set, snapshot is used
 firmware_version: 24.10.2
@@ -46,6 +53,7 @@ firmware_packages_include:
   - luci-app-statistics
   - collectd-mod-sensors
   - luci-app-temp-status
+  - luci-app-ddns
 
 # Extra kernel command line parameters (applied on first boot via uci-defaults script patching /boot/grub/grub.cfg)
 firmware_kernel_extra_cmdline: "pcie_aspm=force intel_idle.max_cstate=9 microcode.force_minrev=0"
