@@ -1,0 +1,8 @@
+
+config globals 'globals'
+	option data_root '/opt/docker/'
+	option log_level 'warn'
+	option iptables '0'
+
+config proxies 'proxies'
+

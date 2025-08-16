@@ -1,5 +1,5 @@
 - name: OpenWRT custom setup playbook
-  hosts: ikoolcore
+  hosts: virtualbox
   connection: local
   become: false
   gather_facts: false

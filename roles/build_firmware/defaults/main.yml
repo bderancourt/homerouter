@@ -4,9 +4,6 @@
 # Interface: eth1 -> PCI: 03:00.0 Ethernet controller [0200]: Intel Corporation Ethernet Controller I226-V [8086:125c] (rev 04)
 # Interface: eth2 -> PCI: 04:00.0 Ethernet controller [0200]: Aquantia Corp. AQC113C NBase-T/IEEE 802.3an Ethernet Controller [1d6a:14c0] (rev 03)
 # Interface: eth3 -> PCI: 05:00.0 Ethernet controller [0200]: Aquantia Corp. AQC113C NBase-T/IEEE 802.3an Ethernet Controller [1d6a:14c0] (rev 03)
-lan_ports:
-  - eth0
-wan_port: eth1
 system_hostname: openwrt
 
 ddns_service_name:
@@ -56,6 +53,11 @@ firmware_packages_include:
   - luci-app-ddns
   - luci-app-sqm
   - drill
+  - docker
+  - dockerd
+  - luci-app-dockerman
+  - docker-compose
+  - kmod-macvlan
 
 # Extra kernel command line parameters (applied on first boot via uci-defaults script patching /boot/grub/grub.cfg)
 firmware_kernel_extra_cmdline: "pcie_aspm=force intel_idle.max_cstate=9 microcode.force_minrev=0"

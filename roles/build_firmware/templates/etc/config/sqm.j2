@@ -1,6 +1,6 @@
 config queue 'wan'
 	option enabled '1'
-	option interface '{{ wan_port }}'
+	option interface 'eth3{{ '.100' if inventory_hostname is not equalto 'virtualbox' }}'
 	option download '0'
 	option upload '950000'
 	option qdisc 'cake'

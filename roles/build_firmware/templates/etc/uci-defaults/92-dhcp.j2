@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#######################################
+# Add DHCP configuration
+#######################################
+
+# Guest DHCP
+uci set dhcp.guest=dhcp
+uci set dhcp.guest.interface='guest'
+uci set dhcp.guest.start='100'
+uci set dhcp.guest.limit='150'
+uci set dhcp.guest.leasetime='12h'
+uci set dhcp.guest.dhcpv6='server'
+uci set dhcp.guest.ra='server'
+
+uci commit dhcp
+
+exit 0

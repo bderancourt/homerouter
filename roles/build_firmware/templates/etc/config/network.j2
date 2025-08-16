@@ -3,26 +3,52 @@ config globals 'globals'
 	option packet_steering '1'
 
 config device
+	option name 'eth1.2'
+	option type '8021q'
+	option ifname 'eth1'
+	option vid '2'
+
+config device
+	option name 'eth2.2'
+	option type '8021q'
+	option ifname 'eth2'
+	option vid '2'
+
+config device
 	option name 'br-lan'
 	option type 'bridge'
-{% for lan_port in lan_ports %}
-	list ports '{{ lan_port }}'
-{% endfor %}
+	list ports 'eth0'
+	list ports 'eth1'
+	list ports 'eth2'
 
 config device
-{% if '.' in wan_port %}
-	option name '{{ wan_port.split('.')[0] }}'
+	option name 'br-guest'
+	option type 'bridge'
+	list ports 'eth1.2'
+	list ports 'eth2.2'
+
+config device
+	option name 'eth3'
 	option macaddr '{{ bbox_mac }}'
+{% if inventory_hostname is not equalto 'virtualbox' %}
 
 config device
-	option name '{{ wan_port }}'
+	option name 'eth3.100'
 	option type '8021q'
-	option ifname '{{ wan_port.split('.')[0] }}'
-	option vid '{{ wan_port.split('.')[1] }}'
-{% else %}
-	option name '{{ wan_port }}'
-{% endif %}
+	option ifname 'eth3'
+	option vid '100'
 	option macaddr '{{ bbox_mac }}'
+{% endif %}
+
+config device
+	option type 'bridge'
+	option name 'docker0'
+	option type 'macvlan'
+
+config interface 'docker'
+	option device 'docker0'
+	option proto 'none'
+	option auto '0'
 
 config interface 'loopback'
 	option device 'lo'
@@ -36,11 +62,20 @@ config interface 'lan'
 	option ipaddr '{{ ansible_host }}'
 	option netmask '255.255.255.0'
 	option ip6assign '64'
-	option ip6hint '1'
+	option ip6hint '{{  ansible_host.split(".")[2] }}'
+	option ip6ifaceid '::1'
+
+config interface 'guest'
+	option device 'br-guest'
+	option proto 'static'
+	option ipaddr '192.168.2.1'
+	option netmask '255.255.255.0'
+	option ip6assign '64'
+	option ip6hint '2'
 	option ip6ifaceid '::1'
 
 config interface 'wan'
-	option device '{{ wan_port }}'
+	option device 'eth3{{ '.100' if inventory_hostname is not equalto 'virtualbox' }}'
 	option proto 'dhcp'
 	option vendorid 'BYGTELIAD'
 	option norelease '1'
@@ -50,7 +85,7 @@ config interface 'wan'
 	list dns '1.0.0.1'
 
 config interface 'wan6'
-	option device '{{ wan_port }}'
+	option device 'eth3{{ '.100' if inventory_hostname is not equalto 'virtualbox' }}'
 	option proto 'dhcpv6'
 	option norelease '1'
 	option reqprefix '60'
