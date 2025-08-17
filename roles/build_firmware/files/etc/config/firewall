@@ -11,7 +11,7 @@ config zone
 	list network 'lan'
 	option input 'ACCEPT'
 	option output 'ACCEPT'
-	option forward 'ACCEPT'
+	option forward 'REJECT'
 
 config zone
 	option name 'wan'
@@ -33,9 +33,10 @@ config zone
 config zone 'docker'
 	option input 'ACCEPT'
 	option output 'ACCEPT'
-	option forward 'ACCEPT'
+	option forward 'REJECT'
 	option name 'docker'
 	list network 'docker'
+	list network 'docker20'
 
 config forwarding
 	option src 'lan'

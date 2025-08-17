@@ -30,14 +30,13 @@ firmware_packages_include:
   - less
   - dmesg
   - lsblk
-  - ethtool-full
+  - wget-ssl
+  - luci-ssl
   - usbutils
   - pciutils
-  - wget-ssl
   - rng-tools
   - lm-sensors
   - smartmontools
-  - luci-ssl-nginx
   - intel-microcode
   - openssh-sftp-server
   - python3-light
