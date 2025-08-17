@@ -14,10 +14,10 @@ config device
 	option ifname 'eth2'
 	option vid '2'
 
+{% if inventory_hostname is not equalto 'virtualbox' %}
 config device
 	option name 'eth3'
 	option macaddr '{{ bbox_mac }}'
-{% if inventory_hostname is not equalto 'virtualbox' %}
 
 config device
 	option name 'eth3.100'

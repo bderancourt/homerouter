@@ -1,0 +1,12 @@
+---
+- name: Create macvlan20 network
+  community.docker.docker_network:
+    name: macvlan20
+    state: present
+    driver: macvlan
+    driver_options:
+      parent: br-lan.20
+    ipam_config:
+      - subnet: 192.168.20.0/24
+        gateway: 192.168.20.1
+        iprange: 192.168.20.16/28

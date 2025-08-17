@@ -44,6 +44,8 @@ firmware_packages_include:
   - python3-urllib
   - python3-multiprocessing
   - python3-decimal
+  - python3-requests
+  - python3-openssl
   - kmod-atlantic
   - powertop
   - luci-app-statistics
