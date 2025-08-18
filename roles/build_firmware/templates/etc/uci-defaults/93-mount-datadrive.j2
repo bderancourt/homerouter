@@ -7,3 +7,5 @@ block detect | uci import fstab
 uci set fstab.@mount[-1].enabled='1'
 uci set fstab.@mount[-1].target='{{ mount_point }}'
 uci set fstab.@global[0].check_fs='1'
+
+uci commit fstab
