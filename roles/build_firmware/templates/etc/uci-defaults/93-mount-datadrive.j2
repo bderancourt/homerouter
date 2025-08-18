@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# https://openwrt.org/docs/guide-user/storage/usb-drives#automount_the_partition
+
+block detect | uci import fstab
+
+uci set fstab.@mount[-1].enabled='1'
+uci set fstab.@mount[-1].target='{{ mount_point }}'
+uci set fstab.@global[0].check_fs='1'
