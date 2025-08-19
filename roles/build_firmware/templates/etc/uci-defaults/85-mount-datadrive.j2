@@ -6,21 +6,13 @@
 
 PART_UUID=`lsblk -p -f -J | jsonfilter -e '$.blockdevices[*].children[@.label="data"].uuid'`
 
-block detect | uci import fstab
-uci set fstab.@global[0].check_fs='1'
+# Remove any previously imported mount entries so we start fresh
+while uci get "fstab.@mount[0]" >/dev/null 2>&1; do
+  uci delete "fstab.@mount[0]"
+done
 
-. /lib/functions.sh
-config_load fstab
-
-find_and_update_mount() {
-  local name="$1"
-  local uuid
-  config_get uuid "$name" uuid
-  if [ "$uuid" = "$PART_UUID" ]; then
-    uci set fstab.$name.target='{{ mount_point }}'
-    uci set fstab.$name.enabled='1'
-  fi
-}
-config_foreach find_and_update_mount mount
-
+uci add fstab mount
+uci set fstab.@mount[-1].target='{{ mount_point }}'
+uci set fstab.@mount[-1].uuid="$PART_UUID"
+uci set fstab.@mount[-1].enabled='1'
 uci commit fstab
