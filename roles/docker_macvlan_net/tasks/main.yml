@@ -1,12 +1,85 @@
 ---
-- name: Create macvlan20 network
+- name: Check presence of network device br-lan.{{ vlan_id }}
+  ansible.builtin.shell: |
+    . /lib/functions.sh
+    config_load network
+    found=0
+    _check_dev() {
+      local section="$1"
+      local name
+      config_get name "$section" name
+      [ "$name" = "br-lan.{{ vlan_id }}" ] && found=1
+    }
+    config_foreach _check_dev device
+    printf '%s' "$found"
+  register: network_device_check
+  changed_when: false
+
+- name: Set fact device_br_lan_exists
+  ansible.builtin.set_fact:
+    device_br_lan_exists: "{{ (network_device_check.stdout | default('0')) | trim == '1' }}"
+
+- name: Create network device br-lan.{{ vlan_id }}
+  ansible.builtin.shell: |
+    uci add network device
+    uci set network.@device[-1].name='br-lan.{{ vlan_id }}'
+    uci set network.@device[-1].type='macvlan'
+    uci set network.@device[-1].ifname='br-lan'
+    uci set network.@device[-1].mode='bridge'
+    uci commit network
+  when: not device_br_lan_exists
+  changed_when: true
+
+- name: Check presence of network interface docker{{ vlan_id }}
+  ansible.builtin.shell: |
+    . /lib/functions.sh
+    config_load network
+    found=0
+    _check_if() {
+      local section="$1"
+      # For interface sections the section name is the interface name
+      [ "$section" = "docker{{ vlan_id }}" ] && found=1
+    }
+    config_foreach _check_if interface
+    printf '%s' "$found"
+  register: network_interface_check
+  changed_when: false
+
+- name: Set fact interface_docker_exists
+  ansible.builtin.set_fact:
+    interface_docker_exists: "{{ (network_interface_check.stdout | default('0')) | trim == '1' }}"
+
+- name: Create network interface docker{{ vlan_id }}
+  ansible.builtin.shell: |
+    uci add network interface
+    uci set network.@interface[-1].name='docker{{ vlan_id }}'
+    uci set network.@interface[-1].device='br-lan.{{ vlan_id }}'
+    uci set network.@interface[-1].proto='static'
+    uci set network.@interface[-1].ipaddr='192.168.{{ vlan_id }}.1'
+    uci set network.@interface[-1].netmask='255.255.255.0'
+    uci commit network
+  when: not interface_docker20_exists
+  changed_when: true
+
+- name: Reload network to apply changes
+  ansible.builtin.service:
+    name: network
+    state: reloaded
+
+- name: "Add interface to firewall docker zone: docker{{ vlan_id }}"
+  ansible.builtin.firewalld:
+    zone: docker{{ vlan_id }}
+    interface: docker{{ vlan_id }}
+    state: enabled
+
+- name: Create docker network macvlan{{ vlan_id }}
   community.docker.docker_network:
-    name: macvlan20
+    name: macvlan{{ vlan_id }}
     state: present
     driver: macvlan
     driver_options:
-      parent: br-lan.20
+      parent: br-lan.{{ vlan_id }}
     ipam_config:
-      - subnet: 192.168.20.0/24
-        gateway: 192.168.20.1
-        iprange: 192.168.20.16/28
+      - subnet: 192.168.{{ vlan_id }}.0/24
+        gateway: 192.168.{{ vlan_id }}.1
+        iprange: 192.168.{{ vlan_id }}.253/32

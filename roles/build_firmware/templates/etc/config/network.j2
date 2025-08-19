@@ -86,26 +86,3 @@ config interface 'guest'
 	option ip6assign '64'
 	option ip6hint '2'
 	option ip6ifaceid '::1'
-
-# Used by Docker default bridge network
-config device
-	option name 'docker0'
-	option type 'bridge'
-
-# Used by Docker default bridge network
-config interface 'docker'
-	option device 'docker0'
-	option proto 'none'
-	option auto '0'
-
-config device
-	option name 'br-lan.20'
-	option type 'macvlan'
-	option ifname 'br-lan'
-	option mode 'bridge'
-
-config interface 'docker20'
-	option device 'br-lan.20'
-	option proto 'static'
-	option ipaddr '192.168.20.1'
-	option netmask '255.255.255.0'

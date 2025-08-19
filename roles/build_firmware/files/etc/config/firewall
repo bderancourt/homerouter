@@ -36,7 +36,6 @@ config zone 'docker'
 	option forward 'REJECT'
 	option name 'docker'
 	list network 'docker'
-	list network 'docker20'
 
 config forwarding
 	option src 'lan'
