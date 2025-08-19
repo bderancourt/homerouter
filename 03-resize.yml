@@ -1,9 +1,0 @@
-- name: OpenWRT custom setup playbook
-  hosts: virtualbox
-  remote_user: root
-  gather_facts: false
-  vars_files:
-    - secrets.yml
-
-  roles:
-    - resize_disk

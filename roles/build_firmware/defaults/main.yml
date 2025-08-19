@@ -29,7 +29,6 @@ firmware_packages_include:
   - btop
   - less
   - dmesg
-  - lsblk
   - wget-ssl
   - luci-ssl
   - usbutils
@@ -60,6 +59,11 @@ firmware_packages_include:
   - docker-compose
   - kmod-macvlan
   - block-mount
+  - parted
+  - losetup
+  - resize2fs
+  - blkid
+  - lsblk
 
 # Extra kernel command line parameters (applied on first boot via uci-defaults script patching /boot/grub/grub.cfg)
 firmware_kernel_extra_cmdline: "pcie_aspm=force intel_idle.max_cstate=9 microcode.force_minrev=0"

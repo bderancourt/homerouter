@@ -18,5 +18,5 @@
 
 - name: Wait for connection
   ansible.builtin.wait_for_connection:
-    timeout: 120
-    delay: 10
+    timeout: 300
+    delay: 30
