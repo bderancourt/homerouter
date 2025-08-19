@@ -9,4 +9,9 @@ for pci in $(lspci | grep 'I226-V' | awk '{print $1}'); do
     echo on > /sys/bus/pci/devices/0000:${pci}/power/control
 done
 
+# Revert power management for Intel i226V NICs (set to 'on')
+for pci in $(lspci | grep ' AQC113C' | awk '{print $1}'); do
+    echo on > /sys/bus/pci/devices/0000:${pci}/power/control
+done
+
 exit 0
