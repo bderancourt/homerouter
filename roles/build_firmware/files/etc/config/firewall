@@ -30,7 +30,8 @@ config zone
 	option output 'ACCEPT'
 	option forward 'REJECT'
 
-config zone 'docker'
+config zone 
+	option name 'docker'
 	option input 'ACCEPT'
 	option output 'ACCEPT'
 	option forward 'REJECT'
