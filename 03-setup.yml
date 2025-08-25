@@ -5,4 +5,4 @@
     - secrets.yml
 
   roles:
-    - docker_macvlan_net
+    - docker_omada_controller

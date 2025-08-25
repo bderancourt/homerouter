@@ -67,7 +67,7 @@
 
 - name: "Add interface to firewall docker zone: docker{{ vlan_id }}"
   ansible.builtin.shell: |
-    uci add_list firewall.@zone[-1].network='docker{{ vlan_id }}'
+    uci add_list firewall.docker.network='docker{{ vlan_id }}'
     uci commit firewall
   when: not firewall_docker_network_exists
   changed_when: true
@@ -75,15 +75,3 @@
 
 - name: Apply pending handlers before creating the docker network
   ansible.builtin.meta: flush_handlers
-
-- name: Create docker network macvlan{{ vlan_id }}
-  community.docker.docker_network:
-    name: macvlan{{ vlan_id }}
-    state: present
-    driver: macvlan
-    driver_options:
-      parent: br-lan.{{ vlan_id }}
-    ipam_config:
-      - subnet: 192.168.{{ vlan_id }}.0/24
-        gateway: 192.168.{{ vlan_id }}.1
-        iprange: 192.168.{{ vlan_id }}.253/32

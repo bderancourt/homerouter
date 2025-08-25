@@ -1,7 +1,7 @@
 services:
   omada-controller:
     container_name: omada-controller
-    image: mbentley/omada-controller:5.15
+    image: mbentley/omada-controller:{{docker_omada_controller_version}}
     restart: unless-stopped
     ulimits:
       nofile:
@@ -11,8 +11,8 @@ services:
     environment:
       - PUID=508
       - PGID=508
-      - MANAGE_HTTP_PORT=8088
-      - MANAGE_HTTPS_PORT=8043
+      - MANAGE_HTTP_PORT=80
+      - MANAGE_HTTPS_PORT=443
       - PORTAL_HTTP_PORT=8088
       - PORTAL_HTTPS_PORT=8843
       - PORT_APP_DISCOVERY=27001
@@ -27,21 +27,21 @@ services:
       - SHOW_MONGODB_LOGS=false
       - SSL_CERT_NAME=tls.crt
       - SSL_KEY_NAME=tls.key
-      - TZ=Etc/UTC
+      - TZ=Europe/Paris
     volumes:
-      - omada-data:/opt/tplink/EAPController/data
-      - omada-logs:/opt/tplink/EAPController/logs
+      - "{{ docker_omada_controller_volume_dir }}data:/opt/tplink/EAPController/data"
+      - "{{ docker_omada_controller_volume_dir }}logs:/opt/tplink/EAPController/logs"
     networks:
-      dockervlan:
-        ipv4_address: 192.168.20.10
+      macvlan{{ vlan_id }}:
+        ipv4_address: 192.168.{{ vlan_id }}.10
 
 networks:
-  dockervlan:
-    name: dockervlan
+  macvlan{{ vlan_id }}:
+    name: macvlan{{ vlan_id }}
     driver: macvlan
     driver_opts:
-      parent: br-lan.20
+      parent: br-lan.{{ vlan_id }}
     ipam:
       config:
-        - subnet: "192.168.20.0/24"
-          gateway: "192.168.20.1"
+        - subnet: "192.168.{{ vlan_id }}.0/24"
+          gateway: "192.168.{{ vlan_id }}.1"

@@ -30,14 +30,6 @@ config zone
 	option output 'ACCEPT'
 	option forward 'REJECT'
 
-config zone 
-	option name 'docker'
-	option input 'ACCEPT'
-	option output 'ACCEPT'
-	option forward 'REJECT'
-	option name 'docker'
-	list network 'docker'
-
 config forwarding
 	option src 'lan'
 	option dest 'docker'

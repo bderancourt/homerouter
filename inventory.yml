@@ -7,3 +7,5 @@ all:
     virtualbox:
       ansible_host: 192.168.9.1
       system_hostname: openwrt-vbox
+  vars:
+    datadrive_dir: /mnt/datadrive
