@@ -20,14 +20,14 @@
 
 - name: "Download luci-app-disks-info package"
   ansible.builtin.get_url:
-    url: "https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-app-disks-info_0.4.2-r3_all.ipk"
+    url: "https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-app-disks-info_0.5.0-r1_all.ipk"
     dest: "{{ firmware_extracted_dir }}/packages/"
     validate_certs: false
     mode: u=rw,g=r,o=r
 
 - name: "Download luci-app-cpu-perf package"
   ansible.builtin.get_url:
-    url: "https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-app-cpu-perf_0.5.0-r1_all.ipk"
+    url: "https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-app-cpu-perf_0.6.0-r2_all.ipk"
     dest: "{{ firmware_extracted_dir }}/packages/"
     validate_certs: false
     mode: u=rw,g=r,o=r

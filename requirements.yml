@@ -2,7 +2,3 @@
 collections:
   - name: community.general
   - name: community.docker
-
-roles:
-  - name: gekmihesg.openwrt
-    src: https://github.com/gekmihesg/ansible-openwrt

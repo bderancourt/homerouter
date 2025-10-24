@@ -13,7 +13,7 @@ ddns_username:
 ddns_password:
 
 # if firmware_version is not set, snapshot is used
-firmware_version: 24.10.2
+firmware_version: 24.10.3
 firmware_target: x86
 build_firmware_packages_exclude:
 firmware_subtarget: 64
