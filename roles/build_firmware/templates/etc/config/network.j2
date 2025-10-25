@@ -2,17 +2,33 @@
 config globals 'globals'
 	option packet_steering '1'
 
+# Guest VLAN on eth1
 config device
 	option name 'eth1.2'
 	option type '8021q'
 	option ifname 'eth1'
 	option vid '2'
 
+# Guest VLAN on eth2
 config device
 	option name 'eth2.2'
 	option type '8021q'
 	option ifname 'eth2'
 	option vid '2'
+
+# IoT VLAN on eth1
+config device
+	option name 'eth1.3'
+	option type '8021q'
+	option ifname 'eth1'
+	option vid '3'
+
+# IoT VLAN on eth2
+config device
+	option name 'eth2.3'
+	option type '8021q'
+	option ifname 'eth2'
+	option vid '3'
 
 {% if inventory_hostname is not equalto 'virtualbox' %}
 config device
@@ -39,6 +55,12 @@ config device
 	option type 'bridge'
 	list ports 'eth1.2'
 	list ports 'eth2.2'
+
+config device
+	option name 'br-iot'
+	option type 'bridge'
+	list ports 'eth1.3'
+	list ports 'eth2.3'
 
 config interface 'loopback'
 	option device 'lo'
@@ -86,3 +108,10 @@ config interface 'guest'
 	option ip6assign '64'
 	option ip6hint '2'
 	option ip6ifaceid '::1'
+
+config interface 'iot'
+	option device 'br-iot'
+	option proto 'static'
+	option ipaddr '192.168.3.1'
+	option netmask '255.255.255.0'
+	option ipv6 0

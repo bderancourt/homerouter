@@ -1,8 +1,8 @@
 - name: OpenWRT custom setup playbook
-  hosts: virtualbox
-  remote_user: root
+  hosts: ikoolcore
   vars_files:
     - secrets.yml
 
   roles:
+    - zeerayne.openwrt
     - docker_omada_controller

@@ -9,14 +9,12 @@
   loop:
     - /docker/omada
     - "{{ docker_omada_controller_volume_dir | default('/docker/omada') }}"
-  become: true
 
 - name: Render omada docker-compose file
   ansible.builtin.template:
     src: compose.yml.j2
     dest: /docker/omada/compose.yml
     mode: '0644'
-  become: true
 
 - name: Deploy Omada stack with docker compose
   community.docker.docker_compose_v2:
@@ -25,4 +23,49 @@
       - compose.yml
     state: present
     recreate: always
-  become: true
+
+- name: Add local DNS domain for Omada controller
+  uci:
+    command: section
+    config: dhcp
+    type: domain
+    find-by:
+      name: omada
+    value:
+      ip: 192.168.20.10
+
+- name: Commit dhcp changes
+  uci:
+    command: commit
+    config: dhcp
+
+- name: Restart dnsmasq to apply changes
+  ansible.builtin.service:
+    name: dnsmasq
+    state: restarted
+
+- name: Add firewall rule to allow Omada controller to reach EAP
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    find-by:
+      name: Omada to eap
+    value:
+      src: docker
+      dest: lan
+      src_ip:
+        - 192.168.20.10
+      dest_ip:
+        - 192.168.1.90
+      target: ACCEPT
+
+- name: Commit firewall changes
+  uci:
+    command: commit
+    config: firewall
+
+- name: Restart firewall to apply changes
+  ansible.builtin.service:
+    name: firewall
+    state: restarted

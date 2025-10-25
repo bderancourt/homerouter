@@ -7,7 +7,7 @@
     image: registry:2.8.2
     state: started
     detach: true
-    restart_policy: always
+    restart_policy: unless-stopped
     env:
       PUID: "1000"
       PGID: "1000"

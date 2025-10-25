@@ -1,5 +1,7 @@
 ---
+firmware_version: 24.10.3
 install_firmware_local_file: >-
   {{ playbook_dir ~
-     '/build/openwrt-imagebuilder-24.10.2-x86-64.Linux-x86_64/bin/targets/x86/64/' ~
-     'openwrt-24.10.2-x86-64-generic-ext4-combined-efi.img.gz' }}
+     '/build/openwrt-imagebuilder-' ~
+     firmware_version ~ '-x86-64.Linux-x86_64/bin/targets/x86/64/' ~
+     'openwrt-' ~ firmware_version ~ '-x86-64-generic-ext4-combined-efi.img.gz' }}

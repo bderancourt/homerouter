@@ -1,4 +1,3 @@
-
 config defaults
 	option input 'REJECT'
 	option output 'ACCEPT'
@@ -30,6 +29,13 @@ config zone
 	option output 'ACCEPT'
 	option forward 'REJECT'
 
+config zone
+	option name 'iot'
+	list network 'iot'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+
 config forwarding
 	option src 'lan'
 	option dest 'docker'
@@ -37,6 +43,10 @@ config forwarding
 config forwarding
 	option src 'lan'
 	option dest 'guest'
+
+config forwarding
+	option src 'lan'
+	option dest 'iot'
 
 config forwarding
 	option src 'lan'
@@ -48,6 +58,10 @@ config forwarding
 
 config forwarding
 	option src 'docker'
+	option dest 'wan'
+
+config forwarding
+	option src 'iot'
 	option dest 'wan'
 
 config rule
@@ -149,5 +163,13 @@ config redirect 'dns_int_docker'
 	option family 'any'
 	option proto 'tcp udp'
 	option src 'docker'
+	option src_dport '53'
+	option target 'DNAT'
+
+config redirect 'dns_int_iot'
+	option name 'Intercept-DNS-IoT'
+	option family 'any'
+	option proto 'tcp udp'
+	option src 'iot'
 	option src_dport '53'
 	option target 'DNAT'
