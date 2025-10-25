@@ -8,7 +8,7 @@ GRUBCFG="/boot/grub/grub.cfg"
 [ -f "$GRUBCFG" ] || exit 0
 
 # If all params already present on first linux line, exit.
-first_linux_line=$(grep -m1 '^\s*linux' "$GRUBCFG" || true)
+first_linux_line=$(grep -m1 '^[[:space:]]*linux' "$GRUBCFG" || true)
 if [ -n "$first_linux_line" ]; then
   all_present=true
   for p in $EXTRAS; do
@@ -22,7 +22,7 @@ first_token=$(echo "$EXTRAS" | awk '{print $1}')
 
 tmpfile=$(mktemp)
 awk -v extras="$EXTRAS" -v firsttok="$first_token" '
-  /^\s*linux/ {
+  /^[[:space:]]*linux/ {
     if (index($0, firsttok)==0) {
       print $0 " " extras
       next
