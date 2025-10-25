@@ -11,6 +11,12 @@ ddns_lookup_host:
 ddns_domain:
 ddns_username:
 ddns_password:
+acme_config_name:
+acme_domains:
+acme_email:
+acme_credentials:
+acme_key_type:
+acme_dns_script:
 
 # if firmware_version is not set, snapshot is used
 firmware_version: 24.10.3
@@ -71,6 +77,8 @@ firmware_packages_include:
   - luci-app-cpu-perf
   - luci-app-cpu-status-mini
   - luci-app-dnsproxy
+  - luci-app-acme
+  - acme-acmesh-dnsapi
 
 # Extra kernel command line parameters (applied on first boot via uci-defaults script patching /boot/grub/grub.cfg)
 firmware_kernel_extra_cmdline: "pcie_aspm=force intel_idle.max_cstate=9 microcode.force_minrev=0"

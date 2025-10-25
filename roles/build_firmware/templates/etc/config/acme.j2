@@ -1,0 +1,19 @@
+
+# To force ACME certificate renewal, run:
+# /etc/init.d/acme renew
+config acme
+        option account_email {{ acme_email }}
+        option debug '1'
+
+config cert '{{ acme_config_name}}'
+        option enabled '{{ '0' if inventory_hostname == 'virtualbox' else '1' }}'
+{% for domain in acme_domains %}
+        list domains '{{ domain }}'
+{% endfor %}
+        option validation_method 'dns'
+        option dns '{{ acme_dns_script }}'
+{% for key, value in acme_credentials.items() %}
+        list credentials '{{ key }}="{{ value }}"'
+{% endfor %}
+        option staging '0'
+        option key_type '{{ acme_key_type }}'

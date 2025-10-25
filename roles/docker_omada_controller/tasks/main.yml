@@ -8,7 +8,7 @@
     mode: '0700'
   loop:
     - /docker/omada
-    - "{{ docker_omada_controller_volume_dir | default('/docker/omada') }}"
+    - "{{ docker_omada_controller_volume_dir }}"
 
 - name: Render omada docker-compose file
   ansible.builtin.template:
@@ -32,7 +32,7 @@
     find-by:
       name: omada
     value:
-      ip: 192.168.20.10
+      ip: "192.168.{{ vlan_id }}.10"
 
 - name: Commit dhcp changes
   uci:
@@ -55,7 +55,7 @@
       src: docker
       dest: lan
       src_ip:
-        - 192.168.20.10
+        - "192.168.{{ vlan_id }}.10"
       dest_ip:
         - 192.168.1.90
       target: ACCEPT
