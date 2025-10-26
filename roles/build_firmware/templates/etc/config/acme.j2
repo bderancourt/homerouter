@@ -1,9 +1,11 @@
 
+# https://github.com/acmesh-official/acme.sh/wiki
 # To force ACME certificate renewal, run:
 # /etc/init.d/acme renew
+
 config acme
         option account_email {{ acme_email }}
-        option debug '1'
+        option debug '0'
 
 config cert '{{ acme_config_name}}'
         option enabled '{{ '0' if inventory_hostname == 'virtualbox' else '1' }}'
