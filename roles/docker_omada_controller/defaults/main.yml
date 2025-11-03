@@ -1,4 +1,0 @@
----
-docker_omada_controller_version: 5.15.24.19
-docker_omada_controller_volume_dir: /mnt/datadrive/docker_volumes/omada/
-vlan_id: 20

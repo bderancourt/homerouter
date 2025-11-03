@@ -1,0 +1,17 @@
+---
+- name: Add local DNS domain for {{ service }}
+  uci:
+    command: section
+    config: dhcp
+    type: domain
+    find-by:
+      name: "{{ service }}"
+    value:
+      ip: "192.168.{{ vlan_id }}.10"
+  notify: Restart dnsmasq
+
+- name: Commit dhcp changes
+  uci:
+    command: commit
+    config: dhcp
+  notify: Restart dnsmasq

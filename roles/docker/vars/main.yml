@@ -1,0 +1,2 @@
+host_interface: veth-{{ service }}
+docker_interface: di-{{ service }}

@@ -1,0 +1,43 @@
+---
+- name: Create virtual ethernet device for Docker isolation
+  uci:
+    command: section
+    config: network
+    type: device
+    find-by:
+      name: "{{ host_interface }}"
+    value:
+      type: veth
+      peer_name: "{{ docker_interface }}"
+
+- name: "Create network interface {{ service }}"
+  uci:
+    command: section
+    config: network
+    type: interface
+    name: "{{ service }}"
+    find-by:
+      name: "{{ service }}"
+    value:
+      device: "{{ host_interface }}"
+      proto: static
+      ipaddr: "192.168.{{ vlan_id }}.1"
+      netmask: "255.255.255.0"
+  notify: Restart network
+
+- name: Commit network changes
+  uci:
+    command: commit
+    config: network
+
+- name: Create Docker network for {{ service }}
+  community.docker.docker_network:
+    name: "{{ service }}_net"
+    driver: ipvlan
+    driver_options:
+      ipvlan_mode: l2
+      parent: "{{ docker_interface }}"
+    ipam_config:
+      - subnet: "192.168.{{ vlan_id }}.0/24"
+        gateway: "192.168.{{ vlan_id }}.1"
+    state: present

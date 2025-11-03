@@ -1,0 +1,48 @@
+---
+- name: Ensure needed docker directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  loop:
+    - /docker/omada
+    - "{{ docker_omada_controller_volume_dir }}"
+
+- name: Render omada docker-compose file
+  ansible.builtin.template:
+    src: compose.yml.j2
+    dest: /docker/omada/compose.yml
+    mode: '0644'
+
+- name: Deploy Omada stack with docker compose
+  community.docker.docker_compose_v2:
+    project_src: /docker/omada
+    files:
+      - compose.yml
+    state: present
+    recreate: always
+
+- name: Add firewall rule to allow Omada controller to reach EAP
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    find-by:
+      name: Omada to eap
+    value:
+      src: omada
+      dest: lan
+      src_ip:
+        - "192.168.{{ vlan_id }}.10"
+      dest_ip:
+        - 192.168.1.90
+      target: ACCEPT
+  notify: Restart firewall
+
+- name: Commit firewall changes
+  uci:
+    command: commit
+    config: firewall
+  notify: Restart firewall

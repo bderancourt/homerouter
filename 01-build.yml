@@ -1,5 +1,5 @@
 - name: OpenWRT custom setup playbook
-  hosts: ikoolcore
+  hosts: localhost
   connection: local
   gather_facts: false
   vars_files:

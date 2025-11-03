@@ -4,11 +4,6 @@ openwrt:
     ikoolcore:
       ansible_host: 192.168.1.1
       ansible_user: root
-      system_hostname: openwrt
     virtualbox:
       ansible_host: 192.168.9.1
       ansible_user: root
-      system_hostname: openwrt-vbox
-  vars:
-    datadrive_dir: /mnt/datadrive
-    firmware_version: 24.10.3

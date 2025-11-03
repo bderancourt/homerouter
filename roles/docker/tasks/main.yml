@@ -1,0 +1,9 @@
+---
+- name: Network tasks
+  ansible.builtin.import_tasks: network.yml
+
+- name: Firewall tasks
+  ansible.builtin.import_tasks: firewall.yml
+
+- name: Dnsmasq tasks
+  ansible.builtin.import_tasks: dnsmasq.yml
