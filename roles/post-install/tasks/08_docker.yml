@@ -1,0 +1,36 @@
+---
+- name: Wait for internet access
+  ansible.builtin.import_role:
+    name: wait_internet
+
+
+- name: Install Docker packages
+  community.general.opkg:
+    name: luci-app-dockerman
+    state: present
+    update_cache: true
+
+
+- name: Create Docker data directory
+  ansible.builtin.file:
+    path: "{{ datadrive_mount_dir }}/docker"
+    state: directory
+    mode: '0755'
+
+
+- name: Enable and start Docker service
+  ansible.builtin.service:
+    name: dockerd
+    state: started
+    enabled: true
+
+
+- name: Verify Docker configuration
+  ansible.builtin.command: docker info
+  register: docker_info
+  changed_when: false
+
+
+- name: Display Docker data root
+  ansible.builtin.debug:
+    msg: "Docker data root: {{ docker_info.stdout | regex_search('Docker Root Dir: (.+)', '\\1') | first }}"

@@ -104,3 +104,6 @@ uci set firewall.dns_int_iot.proto='tcp udp'
 uci set firewall.dns_int_iot.src='iot'
 uci set firewall.dns_int_iot.src_dport='53'
 uci set firewall.dns_int_iot.target='DNAT'
+
+uci commit firewall
+exit 0

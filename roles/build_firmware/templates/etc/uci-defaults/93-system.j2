@@ -35,3 +35,8 @@ uci set dropbear.@dropbear[0].PasswordAuth='off'
 uci set dropbear.@dropbear[0].RootPasswordAuth='off'
 
 uci set luci_statistics.collectd_sensors.enable='1'
+
+uci commit system
+uci commit dropbear
+uci commit luci_statistics
+exit 0

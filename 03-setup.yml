@@ -5,4 +5,4 @@
 
   roles:
     - zeerayne.openwrt
-    - docker_omada_controller
+    - post-install

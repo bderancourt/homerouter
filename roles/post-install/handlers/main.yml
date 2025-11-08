@@ -1,0 +1,48 @@
+---
+- name: Reboot
+  ansible.builtin.command: "reboot &"
+  async: 1
+  poll: 0
+  changed_when: true
+  failed_when: false
+
+- name: Wait for connection after fstab reboot
+  ansible.builtin.wait_for_connection:
+    timeout: 180
+    delay: 10
+  listen: Reboot
+
+- name: Reload config
+  ansible.builtin.command: reload_config
+  changed_when: true
+
+- name: Restart DDNS service
+  ansible.builtin.service:
+    name: ddns
+    state: restarted
+    enabled: true
+
+- name: Restart ACME service
+  ansible.builtin.service:
+    name: acme
+    state: restarted
+
+- name: Restart SQM service
+  ansible.builtin.service:
+    name: sqm
+    state: restarted
+
+- name: Restart dnsmasq service
+  ansible.builtin.service:
+    name: dnsmasq
+    state: restarted
+
+- name: Restart dnsproxy service
+  ansible.builtin.service:
+    name: dnsproxy
+    state: restarted
+
+- name: Restart Docker service
+  ansible.builtin.service:
+    name: dockerd
+    state: restarted

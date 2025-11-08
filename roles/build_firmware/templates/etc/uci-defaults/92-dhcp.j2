@@ -4,20 +4,39 @@
 # Add DHCP configuration
 #######################################
 
-# Guest DHCP
+# LAN DHCP (IPv4 + DHCPv6 stateful sans SLAAC)
+uci set dhcp.lan.start='100'
+uci set dhcp.lan.limit='150'
+uci set dhcp.lan.leasetime='12h'
+uci set dhcp.lan.dhcpv4='server'
+uci set dhcp.lan.dhcpv6='server'
+uci set dhcp.lan.ra='server'
+uci set dhcp.lan.ra_slaac='0'
+uci del dhcp.lan.ra_flags
+uci add_list dhcp.lan.ra_flags='managed-config'
+uci add_list dhcp.lan.ra_flags='other-config'
+
+# Guest DHCP (IPv4 + DHCPv6 + SLAAC pour compatibilité Android)
 uci set dhcp.guest=dhcp
 uci set dhcp.guest.interface='guest'
 uci set dhcp.guest.start='100'
 uci set dhcp.guest.limit='150'
 uci set dhcp.guest.leasetime='12h'
+uci set dhcp.guest.dhcpv4='server'
+uci set dhcp.guest.dhcpv6='server'
+uci set dhcp.guest.ra='server'
+uci set dhcp.guest.ra_slaac='1'
+uci set dhcp.guest.ra_management='1'
 
-# IoT DHCP
+# IoT DHCP (IPv4 only, no IPv6)
 uci set dhcp.iot=dhcp
 uci set dhcp.iot.interface='iot'
 uci set dhcp.iot.start='100'
 uci set dhcp.iot.limit='150'
 uci set dhcp.iot.leasetime='12h'
+uci set dhcp.iot.dhcpv4='server'
 uci set dhcp.iot.dhcpv6='disabled'
+uci set dhcp.iot.ra='disabled'
 
 # Static lease for EAP
 uci set dhcp.eap=host
@@ -61,3 +80,6 @@ uci set dhcp.printer.name='printer'
 uci set dhcp.printer.mac='40:23:43:D9:F3:A4'
 uci set dhcp.printer.ip='192.168.3.14'
 uci set dhcp.printer.dns=1
+
+uci commit dhcp
+exit 0
