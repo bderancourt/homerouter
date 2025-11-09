@@ -39,8 +39,6 @@
     config: acme
     type: cert
     name: "{{ acme_config_name }}"
-    find-by:
-      name: "{{ acme_config_name }}"
     value:
       enabled: "{{ '0' if inventory_hostname == 'virtualbox' else '1' }}"
       domains: "{{ acme_domains }}"

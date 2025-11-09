@@ -1,0 +1,10 @@
+---
+- name: Restart dnsproxy service
+  ansible.builtin.service:
+    name: dnsproxy
+    state: restarted
+
+- name: Restart dnsmasq service
+  ansible.builtin.service:
+    name: dnsmasq
+    state: restarted

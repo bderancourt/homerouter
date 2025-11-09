@@ -1,0 +1,3 @@
+---
+# Add kernel command line arguments to /boot/grub/grub.cfg
+kernel_extra_cmdline: "microcode.force_minrev=0"

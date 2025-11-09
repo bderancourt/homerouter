@@ -9,6 +9,45 @@
     name: luci-app-dockerman
     state: present
     update_cache: true
+  loop:
+    - luci-app-dockerman
+    - kmod-ipvlan
+    - kmod-veth
+
+
+- name: Remove Docker firewall configuration
+  uci:
+    command: absent
+    config: dockerd
+    section: firewall
+
+
+- name: Remove Docker proxies configuration
+  uci:
+    command: absent
+    config: dockerd
+    section: proxies
+
+
+- name: Disable Docker iptables
+  uci:
+    command: section
+    config: dockerd
+    type: globals
+    name: globals
+    value:
+      iptables: 0
+      alt_config_file: /etc/docker/daemon.json
+      data_root: /opt/docker/
+      log_level: info
+    replace: true
+
+
+- name: Commit Docker UCI changes
+  uci:
+    command: commit
+    config: dockerd
+  notify: Reboot
 
 
 - name: Create Docker data directory
@@ -16,13 +55,6 @@
     path: "{{ datadrive_mount_dir }}/docker"
     state: directory
     mode: '0755'
-
-
-- name: Enable and start Docker service
-  ansible.builtin.service:
-    name: dockerd
-    state: started
-    enabled: true
 
 
 - name: Verify Docker configuration

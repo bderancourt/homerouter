@@ -1,4 +1,9 @@
 ---
+- name: Wait for internet access
+  ansible.builtin.import_role:
+    name: wait_internet
+
+
 - name: Install block-mount package
   community.general.opkg:
     name: block-mount

@@ -4,32 +4,13 @@
   ansible.builtin.import_role:
     name: wait_internet
 
+
 - name: Install dnsproxy package
   community.general.opkg:
     name: dnsproxy
     state: present
     update_cache: true
 
-- name: Configure dnsmasq for dnsproxy
-  uci:
-    command: section
-    config: dhcp
-    type: dnsmasq
-    find-by:
-      index: 0
-    value:
-      noresolv: '1'
-      cachesize: '10000'
-      server:
-        - 127.0.0.1#5354
-        - ::1#5354
-    replace: true
-
-- name: Commit dnsmasq configuration
-  uci:
-    command: commit
-    config: dhcp
-  notify: Restart dnsmasq service
 
 - name: Configure dnsproxy global settings
   uci:
@@ -37,27 +18,9 @@
     config: dnsproxy
     type: dnsproxy
     name: global
-    find-by:
-      name: global
     value:
       enabled: '1'
-      listen_port:
-        - '5354'
-    replace: true
 
-- name: Configure dnsproxy cache settings
-  uci:
-    command: section
-    config: dnsproxy
-    type: dnsproxy
-    name: cache
-    find-by:
-      name: cache
-    value:
-      enabled: '0'
-      cache_optimistic: '1'
-      size: '2097152'
-    replace: true
 
 - name: Configure dnsproxy servers
   uci:
@@ -65,13 +28,14 @@
     config: dnsproxy
     type: dnsproxy
     name: servers
-    find-by:
-      name: servers
     value:
       bootstrap:
         - 8.8.8.8
-        - tcp://8.8.8.8
+      upstream:
+        - quic://dns.adguard-dns.com
+        - tls://security.cloudflare-dns.com
     replace: true
+
 
 - name: Commit dnsproxy configuration
   uci:
@@ -79,12 +43,35 @@
     config: dnsproxy
   notify: Restart dnsproxy service
 
+
 - name: Copy sysctl buffer size configuration
   ansible.builtin.copy:
     src: 12-buffer-size.conf
     dest: /etc/sysctl.d/12-buffer-size.conf
     mode: '0644'
 
+
 - name: Apply sysctl buffer size configuration
   ansible.builtin.command: sysctl -p /etc/sysctl.d/12-buffer-size.conf
   changed_when: true
+
+
+# Instance dnsmasq pour LAN
+- name: Configure LAN dnsmasq instance
+  uci:
+    command: section
+    config: dhcp
+    type: dnsmasq
+    find_by:
+      domain: lan
+    value:
+      force: 1
+      ra_default: 1
+      noresolv: '1'
+      cachesize: '10000'
+      max_ttl: 3600
+      max_cache_ttl: 3600
+      server:
+        - 127.0.0.1#5353
+        - ::1#5353
+  notify: Restart dnsmasq service

@@ -1,0 +1,64 @@
+---
+- name: Wait for internet access
+  ansible.builtin.import_role:
+    name: wait_internet
+
+
+- name: Fetch latest packages from fantastic-packages
+  ansible.builtin.uri:
+    url: "https://fantastic-packages.github.io/releases/24.10/packages/x86_64/luci/"
+    method: GET
+    return_content: true
+  register: fantastic_packages_page
+  changed_when: false
+
+
+- name: Extract package URLs
+  ansible.builtin.set_fact:
+    packages_to_download:
+      - name: luci-app-temp-status
+        filename: "{{ fantastic_packages_page.content
+                      | regex_search('(luci-app-temp-status[^\"]*\\.ipk)') }}"
+      - name: luci-app-disks-info
+        filename: "{{ fantastic_packages_page.content
+                      | regex_search('(luci-app-disks-info[^\"]*\\.ipk)') }}"
+      - name: luci-app-cpu-perf
+        filename: "{{ fantastic_packages_page.content
+                      | regex_search('(luci-app-cpu-perf[^\"]*\\.ipk)') }}"
+      - name: luci-app-cpu-status-mini
+        filename: "{{ fantastic_packages_page.content
+                      | regex_search('(luci-app-cpu-status-mini[^\"]*\\.ipk)') }}"
+      - name: luci-app-dnsproxy
+        filename: "{{ fantastic_packages_page.content
+                      | regex_search('(luci-app-dnsproxy[^\"]*\\.ipk)') }}"
+
+
+- name: Download LuCI packages
+  ansible.builtin.get_url:
+    url: "https://fantastic-packages.github.io/releases/24.10/packages/x86_64/luci/{{ item.filename }}"
+    dest: /tmp/
+    validate_certs: false
+    mode: u=rw,g=r,o=r
+    force: true
+  loop: "{{ packages_to_download }}"
+  when: item.filename is not none and item.filename != ''
+  register: downloaded_packages
+
+
+- name: Build list of downloaded package paths
+  ansible.builtin.set_fact:
+    packages_to_install: >-
+      {{ downloaded_packages.results
+         | selectattr('item.filename', 'defined')
+         | map(attribute='dest')
+         | list }}
+
+
+- name: Install downloaded LuCI packages
+  community.general.opkg:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages_to_install }}"
+  when: packages_to_install | length > 0
+  ignore_errors: true
+  register: opkg_install

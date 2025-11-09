@@ -5,6 +5,8 @@
 #######################################
 
 # LAN DHCP (IPv4 + DHCPv6 stateful sans SLAAC)
+uci set dhcp.lan=dhcp
+uci set dhcp.lan.interface='lan'
 uci set dhcp.lan.start='100'
 uci set dhcp.lan.limit='150'
 uci set dhcp.lan.leasetime='12h'
@@ -27,6 +29,8 @@ uci set dhcp.guest.dhcpv6='server'
 uci set dhcp.guest.ra='server'
 uci set dhcp.guest.ra_slaac='1'
 uci set dhcp.guest.ra_management='1'
+uci add_list dhcp.guest.ra_flags='managed-config'
+uci add_list dhcp.guest.ra_flags='other-config'
 
 # IoT DHCP (IPv4 only, no IPv6)
 uci set dhcp.iot=dhcp

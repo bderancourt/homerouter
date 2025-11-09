@@ -6,7 +6,7 @@
   changed_when: true
   failed_when: false
 
-- name: Wait for connection after fstab reboot
+- name: Wait for connection after reboot
   ansible.builtin.wait_for_connection:
     timeout: 180
     delay: 10

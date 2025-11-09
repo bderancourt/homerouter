@@ -34,8 +34,6 @@
     config: sqm
     type: queue
     name: wan
-    find-by:
-      name: wan
     value:
       enabled: '1'
       interface: "{{ wan_interface }}"

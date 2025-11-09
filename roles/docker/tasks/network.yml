@@ -16,8 +16,6 @@
     config: network
     type: interface
     name: "{{ service }}"
-    find-by:
-      name: "{{ service }}"
     value:
       device: "{{ host_interface }}"
       proto: static

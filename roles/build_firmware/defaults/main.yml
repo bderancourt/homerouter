@@ -4,22 +4,9 @@
 # Interface: eth1 -> PCI: 03:00.0 Ethernet controller [0200]: Intel Corporation Ethernet Controller I226-V [8086:125c] (rev 04)
 # Interface: eth2 -> PCI: 04:00.0 Ethernet controller [0200]: Aquantia Corp. AQC113C NBase-T/IEEE 802.3an Ethernet Controller [1d6a:14c0] (rev 03)
 # Interface: eth3 -> PCI: 05:00.0 Ethernet controller [0200]: Aquantia Corp. AQC113C NBase-T/IEEE 802.3an Ethernet Controller [1d6a:14c0] (rev 03)
-system_hostname: openwrt
-
-ddns_service_name:
-ddns_lookup_host:
-ddns_domain:
-ddns_username:
-ddns_password:
-acme_config_name:
-acme_domains:
-acme_email:
-acme_credentials:
-acme_key_type:
-acme_dns_script:
 
 # if firmware_version is not set, snapshot is used
-firmware_version: 24.10.3
+firmware_version: 24.10.4
 firmware_target: x86
 build_firmware_packages_exclude:
 firmware_subtarget: 64
@@ -39,6 +26,9 @@ firmware_packages_include:
   - luci-ssl
   - usbutils
   - pciutils
+  - lsblk
+  - blkid
+  - block-mount
   - rng-tools
   - lm-sensors
   - openssh-sftp-server
@@ -53,8 +43,3 @@ firmware_packages_include:
   - powertop
   - luci-app-statistics
   - collectd-mod-sensors
-
-# Extra kernel command line parameters (applied on first boot via uci-defaults script patching /boot/grub/grub.cfg)
-firmware_kernel_extra_cmdline: "pcie_aspm=force intel_idle.max_cstate=9 microcode.force_minrev=0 fsck.mode=force fsck.repair=yes"
-
-datadrive_mount_dir: /mnt/datadrive/
