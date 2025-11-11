@@ -1,3 +1,12 @@
 ---
-- name: Configure Dnsproxy
+- name: Trigger Wait for internet access
+  ansible.builtin.debug:
+    msg: "Wait for internet access triggered"
+  notify: Wait for internet access
+  changed_when: true
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Configure DNSproxy
   ansible.builtin.import_tasks: 01_dnsproxy.yml

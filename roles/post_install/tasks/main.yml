@@ -1,24 +1,27 @@
 ---
-- name: Mount data partition to /datadrive
-  ansible.builtin.include_tasks: 02_mount_datadrive.yml
+- name: Trigger Wait for internet access
+  ansible.builtin.debug:
+    msg: "Wait for internet access triggered"
+  notify: Wait for internet access
+  changed_when: true
 
-# - name: Resize root filesystem to fill the data partition
-#   ansible.builtin.include_tasks: 01_resize_rootfs.yml
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
 
-# - name: Configure DDNS service
-#   ansible.builtin.include_tasks: 03_ddns.yml
+- name: Configure DDNS service
+  ansible.builtin.include_tasks: 03_ddns.yml
 
-# - name: Configure ACME service
-#   ansible.builtin.include_tasks: 04_acme.yml
+- name: Configure ACME service
+  ansible.builtin.include_tasks: 04_acme.yml
 
-# - name: Configure SQM service
-#   ansible.builtin.include_tasks: 05_sqm.yml
+- name: Configure SQM service
+  ansible.builtin.include_tasks: 05_sqm.yml
 
-# - name: Add kernel command line arguments
-#   ansible.builtin.include_tasks: 07_kernel_cmdline.yml
+- name: Add kernel command line arguments
+  ansible.builtin.include_tasks: 07_kernel_cmdline.yml
 
-# - name: Configure Docker service
-#   ansible.builtin.include_tasks: 08_docker.yml
+- name: Configure Docker service
+  ansible.builtin.include_tasks: 08_docker.yml
 
-# - name: Install luci-app-extras
-#   ansible.builtin.include_tasks: 09_luci_extra_apps.yml
+- name: Install luci-app-extras
+  ansible.builtin.include_tasks: 09_luci_extra_apps.yml

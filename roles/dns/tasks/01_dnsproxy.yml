@@ -1,16 +1,9 @@
 ---
 # https://openwrt.org/docs/guide-user/services/dns/dot_dnsmasq_dnsproxy
-- name: Wait for internet access
-  ansible.builtin.import_role:
-    name: wait_internet
-
-
 - name: Install dnsproxy package
   community.general.opkg:
     name: dnsproxy
     state: present
-    update_cache: true
-
 
 - name: Configure dnsproxy global settings
   uci:
@@ -20,7 +13,9 @@
     name: global
     value:
       enabled: '1'
-
+  notify:
+    - Reload config
+    - Start dnsproxy
 
 - name: Configure dnsproxy servers
   uci:
@@ -36,13 +31,13 @@
         - tls://security.cloudflare-dns.com
     replace: true
 
-
 - name: Commit dnsproxy configuration
   uci:
     command: commit
     config: dnsproxy
-  notify: Restart dnsproxy service
-
+  notify:
+    - Reload config
+    - Start dnsproxy
 
 - name: Copy sysctl buffer size configuration
   ansible.builtin.copy:
@@ -50,11 +45,9 @@
     dest: /etc/sysctl.d/12-buffer-size.conf
     mode: '0644'
 
-
 - name: Apply sysctl buffer size configuration
   ansible.builtin.command: sysctl -p /etc/sysctl.d/12-buffer-size.conf
   changed_when: true
-
 
 # Instance dnsmasq pour LAN
 - name: Configure LAN dnsmasq instance
@@ -74,4 +67,4 @@
       server:
         - 127.0.0.1#5353
         - ::1#5353
-  notify: Restart dnsmasq service
+  notify: Reload config

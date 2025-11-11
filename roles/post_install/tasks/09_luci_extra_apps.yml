@@ -1,9 +1,4 @@
 ---
-- name: Wait for internet access
-  ansible.builtin.import_role:
-    name: wait_internet
-
-
 - name: Fetch latest packages from fantastic-packages
   ansible.builtin.uri:
     url: "https://fantastic-packages.github.io/releases/24.10/packages/x86_64/luci/"

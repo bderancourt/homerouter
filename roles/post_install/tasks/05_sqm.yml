@@ -1,32 +1,22 @@
 ---
-- name: Wait for internet access
-  ansible.builtin.import_role:
-    name: wait_internet
-
-
 - name: Install SQM packages
   community.general.opkg:
     name: luci-app-sqm
     state: present
-    update_cache: true
-
 
 - name: Get WAN interface name
   ansible.builtin.shell: set -o pipefail && uci show network.wan.device | cut -d= -f2 | tr -d "'"
   register: wan_interface_result
   changed_when: false
 
-
 - name: Set WAN interface name
   ansible.builtin.set_fact:
     wan_interface: "{{ wan_interface_result.stdout | trim }}"
-
 
 - name: Cleanup default sqm config
   uci:
     command: absent
     key: sqm.eth1
-
 
 - name: Configure SQM for WAN
   uci:
@@ -51,7 +41,6 @@
       tcMPU: '84'
       linklayer_adaptation_mechanism: default
     replace: true
-
 
 - name: Commit SQM configuration
   uci:

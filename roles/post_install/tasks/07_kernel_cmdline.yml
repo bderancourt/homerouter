@@ -1,22 +1,14 @@
 ---
 # Add kernel command line arguments to /boot/grub/grub.cfg
 # This is useful for adding parameters like pcie_aspm, intel_idle, etc.
-- name: Wait for internet access
-  ansible.builtin.import_role:
-    name: wait_internet
-
-
 - name: Install intel-microcode package
   community.general.opkg:
     name: intel-microcode
     state: present
-    update_cache: true
-
 
 - name: Get first kernel argument to use as marker
   ansible.builtin.set_fact:
     first_kernel_arg: "{{ kernel_extra_cmdline.split()[0] }}"
-
 
 - name: Add kernel command line arguments to GRUB config
   ansible.builtin.replace:
@@ -25,7 +17,6 @@
     replace: '\1 {{ kernel_extra_cmdline }}\2'
   register: grub_update_result
   notify: Reboot
-
 
 - name: Display kernel command line arguments status
   ansible.builtin.debug:

@@ -2,12 +2,6 @@
 # https://github.com/acmesh-official/acme.sh/wiki
 # To force ACME certificate renewal, run:
 # /etc/init.d/acme renew
-
-- name: Wait for internet access
-  ansible.builtin.import_role:
-    name: wait_internet
-
-
 - name: Install ACME packages
   community.general.opkg:
     name: "{{ item }}"
@@ -16,13 +10,11 @@
     - luci-app-acme
     - acme-acmesh-dnsapi
 
-
 - name: Configure ACME account
   uci:
     command: set
     key: acme.@acme[0].account_email
     value: "{{ acme_email }}"
-
 
 - name: Cleanup default acme config
   uci:
@@ -31,7 +23,6 @@
   loop:
     - acme.example_wildcard
     - acme.example_subdomain
-
 
 - name: Configure ACME certificate
   uci:
@@ -48,7 +39,6 @@
       staging: '0'
       key_type: "{{ acme_key_type }}"
     replace: true
-
 
 - name: Commit ACME configuration
   uci:

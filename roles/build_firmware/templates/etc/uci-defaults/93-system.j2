@@ -11,7 +11,10 @@ EOP
 
 echo {{ ssh_key }} >> /etc/dropbear/authorized_keys
 
-chmod u=rwx,g=,o= /root/checkaspm.sh
+# Replace ash by bash for root
+sed -i "/^root:/ s|/bin/ash|/bin/bash|" /etc/passwd
+
+chmod u=rwx,g=,o= /root/*.sh
 
 # Specific hostname for VirtualBox
 grep -qi "virtualbox" /sys/class/dmi/id/product_name && \

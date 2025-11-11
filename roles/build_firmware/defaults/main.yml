@@ -7,19 +7,16 @@
 
 # if firmware_version is not set, snapshot is used
 firmware_version: 24.10.4
-firmware_target: x86
-build_firmware_packages_exclude:
-firmware_subtarget: 64
-firmware_profile: generic
-firmware_image: ext4-combined-efi
 firmware_build_dir: "{{ playbook_dir }}/build/"
 
 firmware_packages_exclude:
   - ppp
   - ppp-mod-pppoe
+  - dnsmasq
 firmware_packages_include:
   - vim-runtime
   - btop
+  - bash
   - less
   - dmesg
   - wget-ssl
@@ -28,7 +25,6 @@ firmware_packages_include:
   - pciutils
   - lsblk
   - blkid
-  - block-mount
   - rng-tools
   - lm-sensors
   - openssh-sftp-server
@@ -43,3 +39,4 @@ firmware_packages_include:
   - powertop
   - luci-app-statistics
   - collectd-mod-sensors
+  - dnsmasq-full

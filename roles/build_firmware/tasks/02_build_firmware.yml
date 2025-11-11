@@ -1,15 +1,15 @@
 ---
-- name: Increase rootfs partition size to 512M
+- name: Increase rootfs partition size to 256M
   ansible.builtin.lineinfile:
     path: "{{ firmware_extracted_dir }}/.config"
     regexp: '^CONFIG_TARGET_ROOTFS_PARTSIZE='
-    line: 'CONFIG_TARGET_ROOTFS_PARTSIZE=512'
+    line: 'CONFIG_TARGET_ROOTFS_PARTSIZE="256"'
 
-- name: Setting grub timeout to 0s to speedup boot
+- name: Setting grub timeout to 2s to speedup boot
   ansible.builtin.lineinfile:
     path: "{{ firmware_extracted_dir }}/.config"
     regexp: '^CONFIG_GRUB_TIMEOUT='
-    line: 'CONFIG_GRUB_TIMEOUT="0"'
+    line: 'CONFIG_GRUB_TIMEOUT="2"'
 
 - name: Copy custom files
   ansible.builtin.copy:
@@ -44,7 +44,7 @@
 - name: Set make image params
   ansible.builtin.set_fact:
     firmware_make_image_params: >
-      PROFILE="{{ firmware_profile }}"
+      PROFILE="generic"
       FILES="files"
       PACKAGES="{{
         ((firmware_packages_exclude | map('regex_replace', '^(.*)$', '-\1')) + firmware_packages_include)

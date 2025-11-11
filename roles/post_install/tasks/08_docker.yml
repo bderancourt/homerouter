@@ -1,9 +1,4 @@
 ---
-- name: Wait for internet access
-  ansible.builtin.import_role:
-    name: wait_internet
-
-
 - name: Install Docker packages
   community.general.opkg:
     name: luci-app-dockerman
@@ -14,20 +9,17 @@
     - kmod-ipvlan
     - kmod-veth
 
-
 - name: Remove Docker firewall configuration
   uci:
     command: absent
     config: dockerd
     section: firewall
 
-
 - name: Remove Docker proxies configuration
   uci:
     command: absent
     config: dockerd
     section: proxies
-
 
 - name: Disable Docker iptables
   uci:
@@ -42,13 +34,11 @@
       log_level: info
     replace: true
 
-
 - name: Commit Docker UCI changes
   uci:
     command: commit
     config: dockerd
   notify: Reboot
-
 
 - name: Create Docker data directory
   ansible.builtin.file:
@@ -56,12 +46,10 @@
     state: directory
     mode: '0755'
 
-
 - name: Verify Docker configuration
   ansible.builtin.command: docker info
   register: docker_info
   changed_when: false
-
 
 - name: Display Docker data root
   ansible.builtin.debug:

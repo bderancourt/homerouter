@@ -7,23 +7,16 @@
 
 - name: Set OpenWRT download url
   ansible.builtin.set_fact:
-    # https://downloads.openwrt.org/snapshots/targets/x86/64/
-    # https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/
+    # https://downloads.openwrt.org/releases/24.10.4/targets/x86/64/
     firmware_download_url: >-
-      https://downloads.openwrt.org/{{
-      'releases/' + firmware_version if firmware_version else 'snapshots'
-      }}/targets/{{ firmware_target }}/{{
-      firmware_subtarget }}/
+      https://downloads.openwrt.org/releases/{{ firmware_version }}/targets/x86/64/
 
 - name: Set imagebuilder url
   ansible.builtin.set_fact:
     # https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-imagebuilder-x86-64.Linux-x86_64.tar.zst
     # https://downloads.openwrt.org/releases/22.03.4/targets/x86/64/openwrt-imagebuilder-22.03.4-x86-64.Linux-x86_64.tar.zst
     firmware_imagebuilder_url: >-
-      {{ firmware_download_url }}openwrt-imagebuilder{{
-      '-' + firmware_version if firmware_version }}-{{
-      firmware_target }}-{{
-      firmware_subtarget }}.Linux-x86_64.tar.zst
+      {{ firmware_download_url }}openwrt-imagebuilder-{{ firmware_version }}-x86-64.Linux-x86_64.tar.zst
 
 - name: Set imagebuilder archive filename
   ansible.builtin.set_fact:

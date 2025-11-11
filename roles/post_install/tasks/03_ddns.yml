@@ -1,19 +1,12 @@
 ---
-- name: Wait for internet access
-  ansible.builtin.import_role:
-    name: wait_internet
-
-
 - name: Install DDNS packages
   community.general.opkg:
     name: "{{ item }}"
     state: present
-    update_cache: true
   loop:
     - curl
     - drill
     - luci-app-ddns
-
 
 - name: Cleanup default ddns config
   uci:
@@ -23,17 +16,14 @@
     - ddns.myddns_ipv4
     - ddns.myddns_ipv6
 
-
 - name: Get WAN6 interface name
   ansible.builtin.shell: set -o pipefail && uci show network.wan6.device | cut -d= -f2 | tr -d "'"
   register: wan6_interface_result
   changed_when: false
 
-
 - name: Set WAN6 interface name
   ansible.builtin.set_fact:
     wan6_interface: "{{ wan6_interface_result.stdout | trim }}"
-
 
 - name: Adding configuration {{ ddns_name + '_v4' }}
   uci:
@@ -57,7 +47,6 @@
       use_syslog: 2
     replace: true
 
-
 - name: Adding configuration {{ ddns_name + '_v6' }}
   uci:
     command: section
@@ -79,7 +68,6 @@
       cacert: /etc/ssl/certs
       use_syslog: 2
     replace: true
-
 
 - name: Commit
   uci:

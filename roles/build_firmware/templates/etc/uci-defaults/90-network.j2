@@ -158,7 +158,8 @@ uci set network.iot.device='br-iot'
 uci set network.iot.proto='static'
 uci set network.iot.ipaddr='192.168.3.1'
 uci set network.iot.netmask='255.255.255.0'
-uci set network.iot.ipv6='0'
+uci set network.iot.ip6assign='64'
+uci set network.iot.ip6hint='3'
 uci set network.iot.dns='8.8.8.8 8.8.4.4'
 
 uci commit network

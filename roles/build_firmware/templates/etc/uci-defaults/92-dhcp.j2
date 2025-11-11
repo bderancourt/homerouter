@@ -4,85 +4,68 @@
 # Add DHCP configuration
 #######################################
 
-# LAN DHCP (IPv4 + DHCPv6 stateful sans SLAAC)
-uci set dhcp.lan=dhcp
-uci set dhcp.lan.interface='lan'
-uci set dhcp.lan.start='100'
-uci set dhcp.lan.limit='150'
-uci set dhcp.lan.leasetime='12h'
-uci set dhcp.lan.dhcpv4='server'
-uci set dhcp.lan.dhcpv6='server'
-uci set dhcp.lan.ra='server'
-uci set dhcp.lan.ra_slaac='0'
-uci del dhcp.lan.ra_flags
-uci add_list dhcp.lan.ra_flags='managed-config'
-uci add_list dhcp.lan.ra_flags='other-config'
+# DHCP for LAN / Guest / IoT
+INST_LIST="lan guest iot"
+for INST in $INST_LIST; do
+	uci set dhcp.$INST=dhcp
+	uci set dhcp.$INST.interface=$INST
+	uci set dhcp.$INST.start=100
+	uci set dhcp.$INST.limit=150
+	uci set dhcp.$INST.leasetime=12h
+	uci set dhcp.$INST.dhcpv4=server
+	uci set dhcp.$INST.dhcpv6=server
+	uci set dhcp.$INST.ra=server
+	uci set dhcp.$INST.ra_slaac=1
+	uci set dhcp.$INST.ra_management=1
+	uci del dhcp.$INST.ra_flags || true
+	uci add_list dhcp.$INST.ra_flags=managed-config
+	uci add_list dhcp.$INST.ra_flags=other-config
+done
 
-# Guest DHCP (IPv4 + DHCPv6 + SLAAC pour compatibilité Android)
-uci set dhcp.guest=dhcp
-uci set dhcp.guest.interface='guest'
-uci set dhcp.guest.start='100'
-uci set dhcp.guest.limit='150'
-uci set dhcp.guest.leasetime='12h'
-uci set dhcp.guest.dhcpv4='server'
-uci set dhcp.guest.dhcpv6='server'
-uci set dhcp.guest.ra='server'
-uci set dhcp.guest.ra_slaac='1'
-uci set dhcp.guest.ra_management='1'
-uci add_list dhcp.guest.ra_flags='managed-config'
-uci add_list dhcp.guest.ra_flags='other-config'
-
-# IoT DHCP (IPv4 only, no IPv6)
-uci set dhcp.iot=dhcp
-uci set dhcp.iot.interface='iot'
-uci set dhcp.iot.start='100'
-uci set dhcp.iot.limit='150'
-uci set dhcp.iot.leasetime='12h'
-uci set dhcp.iot.dhcpv4='server'
-uci set dhcp.iot.dhcpv6='disabled'
-uci set dhcp.iot.ra='disabled'
+uci add_list dhcp.iot.dns=2001:4860:4860::8888
+uci add_list dhcp.iot.dns=2001:4860:4860::8844
 
 # Static lease for EAP
 uci set dhcp.eap=host
-uci set dhcp.eap.name='eap'
-uci set dhcp.eap.mac='20:36:26:D2:65:30'
-uci set dhcp.eap.ip='192.168.1.90'
-uci set dhcp.eap.hostid='5a'
+uci set dhcp.eap.name=eap
+uci set dhcp.eap.mac=20:36:26:D2:65:30
+uci set dhcp.eap.ip=192.168.1.90
+uci set dhcp.eap.hostid=5a
 uci set dhcp.eap.dns=1
 
 # Static lease for Shelly switch VR
 uci set dhcp.shellyvr=host
-uci set dhcp.shellyvr.name='shellyvr'
-uci set dhcp.shellyvr.mac='98:CD:AC:2C:FB:D0'
-uci set dhcp.shellyvr.ip='192.168.3.10'
+uci set dhcp.shellyvr.name=shellyvr
+uci set dhcp.shellyvr.mac=98:CD:AC:2C:FB:D0
+uci set dhcp.shellyvr.ip=192.168.3.10
 uci set dhcp.shellyvr.dns=1
 
 # Static lease for Shelly plug 1
 uci set dhcp.shellyplug1=host
-uci set dhcp.shellyplug1.name='shellyplug1'
-uci set dhcp.shellyplug1.mac='C4:5B:BE:D6:BD:A1'
-uci set dhcp.shellyplug1.ip='192.168.3.11'
+uci set dhcp.shellyplug1.name=shellyplug1
+uci set dhcp.shellyplug1.mac=C4:5B:BE:D6:BD:A1
+uci set dhcp.shellyplug1.ip=192.168.3.11
 uci set dhcp.shellyplug1.dns=1
 
 # Static lease for Shelly plug 2
 uci set dhcp.shellyplug2=host
-uci set dhcp.shellyplug2.name='shellyplug2'
-uci set dhcp.shellyplug2.mac='E8:68:E7:F1:8D:59'
-uci set dhcp.shellyplug2.ip='192.168.3.12'
+uci set dhcp.shellyplug2.name=shellyplug2
+uci set dhcp.shellyplug2.mac=E8:68:E7:F1:8D:59
+uci set dhcp.shellyplug2.ip=192.168.3.12
 uci set dhcp.shellyplug2.dns=1
 
 # Static lease for Roborock vacuum
 uci set dhcp.roborock=host
-uci set dhcp.roborock.name='roborock'
-uci set dhcp.roborock.mac='B0:4A:39:2A:19:F2'
-uci set dhcp.roborock.ip='192.168.3.13'
+uci set dhcp.roborock.name=roborock
+uci set dhcp.roborock.mac=B0:4A:39:2A:19:F2
+uci set dhcp.roborock.ip=192.168.3.13
 uci set dhcp.roborock.dns=1
 
 # Static lease for printer
 uci set dhcp.printer=host
-uci set dhcp.printer.name='printer'
-uci set dhcp.printer.mac='40:23:43:D9:F3:A4'
-uci set dhcp.printer.ip='192.168.3.14'
+uci set dhcp.printer.name=printer
+uci set dhcp.printer.mac=40:23:43:D9:F3:A4
+uci set dhcp.printer.ip=192.168.3.14
 uci set dhcp.printer.dns=1
 
 uci commit dhcp

@@ -12,37 +12,23 @@
     delay: 10
   listen: Reboot
 
+- name: Wait for internet access # noqa: command-instead-of-module
+  ansible.builtin.command:
+    cmd: wget --timeout=5 --spider https://downloads.openwrt.org/releases/23.05.5/targets/x86/64/packages//Packages.gz
+  changed_when: false
+  register: _wget_packages_result
+  retries: 12
+  until: _wget_packages_result.rc == 0
+  listen: Reboot
+
+- name: Update opkg cache
+  opkg: # noqa: fqcn[action]
+    name: opkg
+    update_cache: true
+  listen:
+    - Reboot
+    - Wait for internet access
+
 - name: Reload config
   ansible.builtin.command: reload_config
   changed_when: true
-
-- name: Restart DDNS service
-  ansible.builtin.service:
-    name: ddns
-    state: restarted
-    enabled: true
-
-- name: Restart ACME service
-  ansible.builtin.service:
-    name: acme
-    state: restarted
-
-- name: Restart SQM service
-  ansible.builtin.service:
-    name: sqm
-    state: restarted
-
-- name: Restart dnsmasq service
-  ansible.builtin.service:
-    name: dnsmasq
-    state: restarted
-
-- name: Restart dnsproxy service
-  ansible.builtin.service:
-    name: dnsproxy
-    state: restarted
-
-- name: Restart Docker service
-  ansible.builtin.service:
-    name: dockerd
-    state: restarted
