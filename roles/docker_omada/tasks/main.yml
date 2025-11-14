@@ -1,15 +1,4 @@
 ---
-- name: Ensure needed docker directories exist
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: root
-    group: root
-    mode: '0700'
-  loop:
-    - /docker/omada
-    - "{{ docker_omada_controller_volume_dir }}"
-
 - name: Render omada docker-compose file
   ansible.builtin.template:
     src: compose.yml.j2

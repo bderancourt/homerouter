@@ -24,24 +24,63 @@
     - acme.example_wildcard
     - acme.example_subdomain
 
-- name: Configure ACME certificate
+- name: Configure ACME external certificate
   uci:
     command: section
     config: acme
     type: cert
-    name: "{{ acme_config_name }}"
+    name: "{{ item.name }}"
     value:
       enabled: "{{ '0' if inventory_hostname == 'virtualbox' else '1' }}"
-      domains: "{{ acme_domains }}"
+      domains: "{{ item.domains }}"
       validation_method: dns
-      dns: "{{ acme_dns_script }}"
-      credentials: "{{ acme_credentials }}"
+      dns: "{{ item.dns_script }}"
+      credentials: "{{ item.credentials }}"
       staging: '0'
-      key_type: "{{ acme_key_type }}"
+      key_type: "{{ item.key_type }}"
     replace: true
+  loop: "{{ acme_configs }}"
 
 - name: Commit ACME configuration
   uci:
     command: commit
     config: acme
+  notify:
+    - Reload config
+    - Force renew certificates
+
+- name: Delete default nginx server
+  uci:
+    command: absent
+    config: nginx
+    type: server
+    find-by:
+      name: _lan
+
+- name: Create luci nginx server with ACME certs
+  uci:
+    command: section
+    config: nginx
+    type: server
+    find-by:
+      name: luci
+    values:
+      listen:
+        - '443 ssl default_server'
+        - '[::]:443 ssl default_server'
+      server_name: luci
+      include:
+        - restrict_locally
+        - conf.d/*.locations
+      uci_manage_ssl: acme
+      ssl_certificate: "/etc/ssl/acme/{{ local_domain }}.fullchain.crt"
+      ssl_certificate_key: "/etc/ssl/acme/{{ local_domain }}.key"
+      ssl_session_cache: 'shared:SSL:32k'
+      ssl_session_timeout: '64m'
+      access_log: 'off; # logd openwrt'
+
+- name: Commit ACME cert usage
+  uci:
+    command: commit
+    config: nginx
   notify: Reload config

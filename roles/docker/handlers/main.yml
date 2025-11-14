@@ -1,26 +1,4 @@
 ---
-- name: Restart network
-  ansible.builtin.service:
-    name: network
-    state: restarted
-
-- name: Wait for wan6
-  ansible.builtin.shell: |
-    set -o pipefail
-    ubus call network.interface.wan6 status | jsonfilter -e '@.up'
-  register: wan6_status
-  until: wan6_status.stdout == 'true'
-  retries: 30
-  delay: 2
-  changed_when: false
-  listen: Restart network
-
-- name: Restart firewall
-  ansible.builtin.service:
-    name: firewall
-    state: restarted
-
-- name: Restart dnsmasq
-  ansible.builtin.service:
-    name: dnsmasq
-    state: restarted
+- name: Reload config
+  ansible.builtin.command: reload_config
+  changed_when: true

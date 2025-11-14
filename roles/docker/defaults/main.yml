@@ -1,2 +1,12 @@
-vlan_id: 20
+vlan_id: 300
+network_subnet_ipv4: "192.168.{{ vlan_id }}.0/24"
+network_subnet_ipv6: "{{ ula_prefix }}:{{ '%x' | format(vlan_id) }}::/64"
+netmask: "255.255.255.0"
+gateway_ipv4: "192.168.{{ vlan_id }}.1"
+gateway_ipv6: "{{ ula_prefix }}:{{ '%x' | format(vlan_id) }}::1"
+container_ipv4: "192.168.{{ vlan_id }}.10"
+container_ipv6: "{{ ula_prefix }}:{{ '%x' | format(vlan_id) }}::10"
 service: default
+
+docker_data_dir: /data/docker
+docker_service_volumes_dir: "{{ docker_data_dir }}/{{ service }}/volumes"

@@ -4,17 +4,18 @@
   community.general.opkg:
     name: adguardhome
     state: present
+    update_cache: true
 
-- name: Generate adguardhome password hash
-  ansible.builtin.command:
-    cmd: htpasswd -B -n -b {{ adguardhome_user }} {{ adguardhome_password }}
+- name: Generate adguardhome password hash with bcrypt
+  ansible.builtin.shell:
+    cmd: python3 -c "from passlib.hash import bcrypt; import sys; print(bcrypt.using(rounds=12).hash('{{ adguardhome_password }}'))"
   register: install_adguardhome_pwdhash_result
   changed_when: false
   delegate_to: localhost
 
 - name: Set adguardhome password hash
   ansible.builtin.set_fact:
-    install_adguardhome_pwdhash: "{{ install_adguardhome_pwdhash_result.stdout | split(':') | last }}"
+    install_adguardhome_pwdhash: "{{ install_adguardhome_pwdhash_result.stdout }}"
 
 - name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml
   ansible.builtin.template:
@@ -24,9 +25,9 @@
     group: root
     mode: u=rw,g=r,o=r
 
-- name: Copy nginx reverse proxy configuration to expose ADH at https://openwrt.lan/adh/
-  ansible.builtin.copy:
-    src: files/adguardhome.locations
+- name: Copy nginx reverse proxy configuration for AdGuard Home
+  ansible.builtin.template:
+    src: templates/adguardhome.conf.j2
     dest: /etc/nginx/conf.d/adguardhome.locations
     owner: root
     group: root
@@ -60,67 +61,46 @@
 # 4. Move dnsmasq to port 54.
 # 5. Set Ipv4 DNS advertised by option 6 DHCP
 # 6. Set Ipv6 DNS advertised by DHCP
-- name: Configure dnsmasq as local DNS forwarder only
-  uci:
-    command: section
-    config: dhcp
-    type: dnsmasq
-    find-by:
-      domain: lan
-    value:
-      noresolv: 0
-      cachesize: 1000
-      rebind_protection: 0
-      port: 54
-      server:
-        - "{{ install_adguardhome_router_ipv4_addr }}"
+# - name: Configure dnsmasq as local DNS forwarder only
+#   uci:
+#     command: section
+#     config: dhcp
+#     type: dnsmasq
+#     find-by:
+#       domain: lan
+#     value:
+#       noresolv: 0
+#       cachesize: 1000
+#       rebind_protection: 0
+#       port: 54
+#       server:
+#         - "{{ install_adguardhome_router_ipv4_addr }}"
 
-- name: Configure DHCP DNS options
-  uci:
-    command: section
-    config: dhcp
-    type: dhcp
-    name: lan
-    value:
-      dhcp_option:
-        # DHCP option 6: which DNS (Domain Name Server) to include in the IP configuration for name resolution
-        - "6,{{ install_adguardhome_router_ipv4_addr }}"
-        # DHCP option 3: default router or last resort gateway for this interface
-        - "3,{{ install_adguardhome_router_ipv4_addr }}"
-      dns:
-        - "{{ install_adguardhome_router_ipv6_addr }}"
+# - name: Configure DHCP DNS options
+#   uci:
+#     command: section
+#     config: dhcp
+#     type: dhcp
+#     name: lan
+#     value:
+#       dns:
+#         - "{{ install_adguardhome_router_ipv6_addr }}"
 
-- name: Use local DNS instead of ISP DNS on wan
-  uci:
-    command: set
-    key: network.wan
-    value:
-      peerdns: 0
-      dns: 127.0.0.1
-
-- name: Use local DNS instead of ISP DNS on wan6
-  uci:
-    command: set
-    key: network.wan6
-    value:
-      peerdns: 0
-      dns: 0::1
-
-- name: Adding DNS redirection
-  uci:
-    command: section
-    config: firewall
-    name: dns_intercept
-    type: redirect
-    value:
-      name: Intercept-DNS
-      src: lan
-      src_dport: 53
-      proto: tcp udp
-      target: DNAT
-      dest: lan
-      dest_port: 53
-      family: any
+# - name: Adding DNS redirection
+#   uci:
+#     command: section
+#     config: firewall
+#     name: dns_intercept
+#     type: redirect
+#     value:
+#       name: Intercept-DNS
+#       src: lan
+#       src_dport: 53
+#       proto: tcp udp
+#       target: DNAT
+#       dest: lan
+#       dest_port: 53
+#       family: any
 
 - name: Commit
   uci:
@@ -129,7 +109,7 @@
   loop:
     - dhcp
     - network
-    - firewall
+    # - firewall
 
 - name: Reload config
   ansible.builtin.command: reload_config
@@ -141,7 +121,7 @@
     state: restarted
   loop:
     - network
-    - firewall
+    # - firewall
     - dnsmasq
     - adguardhome
     - nginx

@@ -1,59 +1,49 @@
 ---
 - name: Fetch latest packages from fantastic-packages
   ansible.builtin.uri:
-    url: "https://fantastic-packages.github.io/releases/24.10/packages/x86_64/luci/"
+    url: "{{ fantastic_packages_base_url }}"
     method: GET
     return_content: true
   register: fantastic_packages_page
   changed_when: false
 
-
-- name: Extract package URLs
+- name: Define desired luci packages
   ansible.builtin.set_fact:
-    packages_to_download:
-      - name: luci-app-temp-status
-        filename: "{{ fantastic_packages_page.content
-                      | regex_search('(luci-app-temp-status[^\"]*\\.ipk)') }}"
-      - name: luci-app-disks-info
-        filename: "{{ fantastic_packages_page.content
-                      | regex_search('(luci-app-disks-info[^\"]*\\.ipk)') }}"
-      - name: luci-app-cpu-perf
-        filename: "{{ fantastic_packages_page.content
-                      | regex_search('(luci-app-cpu-perf[^\"]*\\.ipk)') }}"
-      - name: luci-app-cpu-status-mini
-        filename: "{{ fantastic_packages_page.content
-                      | regex_search('(luci-app-cpu-status-mini[^\"]*\\.ipk)') }}"
-      - name: luci-app-dnsproxy
-        filename: "{{ fantastic_packages_page.content
-                      | regex_search('(luci-app-dnsproxy[^\"]*\\.ipk)') }}"
+    desired_luci_packages:
+      - luci-app-temp-status
+      - luci-app-disks-info
+      - luci-app-cpu-perf
+      - luci-app-cpu-status-mini
+      - luci-app-dnsproxy
 
-
-- name: Download LuCI packages
-  ansible.builtin.get_url:
-    url: "https://fantastic-packages.github.io/releases/24.10/packages/x86_64/luci/{{ item.filename }}"
-    dest: /tmp/
-    validate_certs: false
-    mode: u=rw,g=r,o=r
-    force: true
-  loop: "{{ packages_to_download }}"
-  when: item.filename is not none and item.filename != ''
-  register: downloaded_packages
-
-
-- name: Build list of downloaded package paths
+- name: Build package dicts with pkg key
   ansible.builtin.set_fact:
-    packages_to_install: >-
-      {{ downloaded_packages.results
-         | selectattr('item.filename', 'defined')
-         | map(attribute='dest')
-         | list }}
+    pkg_dicts: "{{ desired_luci_packages | map('community.general.dict_kv', 'pkg') }}"
+  changed_when: false
 
+- name: Build list of versioned packages from fantastic-packages page
+  ansible.builtin.set_fact:
+    packages_versionned: >-
+      {{ packages_versionned | default([]) + [ fantastic_packages_page.content | regex_search( '[^\"]*' ~ item ~ '[^\"]*\.ipk' ) ] }}
+  loop: "{{ desired_luci_packages }}"
+  changed_when: false
 
-- name: Install downloaded LuCI packages
-  community.general.opkg:
-    name: "{{ item }}"
-    state: present
-  loop: "{{ packages_to_install }}"
-  when: packages_to_install | length > 0
-  ignore_errors: true
-  register: opkg_install
+- name: Build package URLs from versioned packages
+  ansible.builtin.set_fact:
+    packages_urls: "{{ packages_versionned | map('regex_replace', '^', fantastic_packages_base_url) }}"
+  changed_when: false
+
+- name: Build package dicts with url key
+  ansible.builtin.set_fact:
+    url_dicts: "{{ packages_urls | map('community.general.dict_kv', 'url') }}"
+  changed_when: false
+
+- name: Combine pkg and url dicts
+  ansible.builtin.set_fact:
+    packages_dict: "{{ pkg_dicts | zip(url_dicts) | map('combine') }}"
+  changed_when: false
+
+- name: Install LuCI packages via include_tasks
+  ansible.builtin.include_tasks:
+    file: install_opkg_package.yml
+  loop: "{{ packages_dict }}"

@@ -7,7 +7,7 @@
 # Global settings
 #######################################
 uci set network.globals.packet_steering='1'
-uci set network.globals.ula_prefix='fdc0:ffee:babe::/48'
+uci set network.globals.ula_prefix='{{ ula_prefix }}::/48'
 
 
 #######################################
@@ -123,7 +123,6 @@ uci set network.wan6.reqprefix='auto'
 uci set network.wan6.reqaddress='none'
 uci set network.wan6.ip6hint='0'
 uci set network.wan6.ip6assign='64'
-uci set network.wan6.ip6ifaceid='::1'
 uci set network.wan6.peerdns='0'
 uci del network.wan6.dns
 uci add_list network.wan6.dns='2606:4700:4700::1111'

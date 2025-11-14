@@ -1,3 +1,4 @@
 firmware_version: 24.10.4
 datadrive_mount_dir: /data
 docker_data_dir: /data/docker
+ula_prefix: fd00:cafe:bebe

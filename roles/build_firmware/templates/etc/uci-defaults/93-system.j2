@@ -20,6 +20,9 @@ chmod u=rwx,g=,o= /root/*.sh
 grep -qi "virtualbox" /sys/class/dmi/id/product_name && \
     uci set system.@system[0].hostname='openwrt-vbox'
 
+uci set dhcp.@dnsmasq[0].local='/{{ local_domain }}/'
+uci set dhcp.@dnsmasq[0].domain='{{ local_domain }}'
+
 uci set system.@system[0].timezone='CET-1CEST,M3.5.0,M10.5.0/3'
 uci set system.@system[0].zonename='Europe/Paris'
 uci set system.@system[0].log_size='2048'
@@ -39,7 +42,5 @@ uci set dropbear.@dropbear[0].RootPasswordAuth='off'
 
 uci set luci_statistics.collectd_sensors.enable='1'
 
-uci commit system
-uci commit dropbear
-uci commit luci_statistics
+uci commit
 exit 0

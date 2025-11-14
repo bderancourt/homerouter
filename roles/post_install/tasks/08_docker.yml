@@ -1,9 +1,8 @@
 ---
 - name: Install Docker packages
   community.general.opkg:
-    name: luci-app-dockerman
+    name: "{{ item }}"
     state: present
-    update_cache: true
   loop:
     - luci-app-dockerman
     - kmod-ipvlan
@@ -28,6 +27,8 @@
     type: globals
     name: globals
     value:
+      ipv6: 1
+      fixed_cidr_v6: 'fc00:1::/80'
       iptables: 0
       alt_config_file: /etc/docker/daemon.json
       data_root: /opt/docker/

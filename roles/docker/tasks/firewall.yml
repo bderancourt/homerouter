@@ -12,7 +12,6 @@
       forward: REJECT
       network:
         - "{{ service }}"
-  notify: Restart firewall
 
 - name: Create forwarding Lan to {{ service }}
   uci:
@@ -22,9 +21,8 @@
     find-by:
       src: lan
       dest: "{{ service }}"
-  notify: Restart firewall
 
-- name: Create forwarding to Wan for {{ service }}
+- name: Create forwarding {{ service ~ ' to Wan'}}
   uci:
     command: section
     config: firewall
@@ -32,10 +30,9 @@
     find-by:
       src: "{{ service }}"
       dest: wan
-  notify: Restart firewall
 
 - name: Commit firewall changes
   uci:
     command: commit
     config: firewall
-  notify: Restart firewall
+  notify: Reload config

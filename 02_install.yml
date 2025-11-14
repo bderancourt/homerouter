@@ -1,5 +1,5 @@
 - name: OpenWRT custom setup playbook
-  hosts: ikoolcore
+  hosts: virtualbox
   gather_facts: false
   vars_files:
     - secrets.yml

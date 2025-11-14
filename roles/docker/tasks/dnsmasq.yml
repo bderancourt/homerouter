@@ -1,0 +1,24 @@
+---
+- name: Add local DNS A record for {{ service }}
+  uci:
+    command: section
+    config: dhcp
+    type: domain
+    find-by:
+      name: "{{ service }}"
+      ip: "{{ container_ipv4 }}"
+
+- name: Add local DNS AAAA record for {{ service }}
+  uci:
+    command: section
+    config: dhcp
+    type: domain
+    find-by:
+      name: "{{ service }}"
+      ip: "{{ container_ipv6 }}"
+
+- name: Commit dhcp changes
+  uci:
+    command: commit
+    config: dhcp
+  notify: Reload config

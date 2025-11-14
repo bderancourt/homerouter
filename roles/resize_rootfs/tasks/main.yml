@@ -65,15 +65,10 @@
 - name: Run fsck.ext4 -f on root partition
   ansible.builtin.command: fsck.ext4 -f -y -f -v "{{ root_partition.path }}"
   register: fsck_result
-  changed_when: >-
-   'FILE SYSTEM WAS MODIFIED' in fsck_result.stdout
+  changed_when: fsck_result.rc == 0 or fsck_result.rc == 123
   failed_when: not (fsck_result.rc == 0 or fsck_result.rc == 123)
   when: is_free_space
   notify: Reboot
-
-- name: Force reboot
-  ansible.builtin.meta: flush_handlers
-  when: is_free_space
 
 - name: Remount root filesystem as read-write
   ansible.posix.mount:
@@ -81,6 +76,10 @@
     opts: rw
     state: remounted
   register: remount_root_result
+  when: is_free_space
+
+- name: Force reboot
+  ansible.builtin.meta: flush_handlers
   when: is_free_space
 
 - name: Resize root filesystem

@@ -46,9 +46,7 @@
     firmware_make_image_params: >
       PROFILE="generic"
       FILES="files"
-      PACKAGES="{{
-        ((firmware_packages_exclude | map('regex_replace', '^(.*)$', '-\1')) + firmware_packages_include)
-        | join(' ') }}"
+      PACKAGES="{{ firmware_packages | join(' ') }}"
 
 - name: Show firmware_make_image_params vars_files
   ansible.builtin.debug:

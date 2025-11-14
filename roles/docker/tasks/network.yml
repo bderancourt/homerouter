@@ -9,6 +9,7 @@
     value:
       type: veth
       peer_name: "{{ docker_interface }}"
+      ipv6: 1
 
 - name: "Create network interface {{ service }}"
   uci:
@@ -19,23 +20,20 @@
     value:
       device: "{{ host_interface }}"
       proto: static
-      ipaddr: "192.168.{{ vlan_id }}.1"
-      netmask: "255.255.255.0"
-  notify: Restart network
+      ipaddr: "{{ gateway_ipv4 }}"
+      netmask: "{{ netmask }}"
+      ip6hint: "{{ vlan_id }}"
+      ip6assign: 64
 
 - name: Commit network changes
   uci:
     command: commit
     config: network
+  register: commit_result
+  notify:
+    - Reload config
 
-- name: Create Docker network for {{ service }}
-  community.docker.docker_network:
-    name: "{{ service }}_net"
-    driver: ipvlan
-    driver_options:
-      ipvlan_mode: l2
-      parent: "{{ docker_interface }}"
-    ipam_config:
-      - subnet: "192.168.{{ vlan_id }}.0/24"
-        gateway: "192.168.{{ vlan_id }}.1"
-    state: present
+- name: Ensure interface is UP and has correct qdisc
+  ansible.builtin.command:
+    cmd: "ip link set {{ docker_interface }} up"
+  changed_when: true

@@ -8,19 +8,16 @@
 # if firmware_version is not set, snapshot is used
 firmware_version: 24.10.4
 firmware_build_dir: "{{ playbook_dir }}/build/"
+ula_prefix: "fd00:cafe:bebe"
 
-firmware_packages_exclude:
-  - ppp
-  - ppp-mod-pppoe
-  - dnsmasq
-firmware_packages_include:
+firmware_packages:
+  - luci-ssl-nginx
   - vim-runtime
   - btop
   - bash
   - less
   - dmesg
   - wget-ssl
-  - luci-ssl
   - usbutils
   - pciutils
   - lsblk
@@ -39,4 +36,3 @@ firmware_packages_include:
   - powertop
   - luci-app-statistics
   - collectd-mod-sensors
-  - dnsmasq-full

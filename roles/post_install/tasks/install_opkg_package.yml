@@ -1,0 +1,8 @@
+---
+- name: Install opkg package {{ item.pkg }}
+  community.general.opkg:
+    name: "{{ item.url }}"
+    state: present
+  register: opkg_result
+  failed_when: false
+  changed_when: "'Installing ' ~ item.pkg in opkg_result.msg or 'Configuring ' ~ item.pkg in opkg_result.msg"

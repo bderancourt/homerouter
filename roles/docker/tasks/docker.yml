@@ -1,31 +1,22 @@
 ---
 - name: Ensure needed docker directories exist
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ docker_service_volumes_dir }}"
     state: directory
     owner: root
     group: root
     mode: '0700'
-  loop:
-    - "/docker/{{ service }}"
-    - "{{ docker_omada_controller_volume_dir }}"
 
 - name: Render omada docker-compose file
   ansible.builtin.template:
-    src: compose.yml.j2
-    dest: /docker/omada/compose.yml
+    src: "{{ compose_template_src }}"
+    dest: "{{ docker_data_dir }}/{{ service }}/compose.yml"
     mode: '0644'
 
-- name: Deploy Omada stack with docker compose
+- name: Deploy docker compose {{ service }}
   community.docker.docker_compose_v2:
-    project_src: /docker/omada
+    project_src: "{{ docker_data_dir }}/{{ service }}"
     files:
       - compose.yml
     state: present
     recreate: always
-
-- name: Commit firewall changes
-  uci:
-    command: commit
-    config: firewall
-  notify: Restart firewall
