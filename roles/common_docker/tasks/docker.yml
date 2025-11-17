@@ -16,22 +16,6 @@
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
 
-- name: Bring interface {{ service ~ ' UP' }}
-  ansible.builtin.command: ifup {{ service }}
-  register: ifup_check
-  retries: 10
-  delay: 1
-  until: ifup_check.rc == 0
-  changed_when: ifup_check.rc == 0
-
-- name: Bring interface {{ docker_interface ~ ' UP' }}
-  ansible.builtin.command: ip link set {{ docker_interface }} up
-  register: link_up_check
-  retries: 10
-  delay: 1
-  until: link_up_check.rc == 0
-  changed_when: link_up_check.rc == 0
-
 - name: Deploy docker-compose {{ service }}
   community.docker.docker_compose_v2:
     project_src: "{{ docker_data_dir }}/{{ service }}"

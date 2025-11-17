@@ -29,22 +29,24 @@ services:
       - SSL_KEY_NAME=tls.key
       - TZ=Europe/Paris
     volumes:
-      - "{{ docker_service_volumes_dir }}data:/opt/tplink/EAPController/data"
-      - "{{ docker_service_volumes_dir }}logs:/opt/tplink/EAPController/logs"
+      - "{{ docker_service_volumes_dir }}/data:/opt/tplink/EAPController/data"
+      - "{{ docker_service_volumes_dir }}/logs:/opt/tplink/EAPController/logs"
     networks:
       net:
         ipv4_address: "{{ container_ipv4 }}"
         ipv6_address: "{{ container_ipv6 }}"
+    dns:
+      - "{{ gateway_ipv4 }}"
 
 networks:
   net:
     enable_ipv6: true
     driver: macvlan
     driver_opts:
-      parent: "{{ docker_interface }}"
+      parent: {{ parent_interface }}.{{ vlan_id }}
     ipam:
       config:
-        - subnet: "{{ network_subnet_ipv4 }}"
-          gateway: "{{ gateway_ipv4 }}"
-        - subnet: "{{ network_subnet_ipv6 }}"
-          gateway: "{{ gateway_ipv6 }}"
+        - subnet: {{ network_subnet_ipv4 }}
+          gateway: {{ gateway_ipv4 }}
+        - subnet: {{ network_subnet_ipv6 }}
+          gateway: {{ gateway_ipv6 }}
