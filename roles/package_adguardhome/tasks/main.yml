@@ -27,15 +27,6 @@
   changed_when: true
   when: rmem_max_result.stdout|int < 7500000
 
-- name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml
-  ansible.builtin.template:
-    src: templates/adguardhome.yaml.j2
-    dest: /etc/adguardhome.yaml
-    owner: root
-    group: root
-    mode: u=rw,g=r,o=r
-  notify: Restart AdGuardHome
-
 - name: Configure dnsmasq as local DNS forwarder only
   uci:
     command: section
@@ -107,6 +98,20 @@
     - network
     - firewall
   notify: Reload config
+
+- name: Flush_handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml
+  ansible.builtin.template:
+    src: templates/adguardhome.yaml.j2
+    dest: /etc/adguardhome.yaml
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+  notify:
+    - Reload config
+    - Restart AdGuardHome
 
 - name: Flush_handlers
   ansible.builtin.meta: flush_handlers

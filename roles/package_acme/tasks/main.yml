@@ -96,3 +96,6 @@
     command: commit
     config: uhttpd
   notify: Reload config
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

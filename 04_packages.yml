@@ -1,6 +1,6 @@
 ---
 - name: OpenWRT install and setup packages
-  hosts: ikoolcore
+  hosts: virtualbox
   gather_facts: true
 
   roles:

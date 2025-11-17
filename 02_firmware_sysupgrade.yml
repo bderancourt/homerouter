@@ -1,6 +1,6 @@
 ---
 - name: OpenWRT flash firmware
-  hosts: ikoolcore
+  hosts: virtualbox
   gather_facts: false
 
   roles:

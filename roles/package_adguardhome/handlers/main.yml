@@ -1,4 +1,8 @@
 ---
+- name: Reload config
+  ansible.builtin.command: reload_config
+  changed_when: true
+
 - name: Restart AdGuardHome
   ansible.builtin.service:
     name: adguardhome

@@ -78,3 +78,6 @@
     command: commit
     key: ddns
   notify: Reload config
+
+- name: Flush_handlers
+  ansible.builtin.meta: flush_handlers
