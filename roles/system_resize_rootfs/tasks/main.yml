@@ -1,0 +1,118 @@
+---
+# https://openwrt.org/docs/guide-user/installation/installation_methods/sd_card#expanding_the_filesystem
+# https://openwrt.org/docs/guide-user/installation/openwrt_x86#resizing_partitions
+# https://forum.openwrt.org/t/howto-resizing-root-partition-on-x86-march-2023-edition
+
+- name: Disk info initialization
+  ansible.builtin.import_tasks:
+    file: disk_info.yml
+
+- name: Install needed packages
+  community.general.opkg:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - tune2fs
+    - resize2fs
+    - parted
+    - sgdisk
+  when: is_free_space
+
+- name: Fix GPT backup header position
+  ansible.builtin.command: sgdisk -e {{ root_disk.path }}
+  register: sgdisk_result
+  changed_when: sgdisk_result.rc == 0
+  when: is_free_space
+
+- name: Run partprobe to inform kernel of partition table changes
+  ansible.builtin.command: partprobe
+  register: partprobe_result
+  changed_when: partprobe_result.rc == 0
+  when: is_free_space
+
+- name: Resize root partition
+  ansible.builtin.command: parted -s {{ root_disk.path }} resizepart {{ root_partition.partn }} 100%
+  register: resize_partition_result
+  changed_when: resize_partition_result.rc == 0
+  when: is_free_space
+
+- name: Run partprobe to inform kernel of partition table changes
+  ansible.builtin.command: partprobe
+  register: partprobe_result
+  changed_when: partprobe_result.rc == 0
+  when: is_free_space
+
+- name: Remount root filesystem as read-only
+  ansible.posix.mount:
+    path: /
+    opts: ro
+    state: remounted
+  register: remount_root_result
+  when: is_free_space
+
+- name: Disable resize_inode feature on root partition
+  ansible.builtin.command: tune2fs -O '^resize_inode' {{ root_partition.path }}
+  register: tune2fs_result
+  changed_when: tune2fs_result.rc == 0
+  when: is_free_space
+
+- name: Run fsck.ext4 -f on root partition
+  ansible.builtin.command: fsck.ext4 -f -y -f -v "{{ root_partition.path }}"
+  register: fsck_result
+  changed_when: fsck_result.rc > 0 and fsck_result.rc < 4
+  failed_when: fsck_result.rc >= 4
+  when: is_free_space
+
+- name: Remount root filesystem as read-write
+  ansible.posix.mount:
+    path: /
+    opts: rw
+    state: remounted
+  register: remount_root_result
+  when: is_free_space
+
+- name: Reboot
+  ansible.builtin.command: "reboot &"
+  async: 1
+  poll: 0
+  changed_when: true
+  failed_when: false
+  when: is_free_space
+
+- name: Disk info refresh
+  ansible.builtin.import_tasks:
+    file: disk_info.yml
+
+- name: Resize root filesystem
+  ansible.builtin.command: resize2fs {{ root_partition.path }}
+  register: resize2fs_result
+  changed_when: resize2fs_result.rc == 0 or resize2fs_result.rc == 123
+  failed_when: not (resize2fs_result.rc == 0 or resize2fs_result.rc == 123)
+  when: is_free_space
+
+- name: Disk info refresh
+  ansible.builtin.import_tasks:
+    file: disk_info.yml
+
+- name: Verify filesystem resize - Display final sizes
+  ansible.builtin.debug:
+    msg: |
+      --- Verification Results ---
+      ✓ Filesystem successfully expanded: {{ not is_free_space }}
+
+- name: Remove unused packages
+  community.general.opkg:
+    name: "{{ item }}"
+    state: absent
+    force: removal-of-dependent-packages
+  loop:
+    - parted
+    - sgdisk
+
+- name: Remove resize2fs package without autoremove (dependency of e2fsprogs)
+  community.general.opkg:
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - tune2fs
+    - resize2fs

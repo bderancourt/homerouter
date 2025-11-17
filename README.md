@@ -5,7 +5,7 @@ A simple playbook to deploy SSK public key to an host
 Install Ansible on ubuntu:
 ```
 sudo apt install python3-pip sshpass qemu-utils
-pip install -U ansible ansible-lint
+pip install -U ansible ansible-lint jmespath passlib
 ```
 Then restart to ensure $HOME/.local/bin is well sourced
 
@@ -53,6 +53,15 @@ unset env
 Then run the playbook:
 
 ```
+ansible-playbook playbook.yml
+```
+
+Activate the project's Python virtual environment before running Ansible (if you created one):
+
+```bash
+# from the repository root
+source .venv/bin/activate
+# then run the playbook
 ansible-playbook playbook.yml
 ```
 

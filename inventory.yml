@@ -3,7 +3,6 @@ openwrt:
   hosts:
     ikoolcore:
       ansible_host: 192.168.1.1
-      ansible_user: root
     virtualbox:
       ansible_host: 192.168.9.1
-      ansible_user: root
+

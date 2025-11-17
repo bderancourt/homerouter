@@ -1,9 +1,0 @@
-- name: OpenWRT custom setup playbook
-  hosts: localhost
-  connection: local
-  gather_facts: false
-  vars_files:
-    - secrets.yml
-
-  roles:
-    - build_firmware

@@ -1,8 +1,0 @@
-- name: OpenWRT custom setup playbook
-  hosts: virtualbox
-  gather_facts: false
-  vars_files:
-    - secrets.yml
-
-  roles:
-    - install_firmware

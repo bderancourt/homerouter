@@ -1,3 +1,4 @@
+---
 # It's just a scratch playbook to help manipulating variables
 
 - name: OpenWRT custom setup playbook

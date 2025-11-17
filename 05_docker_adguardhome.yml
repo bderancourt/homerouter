@@ -1,8 +1,0 @@
-- name: OpenWRT custom setup playbook
-  hosts: ikoolcore
-  gather_facts: false
-  vars_files:
-    - secrets.yml
-
-  roles:
-    - docker_adguardhome

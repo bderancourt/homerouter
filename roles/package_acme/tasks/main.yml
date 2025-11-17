@@ -1,0 +1,98 @@
+---
+- name: Run post reboot
+  ansible.builtin.import_role:
+    name: common_post_reboot
+
+- name: Install ACME packages
+  community.general.opkg:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - luci-app-acme
+    - acme-acmesh-dnsapi
+
+- name: Cleanup default acme config
+  uci:
+    command: absent
+    key: "{{ item }}"
+  loop:
+    - acme.example_wildcard
+    - acme.example_subdomain
+
+- name: Configure ACME account
+  uci:
+    command: section
+    config: acme
+    type: acme
+    find-by:
+      debug: 0
+    value:
+      account_email: "{{ acme_email }}"
+
+- name: Configure ACME external certificate
+  uci:
+    command: section
+    config: acme
+    type: cert
+    name: "{{ item.name }}"
+    value:
+      enabled: 1
+      domains: "{{ item.domains }}"
+      validation_method: dns
+      dns: "{{ item.dns_script }}"
+      credentials: "{{ item.credentials }}"
+      staging: 1
+    replace: true
+  loop: "{{ acme_configs }}"
+
+- name: Commit ACME configuration
+  uci:
+    command: commit
+    config: acme
+  notify: Reload config
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Check ACME cert path
+  ansible.builtin.stat:
+    path: "{{ acme_cert }}"
+  register: acme_cert_stat
+  changed_when: false
+
+- name: Force renew certificates
+  ansible.builtin.command: /etc/init.d/acme renew
+  changed_when: true
+  when: not acme_cert_stat.stat.exists
+
+- name: Restart uhttpd to use new certs
+  ansible.builtin.service:
+    name: uhttpd
+    state: restarted
+  when: not acme_cert_stat.stat.exists
+
+- name: Setup luci to use ACME certs
+  uci:
+    command: section
+    config: uhttpd
+    type: uhttpd
+    name: main
+    value:
+      redirect_https: 0
+      cert: "{{ acme_cert }}"
+      key: "{{ acme_key }}"
+      listen:
+        - '443 ssl default_server'
+        - '[::]:443 ssl default_server'
+      server_name: luci
+
+- name: Disable luci HTTP
+  uci:
+    command: absent
+    key: uhttpd.main.listen_http
+
+- name: Commit uhttpd configuration
+  uci:
+    command: commit
+    config: uhttpd
+  notify: Reload config

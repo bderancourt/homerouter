@@ -1,0 +1,7 @@
+---
+- name: OpenWRT install and setup packages
+  hosts: ikoolcore
+  gather_facts: false
+
+  roles:
+    - docker_omada

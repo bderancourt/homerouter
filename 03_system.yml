@@ -1,0 +1,7 @@
+---
+- name: OpenWRT setup system
+  hosts: virtualbox
+  gather_facts: false
+
+  roles:
+    - system_resize_rootfs

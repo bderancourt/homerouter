@@ -1,0 +1,80 @@
+---
+- name: Run post reboot
+  ansible.builtin.import_role:
+    name: common_post_reboot
+
+- name: Install DDNS packages
+  community.general.opkg:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - curl
+    - drill
+    - luci-app-ddns
+
+- name: Cleanup default ddns config
+  uci:
+    command: absent
+    key: "{{ item }}"
+  loop:
+    - ddns.myddns_ipv4
+    - ddns.myddns_ipv6
+
+- name: Get WAN6 interface name
+  ansible.builtin.shell: set -o pipefail && uci show network.wan6.device | cut -d= -f2 | tr -d "'"
+  register: wan6_interface_result
+  changed_when: false
+
+- name: Set WAN6 interface name
+  ansible.builtin.set_fact:
+    wan6_interface: "{{ wan6_interface_result.stdout | trim }}"
+
+- name: Adding configuration {{ ddns_name + '_v4' }}
+  uci:
+    command: section
+    config: ddns
+    type: service
+    name: "{{ ddns_name }}_v4"
+    value:
+      interface: wan
+      ip_source: network
+      ip_network: wan
+      enabled: "{{ '0' if inventory_hostname == 'virtualbox' else '1' }}"
+      use_ipv6: 0
+      service_name: "{{ ddns_service_name }}"
+      lookup_host: "{{ ddns_lookup_host }}"
+      domain: "{{ ddns_domain }}"
+      username: "{{ ddns_username }}"
+      password: "{{ ddns_password }}"
+      use_https: 1
+      cacert: /etc/ssl/certs
+      use_syslog: 2
+    replace: true
+
+- name: Adding configuration {{ ddns_name + '_v6' }}
+  uci:
+    command: section
+    config: ddns
+    type: service
+    name: "{{ ddns_name }}_v6"
+    value:
+      interface: wan
+      ip_source: interface
+      ip_interface: "{{ wan6_interface }}"
+      enabled: "{{ '0' if inventory_hostname == 'virtualbox' else '1' }}"
+      use_ipv6: 1
+      service_name: "{{ ddns_service_name }}"
+      lookup_host: "{{ ddns_lookup_host }}"
+      domain: "{{ ddns_domain }}"
+      username: "{{ ddns_username }}"
+      password: "{{ ddns_password }}"
+      use_https: 1
+      cacert: /etc/ssl/certs
+      use_syslog: 2
+    replace: true
+
+- name: Commit
+  uci:
+    command: commit
+    key: ddns
+  notify: Reload config

@@ -1,0 +1,7 @@
+---
+- name: OpenWRT flash firmware
+  hosts: ikoolcore
+  gather_facts: false
+
+  roles:
+    - firmware_sysupgrade

@@ -1,0 +1,16 @@
+---
+vlan_id: 300
+network_subnet_ipv4: "192.168.{{ vlan_id }}.0/24"
+network_subnet_ipv6: "{{ ula_prefix }}:{{ '%x' | format(vlan_id) }}::/64"
+netmask: "255.255.255.0"
+gateway_ipv4: "192.168.{{ vlan_id }}.1"
+gateway_ipv6: "{{ ula_prefix }}:{{ '%x' | format(vlan_id) }}::1"
+container_ipv4: "192.168.{{ vlan_id }}.{{ container_ip_suffix }}"
+container_ipv6: "{{ ula_prefix }}:{{ '%x' | format(vlan_id) }}::{{ container_ip_suffix }}"
+container_ip_suffix: 10
+host_interface: veth-{{ interface_suffix }} # at most 15 characters so 10 characters left for interface_suffix
+docker_interface: di-{{ interface_suffix }}
+service: default
+docker_data_dir: /data/docker
+docker_service_volumes_dir: "{{ docker_data_dir }}/{{ service }}/volumes"
+compose_template_src: "{{ playbook_dir }}/roles/docker_{{ service }}/templates/compose.yml.j2"

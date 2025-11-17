@@ -1,7 +1,7 @@
 services:
-  omada-controller:
-    container_name: omada-controller
-    image: "mbentley/omada-controller:{{docker_omada_controller_version}}"
+  {{ service }}:
+    container_name: {{ service }}
+    image: "mbentley/omada-controller:{{ image_version }}"
     restart: unless-stopped
     ulimits:
       nofile:
@@ -29,20 +29,22 @@ services:
       - SSL_KEY_NAME=tls.key
       - TZ=Europe/Paris
     volumes:
-      - "{{ docker_omada_controller_volume_dir }}data:/opt/tplink/EAPController/data"
-      - "{{ docker_omada_controller_volume_dir }}logs:/opt/tplink/EAPController/logs"
+      - "{{ docker_service_volumes_dir }}data:/opt/tplink/EAPController/data"
+      - "{{ docker_service_volumes_dir }}logs:/opt/tplink/EAPController/logs"
     networks:
-      omada_net:
-        ipv4_address: 192.168.{{ vlan_id }}.10
+      net:
+        ipv4_address: "{{ container_ipv4 }}"
+        ipv6_address: "{{ container_ipv6 }}"
 
 networks:
-  omada_net:
-    name: omada_net
-    driver: ipvlan
+  net:
+    enable_ipv6: true
+    driver: macvlan
     driver_opts:
-      ipvlan_mode: l2
-      parent: vethd-omada
+      parent: "{{ docker_interface }}"
     ipam:
       config:
-        - subnet: "192.168.{{ vlan_id }}.0/24"
-          gateway: "192.168.{{ vlan_id }}.1"
+        - subnet: "{{ network_subnet_ipv4 }}"
+          gateway: "{{ gateway_ipv4 }}"
+        - subnet: "{{ network_subnet_ipv6 }}"
+          gateway: "{{ gateway_ipv6 }}"

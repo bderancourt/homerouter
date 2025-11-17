@@ -1,0 +1,112 @@
+---
+# https://openwrt.org/docs/guide-user/services/dns/adguard-home
+# https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration
+- name: Run post reboot
+  ansible.builtin.import_role:
+    name: common_post_reboot
+
+- name: Install AdGuard Home package
+  community.general.opkg:
+    name: adguardhome
+    state: present
+
+- name: Copy sysctl buffer size configuration
+  ansible.builtin.copy:
+    src: 12-buffer-size.conf
+    dest: /etc/sysctl.d/12-buffer-size.conf
+    mode: u=rw,g=r,o=r
+
+- name: Get current net.core.rmem_max
+  ansible.builtin.command: sysctl -n net.core.rmem_max
+  register: rmem_max_result
+  changed_when: false
+  failed_when: false
+
+- name: Apply sysctl buffer size configuration
+  ansible.builtin.command: sysctl -p /etc/sysctl.d/12-buffer-size.conf
+  changed_when: true
+  when: rmem_max_result.stdout|int < 7500000
+
+- name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml
+  ansible.builtin.template:
+    src: templates/adguardhome.yaml.j2
+    dest: /etc/adguardhome.yaml
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+  notify: Restart AdGuardHome
+
+- name: Configure dnsmasq as local DNS forwarder only
+  uci:
+    command: section
+    config: dhcp
+    type: dnsmasq
+    find-by:
+      domain: "{{ local_domain }}"
+    value:
+      noresolv: 1
+      cachesize: 0
+      expandhosts: 1
+      port: 54
+      server: []
+
+- name: Configure DHCP ipv4 DNS on internal networks
+  uci:
+    command: section
+    config: network
+    type: interface
+    name: "{{ item.iface }}"
+    value:
+      dns:
+        - 192.168.{{ item.ip }}.1
+  loop:
+    - { iface: lan, ip: 1 }
+    - { iface: guest, ip: 2 }
+    - { iface: iot, ip: 3 }
+
+- name: Configure DHCP ipv6 DNS on internal networks
+  uci:
+    command: section
+    config: dhcp
+    type: dhcp
+    name: "{{ item.iface }}"
+    value:
+      dns:
+        - "{{ ula_prefix }}:{{ item.ip }}::1"
+  loop:
+    - { iface: lan, ip: 1 }
+    - { iface: guest, ip: 2 }
+    - { iface: iot, ip: 3 }
+
+- name: Adding DNS redirection
+  uci:
+    command: section
+    config: firewall
+    type: redirect
+    name: "DNS_intercept_{{ item }}"
+    value:
+      name: "Intercept DNS for {{ item }}"
+      src: "{{ item }}"
+      src_dport: 53
+      proto: tcp udp
+      target: DNAT
+      dest: "{{ item }}"
+      dest_port: 53
+      family: any
+  loop:
+    - lan
+    - guest
+    - iot
+
+- name: Commit
+  uci:
+    command: commit
+    key: "{{ item }}"
+  loop:
+    - dhcp
+    - network
+    - firewall
+  notify: Reload config
+
+- name: Flush_handlers
+  ansible.builtin.meta: flush_handlers

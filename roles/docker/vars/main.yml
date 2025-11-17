@@ -1,2 +1,0 @@
-host_interface: veth-{{ interface_suffix }} # at most 15 characters so 10 characters left for interface_suffix
-docker_interface: di-{{ interface_suffix }}

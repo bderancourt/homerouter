@@ -1,18 +1,4 @@
 ---
-- name: Render omada docker-compose file
-  ansible.builtin.template:
-    src: compose.yml.j2
-    dest: /docker/omada/compose.yml
-    mode: '0644'
-
-- name: Deploy Omada stack with docker compose
-  community.docker.docker_compose_v2:
-    project_src: /docker/omada
-    files:
-      - compose.yml
-    state: present
-    recreate: always
-
 - name: Add firewall rule to allow Omada controller to reach EAP
   uci:
     command: section
@@ -28,10 +14,9 @@
       dest_ip:
         - 192.168.1.90
       target: ACCEPT
-  notify: Restart firewall
 
-- name: Commit firewall changes
+- name: Commit firewall
   uci:
     command: commit
     config: firewall
-  notify: Restart firewall
+  notify: Reload config

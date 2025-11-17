@@ -1,0 +1,4 @@
+---
+dependencies:
+  - role: common_reload_config
+  - role: zeerayne.openwrt

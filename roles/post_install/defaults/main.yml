@@ -1,4 +1,0 @@
----
-# Add kernel command line arguments to /boot/grub/grub.cfg
-kernel_extra_cmdline: "microcode.force_minrev=0"
-fantastic_packages_base_url: "https://fantastic-packages.github.io/releases/24.10/packages/x86_64/luci/"

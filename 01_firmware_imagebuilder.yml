@@ -1,0 +1,8 @@
+---
+- name: OpenWRT build firmware
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - firmware_imagebuilder

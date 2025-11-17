@@ -1,0 +1,12 @@
+---
+- name: OpenWRT install and setup packages
+  hosts: ikoolcore
+  gather_facts: true
+
+  roles:
+    - package_acme
+    - package_adguardhome
+    - package_ddns
+    - package_docker
+    - package_luci_extra_apps
+    - package_sqm
