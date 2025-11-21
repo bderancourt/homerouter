@@ -10,7 +10,7 @@ lspci -vv | awk '
     }
     dev = $0; lnkcap = ""; lnkctl = "";
 }
-/^\s+LnkCap:/ {
+/^[ \t]+LnkCap:/ {
     match($0, /ASPM[^,;]*/);
     if (RSTART > 0) {
         lnkcap = "LnkCap: " substr($0, RSTART, RLENGTH);
@@ -18,7 +18,7 @@ lspci -vv | awk '
         lnkcap = "";
     }
 }
-/^\s+LnkCtl:/ {
+/^[ \t]+LnkCtl:/ {
     match($0, /ASPM[^,;]*/);
     if (RSTART > 0) {
         lnkctl = "LnkCtl: " substr($0, RSTART, RLENGTH);

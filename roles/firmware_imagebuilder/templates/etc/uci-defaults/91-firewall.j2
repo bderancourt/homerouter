@@ -12,7 +12,7 @@ GUEST_ZONE=$(uci add firewall zone)
 uci set firewall.$GUEST_ZONE.name='guest'
 uci del firewall.$GUEST_ZONE.network
 uci add_list firewall.$GUEST_ZONE.network='guest'
-uci set firewall.$GUEST_ZONE.input='ACCEPT'
+uci set firewall.$GUEST_ZONE.input='REJECT'
 uci set firewall.$GUEST_ZONE.output='ACCEPT'
 uci set firewall.$GUEST_ZONE.forward='REJECT'
 
@@ -21,7 +21,7 @@ IOT_ZONE=$(uci add firewall zone)
 uci set firewall.$IOT_ZONE.name='iot'
 uci del firewall.$IOT_ZONE.network
 uci add_list firewall.$IOT_ZONE.network='iot'
-uci set firewall.$IOT_ZONE.input='ACCEPT'
+uci set firewall.$IOT_ZONE.input='REJECT'
 uci set firewall.$IOT_ZONE.output='ACCEPT'
 uci set firewall.$IOT_ZONE.forward='REJECT'
 
@@ -53,6 +53,66 @@ uci set firewall.$GUEST_WAN_FORWARDING.dest='wan'
 LAN_IOT_FORWARDING=$(uci add firewall forwarding)
 uci set firewall.$LAN_IOT_FORWARDING.src='iot'
 uci set firewall.$LAN_IOT_FORWARDING.dest='wan'
+
+#######################################
+# Firewall rules: Allow DNS, DHCP, ICMP, NTP to router
+#######################################
+
+for zone in guest iot; do
+  zone_upper=$(echo "$zone" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+
+  # Allow DNS (port 53) from zone to Router
+  DNS_RULE=$(uci add firewall rule)
+  uci set firewall.$DNS_RULE.name="Allow-${zone_upper}-DNS"
+  uci set firewall.$DNS_RULE.src="$zone"
+  uci set firewall.$DNS_RULE.proto='tcp udp'
+  uci set firewall.$DNS_RULE.dest_port='53'
+  uci set firewall.$DNS_RULE.target='ACCEPT'
+
+  # Allow DHCP (port 67) from zone to Router
+  DHCP_RULE=$(uci add firewall rule)
+  uci set firewall.$DHCP_RULE.name="Allow-${zone_upper}-DHCP"
+  uci set firewall.$DHCP_RULE.src="$zone"
+  uci set firewall.$DHCP_RULE.src_port='68'
+  uci set firewall.$DHCP_RULE.proto='udp'
+  uci set firewall.$DHCP_RULE.dest_port='67'
+  uci set firewall.$DHCP_RULE.family='ipv4'
+  uci set firewall.$DHCP_RULE.target='ACCEPT'
+
+  # Allow DHCPv6 (port 547) from zone to Router
+  DHCPV6_RULE=$(uci add firewall rule)
+  uci set firewall.$DHCPV6_RULE.name="Allow-${zone_upper}-DHCPv6"
+  uci set firewall.$DHCPV6_RULE.src="$zone"
+  uci set firewall.$DHCPV6_RULE.src_port='546'
+  uci set firewall.$DHCPV6_RULE.proto='udp'
+  uci set firewall.$DHCPV6_RULE.dest_port='547'
+  uci set firewall.$DHCPV6_RULE.family='ipv6'
+  uci set firewall.$DHCPV6_RULE.target='ACCEPT'
+
+  # Allow ICMP (ping) from zone to Router
+  ICMP_RULE=$(uci add firewall rule)
+  uci set firewall.$ICMP_RULE.name="Allow-${zone_upper}-ICMP"
+  uci set firewall.$ICMP_RULE.src="$zone"
+  uci set firewall.$ICMP_RULE.proto='icmp'
+  uci set firewall.$ICMP_RULE.family='ipv4'
+  uci set firewall.$ICMP_RULE.target='ACCEPT'
+
+  # Allow ICMPv6 from zone to Router
+  ICMPV6_RULE=$(uci add firewall rule)
+  uci set firewall.$ICMPV6_RULE.name="Allow-${zone_upper}-ICMPv6"
+  uci set firewall.$ICMPV6_RULE.src="$zone"
+  uci set firewall.$ICMPV6_RULE.proto='icmpv6'
+  uci set firewall.$ICMPV6_RULE.family='ipv6'
+  uci set firewall.$ICMPV6_RULE.target='ACCEPT'
+
+  # Allow NTP from zone to Router
+  NTP_RULE=$(uci add firewall rule)
+  uci set firewall.$NTP_RULE.name="Allow-${zone_upper}-NTP"
+  uci set firewall.$NTP_RULE.src="$zone"
+  uci set firewall.$NTP_RULE.proto='udp'
+  uci set firewall.$NTP_RULE.dest_port='123'
+  uci set firewall.$NTP_RULE.target='ACCEPT'
+done
 
 uci commit firewall
 exit 0

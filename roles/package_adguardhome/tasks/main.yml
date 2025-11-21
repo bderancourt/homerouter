@@ -97,10 +97,18 @@
     - dhcp
     - network
     - firewall
-  notify: Reload config
+  register: uci_commit_result
 
-- name: Flush_handlers
-  ansible.builtin.meta: flush_handlers
+- name: Reload config
+  ansible.builtin.command: reload_config
+  changed_when: true
+  when: uci_commit_result is changed # noqa no-handler
+
+- name: Restart dnsmasq
+  ansible.builtin.service:
+    name: dnsmasq
+    state: restarted
+  when: uci_commit_result is changed # noqa no-handler
 
 - name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml
   ansible.builtin.template:

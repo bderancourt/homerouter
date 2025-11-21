@@ -9,8 +9,6 @@
     value:
       src: omada
       dest: lan
-      src_ip:
-        - "192.168.{{ vlan_id }}.10"
       dest_ip:
         - 192.168.1.90
       target: ACCEPT

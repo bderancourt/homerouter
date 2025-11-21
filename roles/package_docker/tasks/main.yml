@@ -11,6 +11,7 @@
     - luci-app-dockerman
     - kmod-macvlan
     - kmod-nf-conntrack-netlink
+  timeout: 300
 
 - name: Remove Docker firewall configuration
   uci:

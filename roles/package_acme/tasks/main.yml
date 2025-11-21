@@ -41,7 +41,7 @@
       validation_method: dns
       dns: "{{ item.dns_script }}"
       credentials: "{{ item.credentials }}"
-      staging: 1
+      staging: "{{ 1 if inventory_hostname == 'virtualbox' else 0 }}"
     replace: true
   loop: "{{ acme_configs }}"
 

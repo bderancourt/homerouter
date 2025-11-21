@@ -7,7 +7,7 @@
     find-by:
       name: "{{ service }}"
     value:
-      input: ACCEPT
+      input: REJECT
       output: ACCEPT
       forward: REJECT
       network:
@@ -30,6 +30,45 @@
     find-by:
       src: "{{ service }}"
       dest: wan
+
+- name: Create Allow DNS rule
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    find-by:
+      name: "Allow-{{ service }}-DNS"
+    value:
+      src: "{{ service }}"
+      proto: tcp udp
+      dest_port: 53
+      target: ACCEPT
+
+- name: Create Allow ICMP rule
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    find-by:
+      name: "Allow-{{ service }}-ICMP"
+    value:
+      src: "{{ service }}"
+      proto: icmp
+      family: ipv4
+      target: ACCEPT
+
+- name: Create Allow ICMPv6 rule
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    find-by:
+      name: "Allow-{{ service }}-ICMPv6"
+    value:
+      src: "{{ service }}"
+      proto: icmpv6
+      family: ipv6
+      target: ACCEPT
 
 - name: Commit firewall changes
   uci:

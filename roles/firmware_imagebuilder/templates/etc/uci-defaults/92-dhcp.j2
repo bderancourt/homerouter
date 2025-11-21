@@ -1,27 +1,97 @@
 #!/bin/sh
 
 #######################################
+# DNS configuration
+#######################################
+uci delete dhcp.@dnsmasq[0].server || true
+uci add_list dhcp.@dnsmasq[0].server='1.1.1.1'
+
+#######################################
 # Add DHCP configuration
+# https://openwrt.org/docs/guide-user/base-system/dhcp#dhcp_pools
 #######################################
 
-# DHCP for LAN / Guest / IoT
-INST_LIST="lan guest iot"
-for INST in $INST_LIST; do
-	uci set dhcp.$INST=dhcp
-	uci set dhcp.$INST.interface=$INST
-	uci set dhcp.$INST.start=100
-	uci set dhcp.$INST.limit=150
-	uci set dhcp.$INST.leasetime=12h
-	uci set dhcp.$INST.dhcpv4=server
-	uci set dhcp.$INST.dhcpv6=server
-	uci set dhcp.$INST.ra=server
-	uci del dhcp.$INST.ra_flags || true
-	uci add_list dhcp.$INST.ra_flags=managed-config
-	uci add_list dhcp.$INST.ra_flags=other-config
-done
+# DHCP for LAN
+#######################################
+uci set dhcp.lan=dhcp
+uci set dhcp.lan.interface=lan
+uci set dhcp.lan.start=100
+uci set dhcp.lan.limit=150
+uci set dhcp.lan.leasetime=12h
+uci set dhcp.lan.dhcpv4=server
+uci set dhcp.lan.dhcpv6=server
+uci set dhcp.lan.ra=server
+uci set dhcp.lan.dns_service=1
+uci set dhcp.lan.force="1"
+uci set dhcp.lan.ra_default="1"
 
-uci add_list dhcp.iot.dns=2001:4860:4860::8888
-uci add_list dhcp.iot.dns=2001:4860:4860::8844
+uci del dhcp.lan.ra_flags || true
+uci add_list dhcp.lan.ra_flags=managed-config
+uci add_list dhcp.lan.ra_flags=other-config
+uci add_list dhcp.lan.ra_flags=home-agent
+
+uci del dhcp.lan.dhcp_option || true
+uci add_list dhcp.lan.dhcp_option="6,192.168.1.1"
+
+uci del dhcp.lan.domain || true
+uci add_list dhcp.lan.domain='bnl.ovh'
+
+
+# DHCP for Guest
+#######################################
+uci set dhcp.guest=dhcp
+uci set dhcp.guest.interface=guest
+uci set dhcp.guest.start=100
+uci set dhcp.guest.limit=150
+uci set dhcp.guest.leasetime=12h
+uci set dhcp.guest.dhcpv4=server
+uci set dhcp.guest.dhcpv6=server
+uci set dhcp.guest.ra=server
+uci set dhcp.guest.dns_service=1
+uci set dhcp.guest.force="1"
+uci set dhcp.guest.ra_default="1"
+
+uci del dhcp.guest.ra_flags || true
+uci add_list dhcp.guest.ra_flags=managed-config
+uci add_list dhcp.guest.ra_flags=other-config
+uci add_list dhcp.guest.ra_flags=home-agent
+
+uci del dhcp.guest.dhcp_option || true
+uci add_list dhcp.guest.dhcp_option="6,192.168.2.1"
+
+uci del dhcp.guest.domain || true
+uci add_list dhcp.guest.domain='bnl.ovh'
+
+
+# DHCP for IoT
+#######################################
+uci set dhcp.iot=dhcp
+uci set dhcp.iot.interface=iot
+uci set dhcp.iot.start=100
+uci set dhcp.iot.limit=150
+uci set dhcp.iot.leasetime=12h
+uci set dhcp.iot.dhcpv4=server
+uci set dhcp.iot.dhcpv6=server
+uci set dhcp.iot.ra=server
+uci set dhcp.iot.dns_service=1
+uci set dhcp.iot.force="1"
+uci set dhcp.iot.ra_default="1"
+
+uci del dhcp.iot.ra_flags || true
+uci add_list dhcp.iot.ra_flags=managed-config
+uci add_list dhcp.iot.ra_flags=other-config
+uci add_list dhcp.iot.ra_flags=home-agent
+
+uci del dhcp.iot.dhcp_option || true
+uci add_list dhcp.iot.dhcp_option="6,192.168.3.1"
+
+uci del dhcp.iot.domain || true
+uci add_list dhcp.iot.domain='bnl.ovh'
+
+
+#######################################
+# Static DHCP leases
+#######################################
 
 # Static lease for EAP
 uci set dhcp.eap=host

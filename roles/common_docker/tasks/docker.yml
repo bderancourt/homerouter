@@ -22,3 +22,4 @@
     files:
       - compose.yml
     state: present
+  timeout: 300
