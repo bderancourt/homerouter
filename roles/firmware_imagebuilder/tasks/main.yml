@@ -2,5 +2,5 @@
 - name: Download and prepare the image builder
   ansible.builtin.include_tasks: 01_imagebuilder.yml
 
-- name: Configure and build the firmware image
+- name: Build the firmware image
   ansible.builtin.include_tasks: 02_build_firmware.yml

@@ -8,21 +8,30 @@
 firmware_build_dir: "{{ playbook_dir }}/build/"
 
 firmware_packages:
-  - luci-ssl
+  # System & Utils
+  - vim-full
   - vim-runtime
   - btop
   - bash
   - less
   - ncdu
   - dmesg
+  - tar
+  - gzip
+  - unzip
   - wget-ssl
   - usbutils
   - pciutils
+  - shadow-utils
+  - findutils
   - lsblk
   - blkid
   - rng-tools
   - lm-sensors
   - openssh-sftp-server
+  - powertop
+
+  # Python
   - python3-light
   - python3-logging
   - python3-urllib
@@ -30,7 +39,15 @@ firmware_packages:
   - python3-decimal
   - python3-requests
   - python3-openssl
-  - kmod-atlantic
-  - powertop
+
+  # LuCI / Web Interface
+  - luci-ssl
   - luci-app-statistics
   - collectd-mod-sensors
+  - luci-app-temp-status
+  - luci-app-disks-info
+  - luci-app-cpu-perf
+  - luci-app-cpu-status-mini
+
+  # Networking & Kubernetes Requirements
+  - kmod-atlantic

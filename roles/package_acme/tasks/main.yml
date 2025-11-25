@@ -65,12 +65,6 @@
   changed_when: true
   when: not acme_cert_stat.stat.exists
 
-- name: Restart uhttpd to use new certs
-  ansible.builtin.service:
-    name: uhttpd
-    state: restarted
-  when: not acme_cert_stat.stat.exists
-
 - name: Setup luci to use ACME certs
   uci:
     command: section
@@ -81,9 +75,6 @@
       redirect_https: 0
       cert: "{{ acme_cert }}"
       key: "{{ acme_key }}"
-      listen:
-        - '443 ssl default_server'
-        - '[::]:443 ssl default_server'
       server_name: luci
 
 - name: Disable luci HTTP
@@ -97,5 +88,7 @@
     config: uhttpd
   notify: Reload config
 
-- name: Flush handlers
-  ansible.builtin.meta: flush_handlers
+- name: Restart uhttpd to use new certs
+  ansible.builtin.service:
+    name: uhttpd
+    state: restarted

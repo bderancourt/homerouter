@@ -41,34 +41,6 @@
       port: 54
       server: []
 
-- name: Configure DHCP ipv4 DNS on internal networks
-  uci:
-    command: section
-    config: network
-    type: interface
-    name: "{{ item.iface }}"
-    value:
-      dns:
-        - 192.168.{{ item.ip }}.1
-  loop:
-    - { iface: lan, ip: 1 }
-    - { iface: guest, ip: 2 }
-    - { iface: iot, ip: 3 }
-
-- name: Configure DHCP ipv6 DNS on internal networks
-  uci:
-    command: section
-    config: dhcp
-    type: dhcp
-    name: "{{ item.iface }}"
-    value:
-      dns:
-        - "{{ ula_prefix }}:{{ item.ip }}::1"
-  loop:
-    - { iface: lan, ip: 1 }
-    - { iface: guest, ip: 2 }
-    - { iface: iot, ip: 3 }
-
 - name: Adding DNS redirection
   uci:
     command: section
@@ -95,7 +67,6 @@
     key: "{{ item }}"
   loop:
     - dhcp
-    - network
     - firewall
   register: uci_commit_result
 

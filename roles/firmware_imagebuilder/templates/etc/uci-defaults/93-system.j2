@@ -42,5 +42,16 @@ uci set dropbear.@dropbear[0].RootPasswordAuth='off'
 
 uci set luci_statistics.collectd_sensors.enable='1'
 
+
+# Configure uHTTPd to listen only on LAN interface
+uci del uhttpd.main.listen_http || true
+uci del uhttpd.main.listen_https || true
+
+grep -qi "virtualbox" /sys/class/dmi/id/product_name && SUBNET="9" || SUBNET="1"
+uci add_list uhttpd.main.listen_http="192.168.$SUBNET.1:80"
+uci add_list uhttpd.main.listen_http="[{{ ula_prefix }}:$SUBNET::1]:80"
+uci add_list uhttpd.main.listen_https="192.168.$SUBNET.1:443"
+uci add_list uhttpd.main.listen_https="[{{ ula_prefix }}:$SUBNET::1]:443"
+
 uci commit
 exit 0

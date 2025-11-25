@@ -1,27 +1,21 @@
 ---
-- name: Increase rootfs partition size to 256M
+- name: Add fantastic packages repository
   ansible.builtin.lineinfile:
-    path: "{{ firmware_extracted_dir }}/.config"
-    regexp: '^CONFIG_TARGET_ROOTFS_PARTSIZE='
-    line: 'CONFIG_TARGET_ROOTFS_PARTSIZE="256"'
+    path: "{{ firmware_extracted_dir }}/repositories.conf"
+    line: "src/gz fantastic_packages_luci https://fantastic-packages.github.io/releases/24.10/packages/x86_64/luci/"
 
-- name: Setting grub timeout to 2s to speedup boot
-  ansible.builtin.lineinfile:
-    path: "{{ firmware_extracted_dir }}/.config"
-    regexp: '^CONFIG_GRUB_TIMEOUT='
-    line: 'CONFIG_GRUB_TIMEOUT="2"'
+- name: Download fantastic packages key
+  ansible.builtin.get_url:
+    url: "https://fantastic-packages.github.io/releases/24.10/53ff2b6672243d28.pub"
+    dest: "{{ firmware_extracted_dir }}/keys/53ff2b6672243d28"
+    mode: u=rw,g=r,o=r
 
-- name: Setting grub boot option to force microcode update
+- name: Customize .config file
   ansible.builtin.lineinfile:
     path: "{{ firmware_extracted_dir }}/.config"
-    regexp: '^CONFIG_GRUB_BOOTOPTS='
-    line: 'CONFIG_GRUB_BOOTOPTS="microcode.force_minrev=0 swapaccount=1"'
-
-- name: Enable kernel memory cgroup swap for Docker
-  ansible.builtin.lineinfile:
-    path: "{{ firmware_extracted_dir }}/.config"
-    regexp: '^# CONFIG_KERNEL_MEMCG_SWAP_ENABLED is not set'
-    line: 'CONFIG_KERNEL_MEMCG_SWAP_ENABLED=y'
+    regexp: "^#? *{{ item.split('=')[0] }}(=| |$)"
+    line: "{{ item }}"
+  loop: "{{ config_parameters }}"
 
 - name: Copy custom files
   ansible.builtin.copy:

@@ -1,0 +1,64 @@
+---
+- name: Create firewall zone k8s
+  uci:
+    command: section
+    config: firewall
+    type: zone
+    name: k8s_admin
+    value:
+      name: k8s_admin
+      network:
+        - k8s_admin
+      input: ACCEPT
+      output: ACCEPT
+      forward: ACCEPT
+
+- name: Create forwarding lan to k8s_admin
+  uci:
+    command: section
+    config: firewall
+    type: forwarding
+    find-by:
+      src: lan
+      dest: k8s_admin
+
+- name: Create forwarding k8s_admin to wan
+  uci:
+    command: section
+    config: firewall
+    type: forwarding
+    find-by:
+      src: k8s_admin
+      dest: wan
+
+- name: Create firewall zone k8s_external
+  uci:
+    command: section
+    config: firewall
+    type: zone
+    name: k8s_external
+    value:
+      name: k8s_external
+      network:
+        - k8s_external
+      input: ACCEPT
+      output: ACCEPT
+      forward: ACCEPT
+
+- name: Create forwarding lan to k8s_external
+  uci:
+    command: section
+    config: firewall
+    type: forwarding
+    find-by:
+      src: lan
+      dest: k8s_external
+
+- name: Commit firewall
+  uci:
+    command: commit
+    config: firewall
+  notify: Reload config
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

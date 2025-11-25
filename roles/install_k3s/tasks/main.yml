@@ -1,0 +1,118 @@
+---
+- name: Run post reboot
+  ansible.builtin.import_role:
+    name: common_post_reboot
+
+- name: Configure dummy module options
+  ansible.builtin.lineinfile:
+    path: /etc/modules.conf
+    line: 'options dummy numdummies=2'
+    create: true
+    mode: '0644'
+
+- name: Install k3s dependencies
+  community.general.opkg:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - kmod-br-netfilter
+    - kmod-ipt-ipset
+    - kmod-ipt-conntrack-extra
+    - kmod-ipt-extra
+    - kmod-nf-conntrack-netlink
+    - kmod-vxlan
+    - kmod-veth
+    - kmod-ipt-nat
+    - kmod-ipt-nat-extra
+    - kmod-ikconfig
+    - kmod-dummy
+    - ipset
+    - iptables-nft
+    - ip6tables-nft
+    - iptables-mod-extra
+    - ip-full
+    - ca-certificates
+    - conntrack
+    - ip-bridge
+    - coreutils-sha256sum
+    - coreutils-stat
+
+- name: Download k3s binary
+  ansible.builtin.get_url:
+    url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s"
+    dest: /usr/bin/k3s
+    mode: '0755'
+
+- name: Create k3s config
+  ansible.builtin.copy:
+    src: k3s
+    dest: /etc/config/k3s
+    mode: '0644'
+
+- name: Create k3s data directory
+  ansible.builtin.file:
+    path: /var/lib/rancher/k3s
+    state: directory
+    mode: '0755'
+
+- name: Create k3s init script
+  ansible.builtin.copy:
+    src: k3s.init
+    dest: /etc/init.d/k3s
+    mode: '0755'
+
+- name: Configure network
+  ansible.builtin.include_tasks: network.yml
+
+- name: Configure firewall
+  ansible.builtin.include_tasks: firewall.yml
+
+- name: Start k3s
+  ansible.builtin.service:
+    name: k3s
+    state: started
+    enabled: true
+
+- name: Download k3s check-config script
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/k3s-io/k3s/master/contrib/util/check-config.sh
+    dest: /root/check-config.sh
+    mode: '0755'
+
+- name: Run k3s check-config
+  ansible.builtin.command: /root/check-config.sh
+  register: k3s_check_config
+  changed_when: false
+  failed_when: false
+
+- name: Print k3s check-config output
+  ansible.builtin.debug:
+    var: k3s_check_config.stdout_lines
+
+- name: Install Helm
+  ansible.builtin.unarchive:
+    src: https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
+    dest: /usr/bin
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+      - linux-amd64/helm
+    mode: '0755'
+
+- name: Create kubectl symlink
+  ansible.builtin.file:
+    src: /usr/bin/k3s
+    dest: /usr/bin/kubectl
+    state: link
+
+- name: Create crictl symlink
+  ansible.builtin.file:
+    src: /usr/bin/k3s
+    dest: /usr/bin/crictl
+    state: link
+
+- name: Create ctr symlink
+  ansible.builtin.file:
+    src: /usr/bin/k3s
+    dest: /usr/bin/ctr
+    state: link

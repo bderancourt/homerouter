@@ -1,4 +1,0 @@
----
-docker_traefik_version: 3.5.3
-docker_traefik_volume_dir: /mnt/datadrive/docker_volumes/traefik/
-vlan_id: 21
