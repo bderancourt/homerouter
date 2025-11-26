@@ -1,0 +1,25 @@
+---
+- name: Configure DNS records for k3s
+  uci:
+    command: section
+    config: dhcp
+    type: domain
+    find-by:
+      name: "{{ item.name }}"
+      ip: "{{ item.ip }}"
+    replace: true
+  loop:
+    - name: "k3s.{{ local_domain }}"
+      ip: "192.168.{{ k8s_admin_vlan_id }}.1"
+    - name: "k3s.{{ local_domain }}"
+      ip: "{{ ula_prefix }}:{{ k8s_admin_vlan_id }}::1"
+    - name: "{{ external_domain }}"
+      ip: "192.168.{{ k8s_external_vlan_id }}.1"
+    - name: "{{ external_domain }}"
+      ip: "{{ ula_prefix }}:{{ k8s_external_vlan_id }}::1"
+
+- name: Commit dhcp changes
+  uci:
+    command: commit
+    config: dhcp
+  notify: Reload config

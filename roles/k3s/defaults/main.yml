@@ -1,0 +1,4 @@
+k3s_version: "v1.34.1+k3s1"
+k3s_arch: "amd64"
+k8s_admin_vlan_id: 10
+k8s_external_vlan_id: 20

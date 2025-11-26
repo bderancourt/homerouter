@@ -1,3 +1,0 @@
-config k3s 'main'
-	option data_dir '/var/lib/rancher/k3s'
-	option server_args '--disable servicelb --flannel-iface dummy0 --node-ip 172.16.10.1'

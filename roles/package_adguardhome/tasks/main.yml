@@ -10,23 +10,6 @@
     name: adguardhome
     state: present
 
-- name: Copy sysctl buffer size configuration
-  ansible.builtin.copy:
-    src: 12-buffer-size.conf
-    dest: /etc/sysctl.d/12-buffer-size.conf
-    mode: u=rw,g=r,o=r
-
-- name: Get current net.core.rmem_max
-  ansible.builtin.command: sysctl -n net.core.rmem_max
-  register: rmem_max_result
-  changed_when: false
-  failed_when: false
-
-- name: Apply sysctl buffer size configuration
-  ansible.builtin.command: sysctl -p /etc/sysctl.d/12-buffer-size.conf
-  changed_when: true
-  when: rmem_max_result.stdout|int < 7500000
-
 - name: Configure dnsmasq as local DNS forwarder only
   uci:
     command: section

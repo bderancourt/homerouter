@@ -9,6 +9,9 @@
       name: k8s_admin
       network:
         - k8s_admin
+      device:
+        - cni0
+        - flannel.1
       input: ACCEPT
       output: ACCEPT
       forward: ACCEPT

@@ -23,6 +23,7 @@
     - kmod-vxlan
     - kmod-veth
     - kmod-ipt-nat
+    - kmod-ipt-nat6
     - kmod-ipt-nat-extra
     - kmod-ikconfig
     - kmod-dummy
@@ -43,9 +44,21 @@
     dest: /usr/bin/k3s
     mode: '0755'
 
+- name: Create k3s config directory
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: '0755'
+
+- name: Copy flannel config
+  ansible.builtin.template:
+    src: flannel-config.json.j2
+    dest: /etc/rancher/k3s/flannel-config.json
+    mode: '0644'
+
 - name: Create k3s config
-  ansible.builtin.copy:
-    src: k3s
+  ansible.builtin.template:
+    src: k3s.j2
     dest: /etc/config/k3s
     mode: '0644'
 
@@ -66,6 +79,22 @@
 
 - name: Configure firewall
   ansible.builtin.include_tasks: firewall.yml
+
+- name: Configure dns
+  ansible.builtin.include_tasks: dns.yml
+
+- name: Create k3s manifests directory
+  ansible.builtin.file:
+    path: /var/lib/rancher/k3s/server/manifests
+    state: directory
+    mode: '0755'
+    recurse: true
+
+- name: Configure Traefik with 4 entrypoints
+  ansible.builtin.template:
+    src: traefik-config.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+    mode: '0644'
 
 - name: Start k3s
   ansible.builtin.service:

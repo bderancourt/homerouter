@@ -46,7 +46,6 @@ firmware_packages:
   - collectd-mod-sensors
   - luci-app-temp-status
   - luci-app-disks-info
-  - luci-app-cpu-perf
   - luci-app-cpu-status-mini
 
   # Networking & Kubernetes Requirements

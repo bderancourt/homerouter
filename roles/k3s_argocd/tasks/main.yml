@@ -1,0 +1,37 @@
+---
+- name: Create destination directory for the chart
+  ansible.builtin.file:
+    path: /tmp/argocd-wrapper
+    state: directory
+    mode: '0755'
+
+- name: Copy ArgoCD wrapper chart to the target
+  ansible.builtin.copy:
+    src: argocd-wrapper/
+    dest: /tmp/argocd-wrapper/
+    mode: '0644'
+
+- name: Template ArgoCD values
+  ansible.builtin.template:
+    src: values.yaml.j2
+    dest: /tmp/argocd-wrapper/values.yaml
+    mode: '0644'
+
+- name: Update Helm dependencies
+  ansible.builtin.command:
+    cmd: /usr/bin/helm dependency update /tmp/argocd-wrapper
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+
+- name: Install ArgoCD via Helm Wrapper
+  ansible.builtin.command:
+    cmd: >
+      /usr/bin/helm upgrade --install argocd /tmp/argocd-wrapper
+      --namespace argocd
+      --create-namespace
+      --kubeconfig /etc/rancher/k3s/k3s.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: argocd_install_result
+  changed_when: argocd_install_result.rc == 0

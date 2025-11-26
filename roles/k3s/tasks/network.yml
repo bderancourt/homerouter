@@ -8,9 +8,9 @@
     value:
       proto: static
       device: dummy0
-      ipaddr: 172.16.10.1
+      ipaddr: 192.168.{{ k8s_admin_vlan_id }}.1
       netmask: 255.255.255.0
-      ip6hint: 10
+      ip6hint: "{{ k8s_admin_vlan_id }}"
       ip6assign: 64
 
 - name: Create network interface k8s_external
@@ -22,10 +22,20 @@
     value:
       proto: static
       device: dummy1
-      ipaddr: 172.16.20.1
+      ipaddr: 192.168.{{ k8s_external_vlan_id }}.1
       netmask: 255.255.255.0
-      ip6hint: 20
+      ip6hint: "{{ k8s_external_vlan_id }}"
       ip6assign: 64
+
+- name: Create default ipv6 route
+  uci:
+    command: section
+    config: network
+    type: route6
+    name: default_v6
+    value:
+      interface: k8s_admin
+      target: ::/0
 
 - name: Commit network
   uci:

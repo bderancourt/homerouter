@@ -1,0 +1,12 @@
+---
+- name: Install k3s on OpenWRT
+  hosts: virtualbox
+  gather_facts: false
+
+  roles:
+    - k3s
+
+  tasks:
+    - name: Reboot
+      ansible.builtin.include_role:
+        name: common_reboot

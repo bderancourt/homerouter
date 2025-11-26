@@ -1,0 +1,77 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    service:
+      enabled: false # On gère les ports manuellement (HostPort)
+    
+    ports:
+      # --- FLUX INTERNE (Par défaut) ---
+      web:
+        expose: true
+        port: 8000
+        exposedPort: 80
+        hostPort: 80
+        hostIP: "192.168.{{ k8s_admin_vlan_id }}.1" # Lié à l'interface Interne uniquement
+        protocol: TCP
+      websecure:
+        expose: true
+        port: 8443
+        exposedPort: 443
+        hostPort: 443
+        hostIP: "192.168.{{ k8s_admin_vlan_id }}.1"
+        protocol: TCP
+      
+      # --- FLUX EXTERNE (Spécifique) ---
+      webext: # Nouveau nom d'entrypoint
+        expose: true
+        port: 9000
+        exposedPort: 80
+        hostPort: 80
+        hostIP: "192.168.{{ k8s_external_vlan_id }}.1" # Lié à l'interface Externe uniquement
+        protocol: TCP
+      websecext:
+        expose: true
+        port: 9443
+        exposedPort: 443
+        hostPort: 443
+        hostIP: "192.168.{{ k8s_external_vlan_id }}.1"
+        protocol: TCP
+
+    # On force Traefik à utiliser les points "web" et "websecure" par défaut
+    # pour que les apps soient sécurisées (internes) si on ne précise rien.
+    additionalArguments:
+      - "--entryPoints.web.address=:8000"
+      - "--entryPoints.websecure.address=:8443"
+      - "--entryPoints.webext.address=:9000"
+      - "--entryPoints.websecext.address=:9443"
+
+    providers:
+      file:
+        enabled: true
+        content: |
+          tls:
+            certificates:
+              - certFile: /certs/local/fullchain.cer
+                keyFile: /certs/local/{{ local_domain }}.key
+              - certFile: /certs/external/fullchain.cer
+                keyFile: /certs/external/{{ external_domain }}.key
+
+    deployment:
+      additionalVolumes:
+        - name: certs-local
+          hostPath:
+            path: /etc/acme/{{ local_domain }}_ecc
+        - name: certs-external
+          hostPath:
+            path: /etc/acme/{{ external_domain }}_ecc
+      additionalVolumeMounts:
+        - name: certs-local
+          mountPath: /certs/local
+          readOnly: true
+        - name: certs-external
+          mountPath: /certs/external
+          readOnly: true
