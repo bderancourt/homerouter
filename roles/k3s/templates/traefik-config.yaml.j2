@@ -52,26 +52,33 @@ spec:
     providers:
       file:
         enabled: true
+        watch: true
         content: |
           tls:
             certificates:
-              - certFile: /certs/local/fullchain.cer
-                keyFile: /certs/local/{{ local_domain }}.key
+              - certFile: /certs/local/{{ acme_cert | basename }}
+                keyFile: /certs/local/{{ acme_key | basename }}
               - certFile: /certs/external/fullchain.cer
                 keyFile: /certs/external/{{ external_domain }}.key
+            stores:
+              default:
+                defaultCertificate:
+                  certFile: /certs/local/{{ acme_cert | basename }}
+                  keyFile: /certs/local/{{ acme_key | basename }}
 
     deployment:
       additionalVolumes:
         - name: certs-local
           hostPath:
-            path: /etc/acme/{{ local_domain }}_ecc
+            path: {{ acme_cert | dirname }}
         - name: certs-external
           hostPath:
             path: /etc/acme/{{ external_domain }}_ecc
-      additionalVolumeMounts:
-        - name: certs-local
-          mountPath: /certs/local
-          readOnly: true
-        - name: certs-external
-          mountPath: /certs/external
-          readOnly: true
+
+    additionalVolumeMounts:
+      - name: certs-local
+        mountPath: /certs/local
+        readOnly: true
+      - name: certs-external
+        mountPath: /certs/external
+        readOnly: true

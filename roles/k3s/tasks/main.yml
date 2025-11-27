@@ -90,6 +90,14 @@
     mode: '0755'
     recurse: true
 
+- name: Ensure ACME certificate keys are readable by Traefik
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: '0644'
+  loop:
+    - "{{ acme_key }}"
+    - "/etc/acme/{{ external_domain }}_ecc/{{ external_domain }}.key"
+
 - name: Configure Traefik with 4 entrypoints
   ansible.builtin.template:
     src: traefik-config.yaml.j2

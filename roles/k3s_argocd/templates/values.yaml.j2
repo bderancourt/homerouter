@@ -8,7 +8,7 @@ argo-cd:
       annotations:
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
-      hostname: argocd.k3s.{{ local_domain }}
+      hostname: argocd.{{ local_domain }}
       path: /
       pathType: Prefix
   configs:
