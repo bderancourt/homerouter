@@ -42,11 +42,11 @@ firmware_packages:
 
   # LuCI / Web Interface
   - luci-ssl
-  - luci-app-statistics
-  - collectd-mod-sensors
   - luci-app-temp-status
   - luci-app-disks-info
   - luci-app-cpu-status-mini
+  - luci-app-statistics
+  - collectd-mod-sensors
 
   # Networking & Kubernetes Requirements
   - kmod-atlantic

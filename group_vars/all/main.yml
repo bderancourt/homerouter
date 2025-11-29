@@ -32,3 +32,5 @@ adguardhome_user: "{{ secret_adguardhome_user }}"
 adguardhome_password: "{{ secret_adguardhome_password }}"
 
 argocd_admin_password: "{{ secret_argocd_admin_password }}"
+
+crowdsec_firewall_bouncer_api_key: "{{ secret_crowdsec_firewall_bouncer_api_key }}"

@@ -6,5 +6,6 @@
   roles:
     - package_acme
     - package_adguardhome
+    - package_crowdsec
     - package_ddns
     - package_sqm

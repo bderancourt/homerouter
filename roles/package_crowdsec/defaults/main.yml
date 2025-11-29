@@ -1,0 +1,3 @@
+---
+crowdsec_wan_interface: "{{ 'eth3' if inventory_hostname == 'virtualbox' else 'eth3.100' }}"
+crowdsec_firewall_bouncer_api_key: "changeme"
