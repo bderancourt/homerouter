@@ -6,7 +6,13 @@ metadata:
 spec:
   valuesContent: |-
     hostNetwork: true
-    dnsPolicy: ClusterFirstWithHostNet
+
+    deployment:
+      dnsPolicy: ClusterFirstWithHostNet
+      additionalVolumes:
+        - name: certs
+          hostPath:
+            path: {{ acme_cert | dirname }}
 
     service:
       enabled: false # On gère les ports manuellement (HostPort)
@@ -23,16 +29,19 @@ spec:
       traefik:
         expose: true
         port: 8080
+        hostPort: 8080
         hostIP: "192.168.{{ k3s_admin_vlan_id }}.1"
         protocol: TCP
       metrics:
         expose: true
         port: 9100
+        hostPort: 9100
         hostIP: "192.168.{{ k3s_admin_vlan_id }}.1"
         protocol: TCP
       websecure:
         expose: true
         port: 443
+        hostPort: 443
         hostIP: "192.168.{{ k3s_admin_vlan_id }}.1"
         protocol: TCP
       
@@ -40,6 +49,7 @@ spec:
       websecext:
         expose: true
         port: 443
+        hostPort: 443
         hostIP: "192.168.{{ k3s_external_vlan_id }}.1"
         protocol: TCP
 
@@ -78,15 +88,6 @@ spec:
                 defaultCertificate:
                   certFile: /certs/{{ acme_cert | basename }}
                   keyFile: /certs/{{ acme_key | basename }}
-
-    updateStrategy:
-      type: Recreate
-
-    deployment:
-      additionalVolumes:
-        - name: certs
-          hostPath:
-            path: {{ acme_cert | dirname }}
 
     additionalVolumeMounts:
       - name: certs
