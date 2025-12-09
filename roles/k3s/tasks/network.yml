@@ -1,41 +1,31 @@
 ---
-- name: Create network interface k8s_admin
+- name: Create network interface k3s_admin
   uci:
     command: section
     config: network
     type: interface
-    name: k8s_admin
+    name: k3s_admin
     value:
       proto: static
       device: dummy0
-      ipaddr: 192.168.{{ k8s_admin_vlan_id }}.1
+      ipaddr: 192.168.{{ k3s_admin_vlan_id }}.1
       netmask: 255.255.255.0
-      ip6hint: "{{ k8s_admin_vlan_id }}"
+      ip6hint: "{{ k3s_admin_vlan_id }}"
       ip6assign: 64
 
-- name: Create network interface k8s_external
+- name: Create network interface k3s_external
   uci:
     command: section
     config: network
     type: interface
-    name: k8s_external
+    name: k3s_external
     value:
       proto: static
       device: dummy1
-      ipaddr: 192.168.{{ k8s_external_vlan_id }}.1
+      ipaddr: 192.168.{{ k3s_external_vlan_id }}.1
       netmask: 255.255.255.0
-      ip6hint: "{{ k8s_external_vlan_id }}"
+      ip6hint: "{{ k3s_external_vlan_id }}"
       ip6assign: 64
-
-- name: Create default ipv6 route
-  uci:
-    command: section
-    config: network
-    type: route6
-    name: default_v6
-    value:
-      interface: k8s_admin
-      target: ::/0
 
 - name: Commit network
   uci:

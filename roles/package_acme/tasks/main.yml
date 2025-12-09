@@ -34,16 +34,17 @@
     command: section
     config: acme
     type: cert
-    name: "{{ item.name }}"
+    name: "acme_cert"
     value:
       enabled: 1
-      domains: "{{ item.domains }}"
+      domains:
+        - "{{ domain }}"
+        - "*.{{ domain }}"
       validation_method: dns
-      dns: "{{ item.dns_script }}"
-      credentials: "{{ item.credentials }}"
-      staging: "{{ 1 if inventory_hostname == 'virtualbox' else 0 }}"
+      dns: "{{ acme_dns }}"
+      credentials: "{{ acme_credentials }}"
+      staging: "{{ acme_staging }}"
     replace: true
-  loop: "{{ acme_configs }}"
 
 - name: Commit ACME configuration
   uci:

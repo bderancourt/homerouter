@@ -16,13 +16,6 @@ sed -i "/^root:/ s|/bin/ash|/bin/bash|" /etc/passwd
 
 chmod u=rwx,g=,o= /root/*.sh
 
-# Specific hostname for VirtualBox
-grep -qi "virtualbox" /sys/class/dmi/id/product_name && \
-    uci set system.@system[0].hostname='openwrt-vbox'
-
-uci set dhcp.@dnsmasq[0].local='/{{ local_domain }}/'
-uci set dhcp.@dnsmasq[0].domain='{{ local_domain }}'
-
 uci set system.@system[0].timezone='CET-1CEST,M3.5.0,M10.5.0/3'
 uci set system.@system[0].zonename='Europe/Paris'
 uci set system.@system[0].log_size='2048'

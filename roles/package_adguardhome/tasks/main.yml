@@ -16,53 +16,37 @@
     config: dhcp
     type: dnsmasq
     find-by:
-      domain: "{{ local_domain }}"
+      localservice: 1
     value:
+      domain: "{{ domain }}"
+      local: "/{{ domain }}/"
       noresolv: 1
       cachesize: 0
       expandhosts: 1
       port: 54
       server: []
 
-- name: Adding DNS redirection
+- name: Add domain in dhcp
   uci:
     command: section
-    config: firewall
-    type: redirect
-    name: "DNS_intercept_{{ item }}"
+    config: dhcp
+    type: dhcp
+    find-by:
+      interface: "{{ item }}"
     value:
-      name: "Intercept DNS for {{ item }}"
-      src: "{{ item }}"
-      src_dport: 53
-      proto: tcp udp
-      target: DNAT
-      dest: "{{ item }}"
-      dest_port: 53
-      family: any
+      domain:
+        - "{{ domain }}"
   loop:
     - lan
     - guest
-    - iot
 
 - name: Commit
   uci:
     command: commit
-    key: "{{ item }}"
-  loop:
-    - dhcp
-    - firewall
-  register: uci_commit_result
-
-- name: Reload config
-  ansible.builtin.command: reload_config
-  changed_when: true
-  when: uci_commit_result is changed # noqa no-handler
-
-- name: Restart dnsmasq
-  ansible.builtin.service:
-    name: dnsmasq
-    state: restarted
-  when: uci_commit_result is changed # noqa no-handler
+    key: dhcp
+  notify:
+    - Reload config
+    - Restart dnsmasq
 
 - name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml
   ansible.builtin.template:
@@ -72,8 +56,4 @@
     group: root
     mode: u=rw,g=r,o=r
   notify:
-    - Reload config
     - Restart AdGuardHome
-
-- name: Flush_handlers
-  ansible.builtin.meta: flush_handlers

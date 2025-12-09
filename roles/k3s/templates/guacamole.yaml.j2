@@ -1,0 +1,231 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: guacamole
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: guacamole-secrets
+  namespace: guacamole
+type: Opaque
+stringData:
+  postgres-password: "changeme"
+  postgres-user: "guacamole"
+  postgres-db: "guacamole"
+---
+# Postgres
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: guacamole
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-password
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-user
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-db
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: guacamole
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: postgres
+---
+# Guacd
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacd
+  namespace: guacamole
+spec:
+  selector:
+    matchLabels:
+      app: guacd
+  template:
+    metadata:
+      labels:
+        app: guacd
+    spec:
+      containers:
+        - name: guacd
+          image: guacamole/guacd:1.6.0
+          ports:
+            - containerPort: 4822
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guacd
+  namespace: guacamole
+spec:
+  ports:
+    - port: 4822
+  selector:
+    app: guacd
+---
+# Guacamole Client
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacamole
+  namespace: guacamole
+spec:
+  selector:
+    matchLabels:
+      app: guacamole
+  template:
+    metadata:
+      labels:
+        app: guacamole
+    spec:
+      volumes:
+        - name: db-init
+          emptyDir: {}
+      initContainers:
+        - name: gen-db-schema
+          image: guacamole/guacamole:1.6.0
+          command: ["/bin/sh", "-c"]
+          args: ["/opt/guacamole/bin/initdb.sh --postgresql > /init/initdb.sql"]
+          volumeMounts:
+            - name: db-init
+              mountPath: /init
+        - name: apply-db-schema
+          image: postgres:15-alpine
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              export PGPASSWORD=$POSTGRES_PASSWORD
+              until psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -c '\q'; do
+                echo "Waiting for postgres..."
+                sleep 2
+              done
+              
+              psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT count(*) FROM guacamole_user" > /dev/null 2>&1
+              if [ $? -ne 0 ]; then
+                echo "Initializing database..."
+                psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -f /init/initdb.sql
+              else
+                echo "Database already initialized."
+              fi
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-password
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-user
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-db
+          volumeMounts:
+            - name: db-init
+              mountPath: /init
+      containers:
+        - name: guacamole
+          image: guacamole/guacamole:1.6.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GUACD_HOSTNAME
+              value: guacd
+            - name: POSTGRESQL_HOSTNAME
+              value: postgres
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-db
+            - name: POSTGRESQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-user
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: postgres-password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guacamole
+  namespace: guacamole
+spec:
+  ports:
+    - port: 8080
+  selector:
+    app: guacamole
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: root-to-guacamole
+  namespace: guacamole
+spec:
+  redirectRegex:
+    regex: "^(https?://[^/]+)/?$"
+    replacement: "${1}/guacamole/"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: guacamole
+  namespace: guacamole
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: guacamole-root-to-guacamole@kubernetescrd
+spec:
+  rules:
+    - host: bastion.{{ domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: guacamole
+                port:
+                  number: 8080

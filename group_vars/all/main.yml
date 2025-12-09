@@ -4,33 +4,27 @@ ansible_user: root
 firmware_version: 24.10.4
 # datadrive_mount_dir: /data
 docker_data_dir: /data/docker
-acme_key: /etc/acme/{{ local_domain }}_ecc/{{ local_domain }}.key
-acme_cert: /etc/acme/{{ local_domain }}_ecc/fullchain.cer
 
-k8s_admin_vlan_id: 10
-k8s_external_vlan_id: 20
+acme_key: /etc/acme/{{ domain }}_ecc/{{ domain }}.key
+acme_cert: /etc/acme/{{ domain }}_ecc/fullchain.cer
 
 # Secrets vars
 bbox_mac: "{{ secret_bbox_mac }}"
 root_password: "{{ secret_root_password }}"
 ssh_key: "{{ secret_ssh_key }}"
-local_domain: "{{ secret_local_domain }}"
-external_domain: "{{ secret_external_domain }}"
+domain: "{{ secret_domain }}"
 ula_prefix: "{{ secret_ula_prefix }}"
 
-ddns_name: "{{ secret_ddns_name }}"
 ddns_service_name: "{{ secret_ddns_service_name }}"
-ddns_lookup_host: "{{ secret_ddns_lookup_host }}"
-ddns_domain: "{{ secret_ddns_domain }}"
 ddns_username: "{{ secret_ddns_username }}"
 ddns_password: "{{ secret_ddns_password }}"
 
 acme_email: "{{ secret_acme_email }}"
-acme_configs: "{{ secret_acme_configs }}"
+acme_dns: "{{ secret_acme_dns }}"
+acme_credentials: "{{ secret_acme_credentials }}"
 
 adguardhome_user: "{{ secret_adguardhome_user }}"
 adguardhome_password: "{{ secret_adguardhome_password }}"
 
-argocd_admin_password: "{{ secret_argocd_admin_password }}"
-
 crowdsec_firewall_bouncer_api_key: "{{ secret_crowdsec_firewall_bouncer_api_key }}"
+crowdsec_enroll_key: "{{ secret_crowdsec_enroll_key }}"

@@ -1,0 +1,7 @@
+---
+- name: OpenWRT install and setup packages
+  hosts: virtualbox
+  gather_facts: false
+
+  roles:
+    - package_crowdsec

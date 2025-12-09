@@ -1,22 +1,11 @@
 ---
-- name: Configure DNS records for k3s
+- name: Configure wildcard DNS for k3s services
   uci:
-    command: section
-    config: dhcp
-    type: domain
-    find-by:
-      name: "{{ item.name }}"
-      ip: "{{ item.ip }}"
-    replace: true
-  loop:
-    - name: "argocd.{{ local_domain }}"
-      ip: "192.168.{{ k8s_admin_vlan_id }}.1"
-    - name: "argocd.{{ local_domain }}"
-      ip: "{{ ula_prefix }}:{{ k8s_admin_vlan_id }}::1"
-    - name: "traefik.{{ external_domain }}"
-      ip: "192.168.{{ k8s_external_vlan_id }}.1"
-    - name: "traefik.{{ external_domain }}"
-      ip: "{{ ula_prefix }}:{{ k8s_external_vlan_id }}::1"
+    command: set
+    key: dhcp.@dnsmasq[0].address
+    value:
+      - "/.{{ domain }}/192.168.{{ k3s_admin_vlan_id }}.1"
+      - "/.{{ domain }}/{{ ula_prefix }}:{{ k3s_admin_vlan_id }}::1"
 
 - name: Commit dhcp changes
   uci:

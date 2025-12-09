@@ -1,0 +1,7 @@
+---
+- name: Setup ACME certificates on OpenWRT
+  hosts: virtualbox
+  gather_facts: false
+
+  roles:
+    - package_acme

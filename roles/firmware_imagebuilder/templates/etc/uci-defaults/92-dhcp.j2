@@ -33,9 +33,6 @@ uci add_list dhcp.lan.ra_flags=home-agent
 uci del dhcp.lan.dhcp_option || true
 uci add_list dhcp.lan.dhcp_option="6,192.168.1.1"
 
-uci del dhcp.lan.domain || true
-uci add_list dhcp.lan.domain='bnl.ovh'
-
 
 # DHCP for Guest
 #######################################
@@ -59,9 +56,6 @@ uci add_list dhcp.guest.ra_flags=home-agent
 uci del dhcp.guest.dhcp_option || true
 uci add_list dhcp.guest.dhcp_option="6,192.168.2.1"
 
-uci del dhcp.guest.domain || true
-uci add_list dhcp.guest.domain='bnl.ovh'
-
 
 # DHCP for IoT
 #######################################
@@ -84,9 +78,6 @@ uci add_list dhcp.iot.ra_flags=home-agent
 
 uci del dhcp.iot.dhcp_option || true
 uci add_list dhcp.iot.dhcp_option="6,192.168.3.1"
-
-uci del dhcp.iot.domain || true
-uci add_list dhcp.iot.domain='bnl.ovh'
 
 
 #######################################

@@ -114,5 +114,18 @@ for zone in guest iot; do
   uci set firewall.$NTP_RULE.target='ACCEPT'
 done
 
+for zone in lan guest iot; do
+  # DNS interception: Redirect DNS requests to router's DNS server
+  DNS_REDIRECT=$(uci add firewall redirect)
+  uci set firewall.$DNS_REDIRECT.name="DNS_intercept_${zone}"
+  uci set firewall.$DNS_REDIRECT.src="$zone"
+  uci set firewall.$DNS_REDIRECT.src_dport='53'
+  uci set firewall.$DNS_REDIRECT.proto='tcp udp'
+  uci set firewall.$DNS_REDIRECT.target='DNAT'
+  uci set firewall.$DNS_REDIRECT.dest="$zone"
+  uci set firewall.$DNS_REDIRECT.dest_port='53'
+  uci set firewall.$DNS_REDIRECT.family='any'
+done
+
 uci commit firewall
 exit 0

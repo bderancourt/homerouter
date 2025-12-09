@@ -3,6 +3,14 @@
   ansible.builtin.import_role:
     name: common_post_reboot
 
+- name: Allow non-root users to bind to privileged ports
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_unprivileged_port_start
+    value: '0'
+    sysctl_set: true
+    state: present
+    reload: true
+
 - name: Configure dummy module options
   ansible.builtin.lineinfile:
     path: /etc/modules.conf
@@ -40,7 +48,7 @@
 
 - name: Download k3s binary
   ansible.builtin.get_url:
-    url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s"
+    url: "{{ k3s_url }}"
     dest: /usr/bin/k3s
     mode: '0755'
 
@@ -62,12 +70,6 @@
     dest: /etc/config/k3s
     mode: '0644'
 
-- name: Create k3s data directory
-  ansible.builtin.file:
-    path: /var/lib/rancher/k3s
-    state: directory
-    mode: '0755'
-
 - name: Create k3s init script
   ansible.builtin.copy:
     src: k3s.init
@@ -83,26 +85,12 @@
 - name: Configure dns
   ansible.builtin.include_tasks: dns.yml
 
-- name: Create k3s manifests directory
-  ansible.builtin.file:
-    path: /var/lib/rancher/k3s/server/manifests
-    state: directory
-    mode: '0755'
-    recurse: true
-
 - name: Ensure ACME certificate keys are readable by Traefik
   ansible.builtin.file:
-    path: "{{ item }}"
-    mode: '0644'
-  loop:
-    - "{{ acme_key }}"
-    - "/etc/acme/{{ external_domain }}_ecc/{{ external_domain }}.key"
-
-- name: Configure Traefik with 4 entrypoints
-  ansible.builtin.template:
-    src: traefik-config.yaml.j2
-    dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
-    mode: '0644'
+    path: "{{ acme_key }}"
+    owner: root
+    group: 65532
+    mode: '0640'
 
 - name: Start k3s
   ansible.builtin.service:
@@ -110,25 +98,15 @@
     state: started
     enabled: true
 
-- name: Download k3s check-config script
-  ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/k3s-io/k3s/master/contrib/util/check-config.sh
-    dest: /root/check-config.sh
-    mode: '0755'
-
-- name: Run k3s check-config
-  ansible.builtin.command: /root/check-config.sh
-  register: k3s_check_config
-  changed_when: false
-  failed_when: false
-
-- name: Print k3s check-config output
-  ansible.builtin.debug:
-    var: k3s_check_config.stdout_lines
+- name: Wait for k3s manifests directory
+  ansible.builtin.wait_for:
+    path: /var/lib/rancher/k3s/server/manifests
+    state: present
+    timeout: 120
 
 - name: Install Helm
   ansible.builtin.unarchive:
-    src: https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
+    src: "{{ helm_url }}"
     dest: /usr/bin
     remote_src: true
     extra_opts:
@@ -153,3 +131,16 @@
     src: /usr/bin/k3s
     dest: /usr/bin/ctr
     state: link
+
+- name: Configure K3s manifests
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/var/lib/rancher/k3s/server/manifests/{{ item | regex_replace('\\.j2$', '') }}"
+    mode: '0644'
+  loop:
+    - traefik-config.yaml.j2
+    - k3s-api-ingress.yaml.j2
+    - guacamole.yaml.j2
+    - firefox.yaml.j2
+    - authentik.yaml.j2
+    - kubernetes-dashboard.yaml.j2

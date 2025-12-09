@@ -20,30 +20,26 @@
     - ddns.myddns_ipv4
     - ddns.myddns_ipv6
 
-- name: Get WAN6 interface name
-  ansible.builtin.shell: set -o pipefail && uci show network.wan6.device | cut -d= -f2 | tr -d "'"
-  register: wan6_interface_result
-  changed_when: false
 
-- name: Set WAN6 interface name
+- name: Set ddns_name fact
   ansible.builtin.set_fact:
-    wan6_interface: "{{ wan6_interface_result.stdout | trim }}"
+    ddns_name: "{{ domain | replace('.', '_') }}"
 
 - name: Adding configuration {{ ddns_name + '_v4' }}
   uci:
     command: section
     config: ddns
     type: service
-    name: "{{ ddns_name }}_v4"
+    name: "{{ ddns_name + '_v4' }}"
     value:
       interface: wan
       ip_source: network
       ip_network: wan
-      enabled: "{{ '0' if inventory_hostname == 'virtualbox' else '1' }}"
+      enabled: "{{ ddns_enabled }}"
       use_ipv6: 0
       service_name: "{{ ddns_service_name }}"
-      lookup_host: "{{ ddns_lookup_host }}"
-      domain: "{{ ddns_domain }}"
+      lookup_host: "{{ domain }}"
+      domain: "{{ domain }}"
       username: "{{ ddns_username }}"
       password: "{{ ddns_password }}"
       use_https: 1
@@ -60,12 +56,12 @@
     value:
       interface: wan
       ip_source: interface
-      ip_interface: "{{ wan6_interface }}"
-      enabled: "{{ '0' if inventory_hostname == 'virtualbox' else '1' }}"
+      ip_interface: dummy0
+      enabled: "{{ ddns_enabled }}"
       use_ipv6: 1
       service_name: "{{ ddns_service_name }}"
-      lookup_host: "{{ ddns_lookup_host }}"
-      domain: "{{ ddns_domain }}"
+      lookup_host: "{{ domain }}"
+      domain: "{{ domain }}"
       username: "{{ ddns_username }}"
       password: "{{ ddns_password }}"
       use_https: 1
@@ -78,6 +74,3 @@
     command: commit
     key: ddns
   notify: Reload config
-
-- name: Flush_handlers
-  ansible.builtin.meta: flush_handlers

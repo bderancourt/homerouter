@@ -23,11 +23,27 @@
   loop:
     - crowdsecurity/sshd
     - crowdsecurity/linux
-    - crowdsecurity/cri-logs
     - crowdsecurity/traefik
   register: cscli_install
   changed_when: "'Enabled' in cscli_install.stdout"
   failed_when: false
+
+- name: Install CrowdSec parsers
+  ansible.builtin.command: cscli parsers install {{ item }}
+  loop:
+    - crowdsecurity/cri-logs
+  register: cscli_parsers_install
+  changed_when: "'Enabled' in cscli_parsers_install.stdout"
+  failed_when: false
+
+- name: Enroll CrowdSec instance
+  ansible.builtin.command: cscli console enroll {{ crowdsec_enroll_key }}
+  when: crowdsec_enroll_key | length > 0
+  register: crowdsec_enroll
+  changed_when: "'Successfully enrolled' in crowdsec_enroll.stdout"
+  failed_when:
+    - crowdsec_enroll.rc != 0
+    - "'already enrolled' not in crowdsec_enroll.stderr"
 
 - name: Create crowdsec-firewall-bouncer
   ansible.builtin.command: cscli bouncers add crowdsec-firewall-bouncer -o raw -k {{ crowdsec_firewall_bouncer_api_key }}
@@ -48,8 +64,8 @@
     value:
       ipv4: 1
       ipv6: 1
+      api_url: 'http://127.0.0.1:8080/'
       enabled: 1
-      api_url: "127.0.0.1:8080"
       api_key: "{{ crowdsec_firewall_bouncer_api_key }}"
       deny_action: drop
       deny_log: 1

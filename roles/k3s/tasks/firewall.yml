@@ -4,58 +4,136 @@
     command: section
     config: firewall
     type: zone
-    name: k8s_admin
+    name: k3s_admin
     value:
-      name: k8s_admin
+      name: k3s_admin
       network:
-        - k8s_admin
+        - k3s_admin
       device:
         - cni0
         - flannel.1
-      input: ACCEPT
+      input: REJECT
       output: ACCEPT
       forward: ACCEPT
 
-- name: Create forwarding lan to k8s_admin
+- name: Create forwarding lan to k3s_admin
   uci:
     command: section
     config: firewall
     type: forwarding
     find-by:
       src: lan
-      dest: k8s_admin
+      dest: k3s_admin
 
-- name: Create forwarding k8s_admin to wan
+- name: Create forwarding k3s_admin to wan
   uci:
     command: section
     config: firewall
     type: forwarding
     find-by:
-      src: k8s_admin
+      src: k3s_admin
       dest: wan
 
-- name: Create firewall zone k8s_external
+- name: Create firewall zone k3s_external
   uci:
     command: section
     config: firewall
     type: zone
-    name: k8s_external
+    name: k3s_external
     value:
-      name: k8s_external
+      name: k3s_external
       network:
-        - k8s_external
-      input: ACCEPT
+        - k3s_external
+      input: REJECT
       output: ACCEPT
-      forward: ACCEPT
+      forward: REJECT
 
-- name: Create forwarding lan to k8s_external
+- name: Allow k3s_admin DNS access to router
   uci:
     command: section
     config: firewall
-    type: forwarding
-    find-by:
-      src: lan
-      dest: k8s_external
+    type: rule
+    name: allow_k3s_admin_dns
+    value:
+      name: Allow k3s_admin DNS to router
+      src: k3s_admin
+      proto: tcp udp
+      dest_port: 53
+      family: any
+      target: ACCEPT
+
+- name: Allow k3s_admin API access to router
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    name: allow_k3s_admin_api
+    value:
+      name: Allow k3s_admin API to router
+      src: k3s_admin
+      proto: tcp
+      dest_port: 6443
+      family: any
+      target: ACCEPT
+
+- name: Allow k3s_admin Kubelet access to router
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    name: allow_k3s_admin_kubelet
+    value:
+      name: Allow k3s_admin Kubelet to router
+      src: k3s_admin
+      proto: tcp
+      dest_port: 10250
+      family: any
+      target: ACCEPT
+
+- name: Allow WAN HTTPS to k3s_external (IPv4 DNAT)
+  uci:
+    command: section
+    config: firewall
+    type: redirect
+    name: wan_to_k3s_external_https_ipv4
+    value:
+      name: Allow WAN HTTPS to k3s_external (IPv4)
+      src: wan
+      src_dport: 443
+      dest: k3s_external
+      dest_ip: 192.168.{{ k3s_external_vlan_id }}.1
+      dest_port: 443
+      proto: tcp
+      family: ipv4
+      target: DNAT
+
+- name: Allow WAN HTTPS to k3s_external (IPv6)
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    name: allow_wan_k3s_external_https_ipv6
+    value:
+      name: Allow WAN HTTPS to k3s_external (IPv6)
+      src: wan
+      dest: k3s_external
+      proto: tcp
+      dest_port: 443
+      family: ipv6
+      target: ACCEPT
+
+- name: Allow k3s_admin to access AP Management
+  uci:
+    command: section
+    config: firewall
+    type: rule
+    name: allow_k3s_admin_ap
+    value:
+      name: Allow k3s_admin to AP
+      src: k3s_admin
+      dest: lan
+      dest_ip: 192.168.1.90
+      target: ACCEPT
 
 - name: Commit firewall
   uci:

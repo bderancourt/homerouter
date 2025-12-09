@@ -1,0 +1,6 @@
+---
+- name: Setup AdGuard Home on OpenWRT
+  hosts: virtualbox
+
+  roles:
+    - package_adguardhome
