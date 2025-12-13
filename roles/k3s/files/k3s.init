@@ -7,25 +7,9 @@ USE_PROCD=1
 PROG=/usr/bin/k3s
 
 start_service() {
-    # Ensure persistent storage for kubelet and rancher (containerd)
-    mkdir -p /opt/k3s/var/lib/rancher
-    mkdir -p /opt/k3s/var/lib/kubelet
-    
-    mkdir -p /var/lib/rancher
-    mkdir -p /var/lib/kubelet
-
-    if ! grep -q "/var/lib/rancher" /proc/mounts; then
-        mount --bind /opt/k3s/var/lib/rancher /var/lib/rancher
-    fi
-
-    if ! grep -q "/var/lib/kubelet" /proc/mounts; then
-        mount --bind /opt/k3s/var/lib/kubelet /var/lib/kubelet
-    fi
-
     # Load configuration from /etc/config/k3s
     . /lib/functions.sh
     config_load k3s
-    config_get data_dir main data_dir
 
     procd_open_instance
     procd_set_param command $PROG server
@@ -40,11 +24,6 @@ start_service() {
     }
     config_list_foreach main server_args append_arg
 
-    if [ -n "$data_dir" ]; then
-        procd_append_param command --data-dir "$data_dir"
-        ARGS_LOG="$ARGS_LOG --data-dir $data_dir"
-    fi
-
     logger -t k3s "Starting k3s with args:$ARGS_LOG"
 
     procd_set_param respawn
@@ -55,6 +34,4 @@ start_service() {
 
 stop_service() {
     killall k3s
-    umount /var/lib/kubelet 2>/dev/null || true
-    umount /var/lib/rancher 2>/dev/null || true
 }

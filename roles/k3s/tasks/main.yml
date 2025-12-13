@@ -3,48 +3,13 @@
   ansible.builtin.import_role:
     name: common_post_reboot
 
-- name: Allow non-root users to bind to privileged ports
-  ansible.posix.sysctl:
-    name: net.ipv4.ip_unprivileged_port_start
-    value: '0'
-    sysctl_set: true
-    state: present
-    reload: true
-
 - name: Configure dummy module options
   ansible.builtin.lineinfile:
     path: /etc/modules.conf
     line: 'options dummy numdummies=2'
     create: true
     mode: '0644'
-
-- name: Install k3s dependencies
-  community.general.opkg:
-    name: "{{ item }}"
-    state: present
-  loop:
-    - kmod-br-netfilter
-    - kmod-ipt-ipset
-    - kmod-ipt-conntrack-extra
-    - kmod-ipt-extra
-    - kmod-nf-conntrack-netlink
-    - kmod-vxlan
-    - kmod-veth
-    - kmod-ipt-nat
-    - kmod-ipt-nat6
-    - kmod-ipt-nat-extra
-    - kmod-ikconfig
-    - kmod-dummy
-    - ipset
-    - iptables-nft
-    - ip6tables-nft
-    - iptables-mod-extra
-    - ip-full
-    - ca-certificates
-    - conntrack
-    - ip-bridge
-    - coreutils-sha256sum
-    - coreutils-stat
+  notify: Reload dummy module
 
 - name: Download k3s binary
   ansible.builtin.get_url:
@@ -76,6 +41,9 @@
     dest: /etc/init.d/k3s
     mode: '0755'
 
+- name: Flush handlers before starting k3s
+  ansible.builtin.meta: flush_handlers
+
 - name: Configure network
   ansible.builtin.include_tasks: network.yml
 
@@ -91,6 +59,9 @@
     owner: root
     group: 65532
     mode: '0640'
+
+- name: Generate K3s certificates
+  ansible.builtin.include_tasks: certificates.yml
 
 - name: Start k3s
   ansible.builtin.service:
@@ -139,8 +110,8 @@
     mode: '0644'
   loop:
     - traefik-config.yaml.j2
-    - k3s-api-ingress.yaml.j2
-    - guacamole.yaml.j2
-    - firefox.yaml.j2
-    - authentik.yaml.j2
+    - kube-system-netpol.yaml.j2
+    - coredns-custom.yaml.j2
+    - authelia.yaml.j2
     - kubernetes-dashboard.yaml.j2
+    - teleport.yaml.j2

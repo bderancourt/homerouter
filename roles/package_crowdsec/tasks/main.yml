@@ -82,3 +82,20 @@
     - Reload config
     - Restart crowdsec-firewall-bouncer
     - Restart crowdsec
+
+- name: Enable logging on WAN zone for rejected traffic
+  uci:
+    command: section
+    config: firewall
+    type: zone
+    find-by:
+      name: wan
+    value:
+      log: 1
+      log_limit: '10/minute'
+
+- name: Commit firewall changes for WAN logging
+  uci:
+    command: commit
+    config: firewall
+  notify: Reload config

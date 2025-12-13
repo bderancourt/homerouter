@@ -3,6 +3,81 @@ kind: Namespace
 metadata:
   name: kubernetes-dashboard
 ---
+# NetworkPolicy: Allow intra-namespace traffic, deny inter-namespace by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: kubernetes-dashboard
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow all traffic from same namespace
+  - from:
+    - podSelector: {}
+  egress:
+  # Allow all traffic to same namespace
+  - to:
+    - podSelector: {}
+  # Allow DNS to kube-system
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# NetworkPolicy: Allow ingress from Traefik
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-traefik
+  namespace: kubernetes-dashboard
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: kong
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+    ports:
+    - protocol: TCP
+      port: 80
+---
+# NetworkPolicy: Allow egress to Kubernetes API
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-k8s-api
+  namespace: kubernetes-dashboard
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: kubernetes-dashboard
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: default
+    ports:
+    - protocol: TCP
+      port: 6443
+---
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:

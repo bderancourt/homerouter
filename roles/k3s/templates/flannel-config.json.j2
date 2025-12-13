@@ -1,9 +1,9 @@
 {
     "Network": "10.42.0.0/16",
-    "IPv6Network": "fd00:42::/56",
     "Backend": {
-        "Type": "vxlan"
+        "Type": "vxlan",
+        "Port": 8472,
+        "VNI": 1
     },
-    "EnableNFTables": true,
-    "EnableIPv6": true
+    "EnableNFTables": true
 }

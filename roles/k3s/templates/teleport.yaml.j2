@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: teleport
+---
+# NetworkPolicy: Allow intra-namespace traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: teleport
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector: {}
+  egress:
+  - to:
+    - podSelector: {}
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# NetworkPolicy: Allow ingress from Traefik
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-traefik
+  namespace: teleport
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: teleport
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+    ports:
+    - protocol: TCP
+      port: 443
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: teleport
+  namespace: kube-system
+spec:
+  repo: https://charts.releases.teleport.dev
+  chart: teleport-cluster
+  targetNamespace: teleport
+  createNamespace: true
+  valuesContent: |-
+    clusterName: "bastion2.{{ domain }}"
+    proxyListenerMode: multiplex
+    
+    auth:
+      teleportConfig:
+        teleport:
+          log:
+            output: stderr
+            severity: INFO
+
+    proxy:
+      service:
+        type: ClusterIP
+    
+    ingress:
+      enabled: true
+      spec:
+        ingressClassName: traefik
+        rules:
+        - host: bastion2.{{ domain }}
+          http:
+            paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: teleport
+                  port:
+                    number: 443
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure,websecext
+        traefik.ingress.kubernetes.io/router.tls: "true"
+
+    persistence:
+      enabled: false

@@ -39,6 +39,7 @@ firmware_packages:
   - python3-decimal
   - python3-requests
   - python3-openssl
+  - python3-cryptography
 
   # LuCI / Web Interface
   - luci-ssl
@@ -50,3 +51,27 @@ firmware_packages:
 
   # Networking & Kubernetes Requirements
   - kmod-atlantic
+  - kmod-br-netfilter
+  - kmod-ipt-ipset
+  - kmod-ipt-conntrack-extra
+  - kmod-ipt-extra
+  - kmod-nf-conntrack-netlink
+  - kmod-vxlan
+  - kmod-veth
+  - kmod-ipt-nat
+  - kmod-ipt-nat6
+  - kmod-ipt-nat-extra
+  - kmod-ikconfig
+  - kmod-dummy
+  - ipset
+  - iptables-nft
+  - ip6tables-nft
+  - iptables-mod-extra
+  - ip-full
+  - ca-certificates
+  - conntrack
+  - ip-bridge
+  - coreutils-sha256sum
+  - coreutils-stat
+  - curl
+  - drill

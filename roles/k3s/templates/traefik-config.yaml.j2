@@ -8,6 +8,9 @@ spec:
     hostNetwork: true
 
     deployment:
+      replicas: 1
+      strategy:
+        type: Recreate
       dnsPolicy: ClusterFirstWithHostNet
       additionalVolumes:
         - name: certs
@@ -40,16 +43,16 @@ spec:
         protocol: TCP
       websecure:
         expose: true
-        port: 443
-        hostPort: 443
+        port: 8443
+        hostPort: 8443
         hostIP: "192.168.{{ k3s_admin_vlan_id }}.1"
         protocol: TCP
       
       # --- FLUX EXTERNE (Spécifique) ---
       websecext:
         expose: true
-        port: 443
-        hostPort: 443
+        port: 8443
+        hostPort: 8443
         hostIP: "192.168.{{ k3s_external_vlan_id }}.1"
         protocol: TCP
 
@@ -70,6 +73,16 @@ spec:
         watch: true
         content: |
           http:
+            routers:
+              catchall:
+                rule: "HostRegexp(`{host:.+}`)"
+                priority: 1
+                entryPoints:
+                  - websecure
+                  - websecext
+                middlewares:
+                  - drop-connection
+                service: noop
             middlewares:
               dashboard-redirect:
                 redirectRegex:
@@ -79,6 +92,17 @@ spec:
                 redirectRegex:
                   regex: "^(https?://[^/]+)/?$"
                   replacement: "${1}/dashboard/"
+              drop-connection:
+                errors:
+                  status:
+                    - "403"
+                  query: "/"
+                  service: noop
+            services:
+              noop:
+                loadBalancer:
+                  servers:
+                    - url: "http://127.0.0.1:1"
           tls:
             certificates:
               - certFile: /certs/{{ acme_cert | basename }}

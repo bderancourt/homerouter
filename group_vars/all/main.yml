@@ -28,3 +28,14 @@ adguardhome_password: "{{ secret_adguardhome_password }}"
 
 crowdsec_firewall_bouncer_api_key: "{{ secret_crowdsec_firewall_bouncer_api_key }}"
 crowdsec_enroll_key: "{{ secret_crowdsec_enroll_key }}"
+
+smtp_host: "{{ secret_smtp_host }}"
+smtp_username: "{{ secret_smtp_username }}"
+smtp_password: "{{ secret_smtp_password }}"
+
+authelia_jwt_secret: "{{ secret_authelia_jwt_secret }}"
+authelia_session_secret: "{{ secret_authelia_session_secret }}"
+authelia_storage_encryption_key: "{{ secret_authelia_storage_encryption_key }}"
+authelia_admin_password: "{{ secret_authelia_admin_password }}"
+
+k3s_token: "{{ secret_k3s_token }}"

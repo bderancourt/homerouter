@@ -1,0 +1,282 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: authelia
+---
+# NetworkPolicy: Allow intra-namespace traffic, deny inter-namespace by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: authelia
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow all traffic from same namespace
+  - from:
+    - podSelector: {}
+  egress:
+  # Allow all traffic to same namespace
+  - to:
+    - podSelector: {}
+  # Allow DNS to kube-system
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# NetworkPolicy: Allow ingress from Traefik to authelia
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-traefik
+  namespace: authelia
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: authelia
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+    ports:
+    - protocol: TCP
+      port: 9091
+---
+# NetworkPolicy: Allow egress to internet for SMTP
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-internet
+  namespace: authelia
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: authelia
+  policyTypes:
+  - Egress
+  egress:
+  # Allow HTTPS
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow SMTP (port 465 SSL/TLS, 587 STARTTLS)
+  - ports:
+    - protocol: TCP
+      port: 465
+    - protocol: TCP
+      port: 587
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: authelia-secrets
+  namespace: authelia
+type: Opaque
+stringData:
+  jwt_secret: "{{ authelia_jwt_secret }}"
+  session_secret: "{{ authelia_session_secret }}"
+  storage_encryption_key: "{{ authelia_storage_encryption_key }}"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authelia-config
+  namespace: authelia
+data:
+  configuration.yml: |
+    theme: auto
+    default_2fa_method: totp
+    
+    server:
+      address: 'tcp://0.0.0.0:9091'
+    
+    log:
+      level: info
+    
+    totp:
+      issuer: {{ domain }}
+    
+    authentication_backend:
+      file:
+        path: /config/users_database.yml
+    
+    access_control:
+      default_policy: deny
+      rules:
+        - domain: "*.{{ domain }}"
+          policy: two_factor
+    
+    session:
+      name: authelia_session
+      domain: {{ domain }}
+      expiration: 3600
+      inactivity: 300
+      remember_me: 1M
+      cookies:
+        - domain: {{ domain }}
+          authelia_url: https://auth.{{ domain }}
+    
+    regulation:
+      max_retries: 3
+      find_time: 2m
+      ban_time: 5m
+    
+    storage:
+      local:
+        path: /config/db.sqlite3
+    
+    notifier:
+      smtp:
+        address: {{ smtp_host | default('localhost') }}:465
+        username: {{ smtp_username | default('') }}
+        password: {{ smtp_password | default('') }}
+        sender: authelia@{{ domain }}
+        subject: "[Authelia] {title}"
+        startup_check_address: test@authelia.com
+        disable_require_tls: false
+        disable_html_emails: false
+        tls:
+          server_name: {{ smtp_host | default('localhost') }}
+          skip_verify: false
+  
+  users_database.yml: |
+    users:
+      admin:
+        displayname: "Admin User"
+        password: "{{ authelia_admin_password }}"
+        email: admin@{{ domain }}
+        groups:
+          - admins
+          - dev
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authelia
+  namespace: authelia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: authelia
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: authelia
+    spec:
+      containers:
+        - name: authelia
+          image: authelia/authelia:latest
+          ports:
+            - name: http
+              containerPort: 9091
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config/configuration.yml
+              subPath: configuration.yml
+            - name: config
+              mountPath: /config/users_database.yml
+              subPath: users_database.yml
+            - name: data
+              mountPath: /config
+          env:
+            - name: AUTHELIA_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: authelia-secrets
+                  key: jwt_secret
+            - name: AUTHELIA_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: authelia-secrets
+                  key: session_secret
+            - name: AUTHELIA_STORAGE_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: authelia-secrets
+                  key: storage_encryption_key
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: 500m
+            requests:
+              memory: 128Mi
+              cpu: 100m
+      volumes:
+        - name: config
+          configMap:
+            name: authelia-config
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authelia
+  namespace: authelia
+spec:
+  selector:
+    app.kubernetes.io/name: authelia
+  ports:
+    - protocol: TCP
+      port: 9091
+      targetPort: 9091
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: authelia
+  namespace: authelia
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure,websecext
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  rules:
+    - host: auth.{{ domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: authelia
+                port:
+                  number: 9091
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: authelia
+  namespace: authelia
+spec:
+  forwardAuth:
+    address: http://authelia.authelia.svc.cluster.local:9091/api/authz/forward-auth
+    trustForwardHeader: true
+    authResponseHeaders:
+      - Remote-User
+      - Remote-Groups
+      - Remote-Name
+      - Remote-Email
