@@ -63,3 +63,48 @@
     chdir: "{{ firmware_extracted_dir }}"
     target: image
     params: "{{ firmware_make_image_params }}"
+
+- name: Set combined EFI image gzip path
+  ansible.builtin.set_fact:
+    firmware_combined_img_gz: >-
+      {{
+        [
+          firmware_extracted_dir,
+          'bin/targets/x86/64',
+          'openwrt-' ~ firmware_version ~ '-x86-64-generic-ext4-combined-efi.img.gz'
+        ] | join('/')
+      }}
+
+- name: Set decompressed and qcow2 paths
+  ansible.builtin.set_fact:
+    firmware_combined_img: "{{ firmware_combined_img_gz | regex_replace('\\.gz$', '') }}"
+    firmware_combined_qcow2: "{{ firmware_combined_img_gz | regex_replace('\\.img.gz$', '') }}.qcow2"
+
+- name: Display paths
+  ansible.builtin.debug:
+    msg:
+      - "Source (gzip): {{ firmware_combined_img_gz }}"
+      - "Decompressed: {{ firmware_combined_img }}"
+      - "QCOW2 target: {{ firmware_combined_qcow2 }}"
+
+- name: Uncompress combined EFI image while keeping the gzip file
+  ansible.builtin.command:
+    cmd: gzip -dk "{{ firmware_combined_img_gz }}"
+    creates: "{{ firmware_combined_img }}"
+  register: gunzip_result
+  failed_when: gunzip_result.rc not in [0, 2]
+
+- name: Convert combined EFI image to qcow2
+  ansible.builtin.command:
+    cmd: qemu-img convert -f raw -O qcow2 "{{ firmware_combined_img }}" "{{ firmware_combined_qcow2 }}"
+    creates: "{{ firmware_combined_qcow2 }}"
+
+- name: Display final qcow2 info
+  ansible.builtin.command:
+    cmd: qemu-img info "{{ firmware_combined_qcow2 }}"
+  register: qcow2_info
+  changed_when: false
+
+- name: Show qcow2 info
+  ansible.builtin.debug:
+    var: qcow2_info.stdout_lines
