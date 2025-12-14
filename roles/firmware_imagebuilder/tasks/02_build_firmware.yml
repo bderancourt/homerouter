@@ -99,6 +99,12 @@
     cmd: qemu-img convert -f raw -O qcow2 "{{ firmware_combined_img }}" "{{ firmware_combined_qcow2 }}"
     creates: "{{ firmware_combined_qcow2 }}"
 
+- name: Resize qcow2 image to 25GB
+  ansible.builtin.command:
+    cmd: qemu-img resize "{{ firmware_combined_qcow2 }}" 25G
+  register: resize_result
+  changed_when: "'Image resized' in resize_result.stdout or resize_result.rc == 0"
+
 - name: Display final qcow2 info
   ansible.builtin.command:
     cmd: qemu-img info "{{ firmware_combined_qcow2 }}"
