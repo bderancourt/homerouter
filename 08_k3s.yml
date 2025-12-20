@@ -1,6 +1,6 @@
 ---
 - name: Install k3s on OpenWRT
-  hosts: ikoolcore
+  hosts: virtualbox
   gather_facts: false
 
   roles:
