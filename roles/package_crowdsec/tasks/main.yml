@@ -79,7 +79,6 @@
     command: commit
     config: crowdsec
   notify:
-    - Reload config
     - Restart crowdsec-firewall-bouncer
     - Restart crowdsec
 

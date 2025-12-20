@@ -9,6 +9,10 @@
 uci set network.globals.packet_steering='1'
 uci set network.globals.ula_prefix='{{ ula_prefix }}::/48'
 
+# Detect if running in virtual environment
+grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
+IS_VIRTUAL=$?
+
 
 #######################################
 # Clean existing custom devices to avoid duplicates
@@ -21,7 +25,7 @@ while uci -q delete network.@device[0]; do :; done
 # WAN interface device eth3
 #######################################
 # Skip for VirtualBox
-grep -qi "virtualbox" /sys/class/dmi/id/product_name || {
+if [ $IS_VIRTUAL -ne 0 ]; then
     ETH3_DEVICE=$(uci add network device)
     uci set network.$ETH3_DEVICE.name='eth3'
     uci set network.$ETH3_DEVICE.macaddr='{{ bbox_mac }}'
@@ -32,7 +36,7 @@ grep -qi "virtualbox" /sys/class/dmi/id/product_name || {
     uci set network.$ETH3_100_DEVICE.ifname='eth3'
     uci set network.$ETH3_100_DEVICE.vid='100'
     uci set network.$ETH3_100_DEVICE.macaddr='{{ bbox_mac }}'
-}
+fi
 
 
 #######################################
@@ -99,22 +103,25 @@ uci add_list network.$BR_IOT_DEVICE.ports='eth2.3'
 
 # WAN interface
 uci set network.wan=interface
-grep -qi "virtualbox" /sys/class/dmi/id/product_name && \
-    uci set network.wan.device='eth3' || \
+if [ $IS_VIRTUAL -eq 0 ]; then
+    uci set network.wan.device='eth3'
+else
     uci set network.wan.device='eth3.100'
+fi
 uci set network.wan.proto='dhcp'
 uci set network.wan.vendorid='BYGTELIAD'
 uci set network.wan.norelease='1'
 uci set network.wan.ipv6='0'
 uci set network.wan.hostname='*'
 uci set network.wan.peerdns='0'
-uci del network.wan.dns
 
 # WAN6 interface
 uci set network.wan6=interface
-grep -qi "virtualbox" /sys/class/dmi/id/product_name && \
-    uci set network.wan6.device='eth3' || \
+if [ $IS_VIRTUAL -eq 0 ]; then
+    uci set network.wan6.device='eth3'
+else
     uci set network.wan6.device='eth3.100'
+fi
 uci set network.wan6.proto='dhcpv6'
 uci set network.wan6.norelease='1'
 uci set network.wan6.reqprefix='auto'
@@ -122,7 +129,6 @@ uci set network.wan6.reqaddress='none'
 uci set network.wan6.ip6hint='0'
 uci set network.wan6.ip6assign='64'
 uci set network.wan6.peerdns='0'
-uci del network.wan6.dns
 
 # LAN interface
 uci set network.lan=interface
@@ -130,13 +136,13 @@ uci set network.lan.device='br-lan'
 uci set network.lan.proto='static'
 uci set network.lan.netmask='255.255.255.0'
 uci set network.lan.ip6assign='64'
-grep -qi "virtualbox" /sys/class/dmi/id/product_name && {
+if [ $IS_VIRTUAL -eq 0 ]; then
     uci set network.lan.ipaddr='192.168.9.1'
     uci set network.lan.ip6hint='9'
-} || {
+else
     uci set network.lan.ipaddr='192.168.1.1'
     uci set network.lan.ip6hint='1'
-}
+fi
 
 # Guest interface
 uci set network.guest=interface

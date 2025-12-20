@@ -45,7 +45,6 @@
     command: commit
     key: dhcp
   notify:
-    - Reload config
     - Restart dnsmasq
 
 - name: Template adguardhome.yaml.j2 to /etc/adguardhome.yaml

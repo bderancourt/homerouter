@@ -1,7 +1,7 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.11
 ansible_user: root
-firmware_version: 24.10.4
+firmware_version: 24.10.5
 # datadrive_mount_dir: /data
 docker_data_dir: /data/docker
 

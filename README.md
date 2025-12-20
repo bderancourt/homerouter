@@ -65,3 +65,54 @@ source .venv/bin/activate
 ansible-playbook playbook.yml
 ```
 
+## Libvirt / virt-manager (Arch/CachyOS): DHCP on the WAN NAT network
+
+If your OpenWrt VM gets link on the WAN interface but never receives a DHCP lease from the libvirt NAT network (e.g. `openwrt_eth3` / `virbr3`), the following items matter.
+
+### 1) Ensure MAC addresses are unique
+
+If two VM NICs share the same MAC address, bridging/DHCP can behave unpredictably.
+
+- In virt-manager, ensure every NIC has a different MAC.
+- Quick check:
+
+```sh
+sudo virsh domiflist openwrt
+```
+
+### 2) Use libvirt firewall backend `iptables` (still compatible with nftables)
+
+On Arch/CachyOS, libvirt can use either the `nft` or the `iptables` API to program firewall rules. Even on nftables-based systems, `iptables` is often provided as **iptables-nft** (iptables commands generating nft rules).
+
+If DHCP is blocked with the nftables backend, forcing libvirt to use the iptables backend can fix it.
+
+1. Edit `/etc/libvirt/network.conf` and set:
+
+```conf
+firewall_backend = "iptables"
+```
+
+2. Restart libvirt and reload the network:
+
+```sh
+sudo systemctl restart libvirtd.service
+sudo virsh net-destroy openwrt_eth3 || true
+sudo virsh net-start openwrt_eth3
+```
+
+3. Verify that libvirt chains exist:
+
+```sh
+sudo iptables -S | grep -E 'LIBVIRT' | head
+```
+
+4. (fish) Verify whether `iptables` is actually iptables-nft:
+
+```sh
+readlink -f (command -v iptables)
+```
+
+### Notes
+
+- Disabling IPv6 on the libvirt network is fine; it does not prevent DHCPv4.
+
