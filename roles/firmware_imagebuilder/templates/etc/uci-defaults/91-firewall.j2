@@ -7,6 +7,9 @@
 # Firewall zones
 #######################################
 
+# LAN zone
+uci set firewall.@zone[0].forward='REJECT'
+
 # Guest zone
 GUEST_ZONE=$(uci add firewall zone)
 uci set firewall.$GUEST_ZONE.name='guest'

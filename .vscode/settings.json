@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "*.yml": "ansible",
+    "*.yaml": "ansible"
+  },
+  "ansible.python.interpreterPath": ".venv/bin/python",
+  "ansible.playbook.arguments": "-v",
+  "ansible.validation.lint.path": ".venv/bin/ansible-lint",
+  "ansible.ansible.path": ".venv/bin/ansible"
+}
