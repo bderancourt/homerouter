@@ -1,7 +1,7 @@
 ---
 - name: Create k3s TLS directory
   ansible.builtin.file:
-    path: /var/lib/rancher/k3s/server/tls
+    path: /opt/k3s/server/tls
     state: directory
     mode: '0755'
     recurse: true
@@ -11,15 +11,15 @@
 # ------------------------------------------------------------------------------
 - name: Generate Client CA private key
   community.crypto.openssl_privatekey:
-    path: /var/lib/rancher/k3s/server/tls/client-ca.key
+    path: /opt/k3s/server/tls/client-ca.key
     type: RSA
     size: 2048
     mode: '0600'
 
 - name: Generate Client CA CSR
   community.crypto.openssl_csr:
-    path: /var/lib/rancher/k3s/server/tls/client-ca.csr
-    privatekey_path: /var/lib/rancher/k3s/server/tls/client-ca.key
+    path: /opt/k3s/server/tls/client-ca.csr
+    privatekey_path: /opt/k3s/server/tls/client-ca.key
     common_name: k3s-client-ca
     basic_constraints: "CA:TRUE"
     basic_constraints_critical: true
@@ -27,9 +27,9 @@
 
 - name: Generate Client CA certificate
   community.crypto.x509_certificate:
-    path: /var/lib/rancher/k3s/server/tls/client-ca.crt
-    csr_path: /var/lib/rancher/k3s/server/tls/client-ca.csr
-    privatekey_path: /var/lib/rancher/k3s/server/tls/client-ca.key
+    path: /opt/k3s/server/tls/client-ca.crt
+    csr_path: /opt/k3s/server/tls/client-ca.csr
+    privatekey_path: /opt/k3s/server/tls/client-ca.key
     provider: selfsigned
     selfsigned_not_after: "+36500d"
     mode: '0644'
@@ -39,15 +39,15 @@
 # ------------------------------------------------------------------------------
 - name: Generate Server CA private key
   community.crypto.openssl_privatekey:
-    path: /var/lib/rancher/k3s/server/tls/server-ca.key
+    path: /opt/k3s/server/tls/server-ca.key
     type: RSA
     size: 2048
     mode: '0600'
 
 - name: Generate Server CA CSR
   community.crypto.openssl_csr:
-    path: /var/lib/rancher/k3s/server/tls/server-ca.csr
-    privatekey_path: /var/lib/rancher/k3s/server/tls/server-ca.key
+    path: /opt/k3s/server/tls/server-ca.csr
+    privatekey_path: /opt/k3s/server/tls/server-ca.key
     common_name: k3s-server-ca
     basic_constraints: "CA:TRUE"
     basic_constraints_critical: true
@@ -55,9 +55,9 @@
 
 - name: Generate Server CA certificate
   community.crypto.x509_certificate:
-    path: /var/lib/rancher/k3s/server/tls/server-ca.crt
-    csr_path: /var/lib/rancher/k3s/server/tls/server-ca.csr
-    privatekey_path: /var/lib/rancher/k3s/server/tls/server-ca.key
+    path: /opt/k3s/server/tls/server-ca.crt
+    csr_path: /opt/k3s/server/tls/server-ca.csr
+    privatekey_path: /opt/k3s/server/tls/server-ca.key
     provider: selfsigned
     selfsigned_not_after: "+36500d"
     mode: '0644'
@@ -67,15 +67,15 @@
 # ------------------------------------------------------------------------------
 - name: Generate Request Header CA private key
   community.crypto.openssl_privatekey:
-    path: /var/lib/rancher/k3s/server/tls/request-header-ca.key
+    path: /opt/k3s/server/tls/request-header-ca.key
     type: RSA
     size: 2048
     mode: '0600'
 
 - name: Generate Request Header CA CSR
   community.crypto.openssl_csr:
-    path: /var/lib/rancher/k3s/server/tls/request-header-ca.csr
-    privatekey_path: /var/lib/rancher/k3s/server/tls/request-header-ca.key
+    path: /opt/k3s/server/tls/request-header-ca.csr
+    privatekey_path: /opt/k3s/server/tls/request-header-ca.key
     common_name: k3s-request-header-ca
     basic_constraints: "CA:TRUE"
     basic_constraints_critical: true
@@ -83,9 +83,9 @@
 
 - name: Generate Request Header CA certificate
   community.crypto.x509_certificate:
-    path: /var/lib/rancher/k3s/server/tls/request-header-ca.crt
-    csr_path: /var/lib/rancher/k3s/server/tls/request-header-ca.csr
-    privatekey_path: /var/lib/rancher/k3s/server/tls/request-header-ca.key
+    path: /opt/k3s/server/tls/request-header-ca.crt
+    csr_path: /opt/k3s/server/tls/request-header-ca.csr
+    privatekey_path: /opt/k3s/server/tls/request-header-ca.key
     provider: selfsigned
     selfsigned_not_after: "+36500d"
     mode: '0644'
@@ -95,25 +95,36 @@
 # ------------------------------------------------------------------------------
 - name: Generate Admin Client private key
   community.crypto.openssl_privatekey:
-    path: /var/lib/rancher/k3s/server/tls/client-admin.key
+    path: /opt/k3s/server/tls/client-admin.key
     type: RSA
     size: 2048
     mode: '0600'
 
 - name: Generate Admin Client CSR
   community.crypto.openssl_csr:
-    path: /var/lib/rancher/k3s/server/tls/client-admin.csr
-    privatekey_path: /var/lib/rancher/k3s/server/tls/client-admin.key
+    path: /opt/k3s/server/tls/client-admin.csr
+    privatekey_path: /opt/k3s/server/tls/client-admin.key
     common_name: system:admin
     organization_name: system:masters
     mode: '0644'
 
 - name: Generate Admin Client certificate
   community.crypto.x509_certificate:
-    path: /var/lib/rancher/k3s/server/tls/client-admin.crt
-    csr_path: /var/lib/rancher/k3s/server/tls/client-admin.csr
-    ownca_path: /var/lib/rancher/k3s/server/tls/client-ca.crt
-    ownca_privatekey_path: /var/lib/rancher/k3s/server/tls/client-ca.key
+    path: /opt/k3s/server/tls/client-admin.crt
+    csr_path: /opt/k3s/server/tls/client-admin.csr
+    ownca_path: /opt/k3s/server/tls/client-ca.crt
+    ownca_privatekey_path: /opt/k3s/server/tls/client-ca.key
     provider: ownca
     ownca_not_after: "+36500d"
     mode: '0644'
+
+- name: Generate Admin Client PKCS#12
+  community.crypto.openssl_pkcs12:
+    path: /opt/k3s/server/tls/client-admin.p12
+    friendly_name: kubernetes-admin
+    privatekey_path: /opt/k3s/server/tls/client-admin.key
+    certificate_path: /opt/k3s/server/tls/client-admin.crt
+    ca_certificates: /opt/k3s/server/tls/client-ca.crt
+    state: present
+    mode: '0600'
+    passphrase: "{{ k3s_token }}"

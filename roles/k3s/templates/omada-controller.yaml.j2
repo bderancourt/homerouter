@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: omada
+---
+# NetworkPolicy: Allow intra-namespace traffic and DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: omada
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector: {}
+  egress:
+  - to:
+    - podSelector: {}
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# NetworkPolicy: Allow ingress from Traefik
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-traefik
+  namespace: omada
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: omada-controller-helm
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+    ports:
+    - protocol: TCP
+      port: 8043
+---
+# NetworkPolicy: Allow device discovery and adoption from LAN
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-device-management
+  namespace: omada
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: omada-controller-helm
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Device discovery (UDP)
+  - ports:
+    - protocol: UDP
+      port: 27001
+    - protocol: UDP
+      port: 29810
+    - protocol: UDP
+      port: 19810
+  # Device management (TCP)
+  - ports:
+    - protocol: TCP
+      port: 29811
+    - protocol: TCP
+      port: 29812
+    - protocol: TCP
+      port: 29813
+    - protocol: TCP
+      port: 29814
+    - protocol: TCP
+      port: 29815
+    - protocol: TCP
+      port: 29816
+    - protocol: TCP
+      port: 29817
+  egress:
+  # Allow outbound to manage devices on LAN
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: omada-controller
+  namespace: kube-system
+spec:
+  chartContent: ""
+  chart: oci://registry-1.docker.io/mbentley/omada-controller-helm
+  version: 1.0.1
+  targetNamespace: omada
+  createNamespace: false
+  valuesContent: |-
+    config:
+      timezone: "Europe/Paris"
+      rootless: true
+
+    service:
+      type: ClusterIP
+
+    ingress:
+      enabled: false
+
+    persistence:
+      data:
+        enabled: true
+        size: 2Gi
+      logs:
+        enabled: true
+        size: 500Mi
+
+    resources:
+      limits:
+        memory: 1536Mi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+---
+# IngressRoute for Omada management portal (HTTPS backend)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: omada-management
+  namespace: omada
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`omada.{{ domain }}`)
+      kind: Rule
+      services:
+        - name: omada-controller
+          port: 8043
+          scheme: https
+          serversTransport: omada-transport
+  tls:
+    secretName: acme-cert
+---
+# ServersTransport for HTTPS backend with self-signed cert
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: omada-transport
+  namespace: omada
+spec:
+  insecureSkipVerify: true

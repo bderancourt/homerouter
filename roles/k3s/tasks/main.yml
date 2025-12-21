@@ -60,8 +60,10 @@
     group: 65532
     mode: '0640'
 
-- name: Generate K3s certificates
-  ansible.builtin.include_tasks: certificates.yml
+# Certificate generation disabled - K3s manages its own certificates
+# Custom client certificates for dashboard auth can be generated separately
+# - name: Generate K3s certificates
+#   ansible.builtin.include_tasks: certificates.yml
 
 - name: Start k3s
   ansible.builtin.service:
@@ -71,7 +73,7 @@
 
 - name: Wait for k3s manifests directory
   ansible.builtin.wait_for:
-    path: /var/lib/rancher/k3s/server/manifests
+    path: /opt/k3s/server/manifests
     state: present
     timeout: 120
 
@@ -106,7 +108,7 @@
 - name: Configure K3s manifests
   ansible.builtin.template:
     src: "{{ item }}"
-    dest: "/var/lib/rancher/k3s/server/manifests/{{ item | regex_replace('\\.j2$', '') }}"
+    dest: "/opt/k3s/server/manifests/{{ item | regex_replace('\\.j2$', '') }}"
     mode: '0644'
   loop:
     - traefik-config.yaml.j2
@@ -115,3 +117,4 @@
     - authelia.yaml.j2
     - kubernetes-dashboard.yaml.j2
     - teleport.yaml.j2
+    - omada-controller.yaml.j2

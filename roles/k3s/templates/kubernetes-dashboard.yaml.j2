@@ -87,7 +87,7 @@ spec:
   repo: https://kubernetes.github.io/dashboard/
   chart: kubernetes-dashboard
   targetNamespace: kubernetes-dashboard
-  createNamespace: true
+  createNamespace: false
   valuesContent: |-
     kong:
       proxy:
@@ -99,28 +99,22 @@ spec:
       ingressController:
         enabled: false
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: kubernetes-dashboard
   namespace: kubernetes-dashboard
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/service.serversscheme: http
-    traefik.ingress.kubernetes.io/router.middlewares: authentik-authentik@kubernetescrd
 spec:
-  rules:
-    - host: dashboard.{{ domain }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: kubernetes-dashboard-kong-proxy
-                port:
-                  number: 80
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`dashboard.{{ domain }}`)
+      kind: Rule
+      services:
+        - name: kubernetes-dashboard-kong-proxy
+          port: 80
+          scheme: http
+  tls: {}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

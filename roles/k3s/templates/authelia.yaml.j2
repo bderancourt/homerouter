@@ -84,81 +84,110 @@ spec:
       port: 587
 
 ---
-apiVersion: v1
-kind: Secret
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
 metadata:
-  name: authelia-secrets
-  namespace: authelia
-type: Opaque
-stringData:
-  jwt_secret: "{{ authelia_jwt_secret }}"
-  session_secret: "{{ authelia_session_secret }}"
-  storage_encryption_key: "{{ authelia_storage_encryption_key }}"
+  name: authelia
+  namespace: kube-system
+spec:
+  repo: https://charts.authelia.com
+  chart: authelia
+  version: 0.10.49
+  targetNamespace: authelia
+  createNamespace: false
+  valuesContent: |-
+    ingress:
+      enabled: true
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure,websecext
+        traefik.ingress.kubernetes.io/router.tls: "true"
+      tls:
+        enabled: false
+      traefikCRD:
+        enabled: true
+        disableIngressRoute: true
+        entryPoints:
+          - websecure
+          - websecext
+    
+    pod:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+    
+    configMap:
+      theme: auto
+      default_2fa_method: totp
+      
+      log:
+        level: info
+      
+      totp:
+        issuer: {{ domain }}
+      
+      authentication_backend:
+        file:
+          enabled: true
+          password:
+            algorithm: argon2
+      
+      access_control:
+        default_policy: deny
+        rules:
+          - domain: "*.{{ domain }}"
+            policy: two_factor
+      
+      session:
+        encryption_key:
+          value: {{ authelia_session_secret | to_json }}
+        cookies:
+          - domain: {{ domain }}
+            subdomain: auth
+            default_redirection_url: https://{{ domain }}
+        expiration: 1h
+        inactivity: 5m
+        remember_me: 1M
+      
+      regulation:
+        max_retries: 3
+        find_time: 2m
+        ban_time: 5m
+      
+      storage:
+        encryption_key:
+          value: {{ authelia_storage_encryption_key | to_json }}
+        local:
+          enabled: true
+      
+      notifier:
+        smtp:
+          enabled: true
+          address: submissions://{{ smtp_host | default('localhost') }}:465
+          username: {{ smtp_username | default('') }}
+          sender: authelia@{{ domain }}
+          subject: "[Authelia] {title}"
+          startup_check_address: test@authelia.com
+          password:
+            value: {{ smtp_password | default('') | to_json }}
+          tls:
+            server_name: {{ smtp_host | default('localhost') }}
+    
+    persistence:
+      enabled: false
 
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: authelia-config
+  name: authelia-users
   namespace: authelia
-data:
-  configuration.yml: |
-    theme: auto
-    default_2fa_method: totp
-    
-    server:
-      address: 'tcp://0.0.0.0:9091'
-    
-    log:
-      level: info
-    
-    totp:
-      issuer: {{ domain }}
-    
-    authentication_backend:
-      file:
-        path: /config/users_database.yml
-    
-    access_control:
-      default_policy: deny
-      rules:
-        - domain: "*.{{ domain }}"
-          policy: two_factor
-    
-    session:
-      name: authelia_session
-      domain: {{ domain }}
-      expiration: 3600
-      inactivity: 300
-      remember_me: 1M
-      cookies:
-        - domain: {{ domain }}
-          authelia_url: https://auth.{{ domain }}
-    
-    regulation:
-      max_retries: 3
-      find_time: 2m
-      ban_time: 5m
-    
-    storage:
-      local:
-        path: /config/db.sqlite3
-    
-    notifier:
-      smtp:
-        address: {{ smtp_host | default('localhost') }}:465
-        username: {{ smtp_username | default('') }}
-        password: {{ smtp_password | default('') }}
-        sender: authelia@{{ domain }}
-        subject: "[Authelia] {title}"
-        startup_check_address: test@authelia.com
-        disable_require_tls: false
-        disable_html_emails: false
-        tls:
-          server_name: {{ smtp_host | default('localhost') }}
-          skip_verify: false
-  
-  users_database.yml: |
+type: Opaque
+stringData:
+  users.yaml: |
     users:
       admin:
         displayname: "Admin User"
@@ -167,103 +196,6 @@ data:
         groups:
           - admins
           - dev
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: authelia
-  namespace: authelia
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: authelia
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: authelia
-    spec:
-      containers:
-        - name: authelia
-          image: authelia/authelia:latest
-          ports:
-            - name: http
-              containerPort: 9091
-              protocol: TCP
-          volumeMounts:
-            - name: config
-              mountPath: /config/configuration.yml
-              subPath: configuration.yml
-            - name: config
-              mountPath: /config/users_database.yml
-              subPath: users_database.yml
-            - name: data
-              mountPath: /config
-          env:
-            - name: AUTHELIA_JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: authelia-secrets
-                  key: jwt_secret
-            - name: AUTHELIA_SESSION_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: authelia-secrets
-                  key: session_secret
-            - name: AUTHELIA_STORAGE_ENCRYPTION_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: authelia-secrets
-                  key: storage_encryption_key
-          resources:
-            limits:
-              memory: 256Mi
-              cpu: 500m
-            requests:
-              memory: 128Mi
-              cpu: 100m
-      volumes:
-        - name: config
-          configMap:
-            name: authelia-config
-        - name: data
-          emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: authelia
-  namespace: authelia
-spec:
-  selector:
-    app.kubernetes.io/name: authelia
-  ports:
-    - protocol: TCP
-      port: 9091
-      targetPort: 9091
-
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: authelia
-  namespace: authelia
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure,websecext
-    traefik.ingress.kubernetes.io/router.tls: "true"
-spec:
-  rules:
-    - host: auth.{{ domain }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: authelia
-                port:
-                  number: 9091
 
 ---
 apiVersion: traefik.io/v1alpha1
