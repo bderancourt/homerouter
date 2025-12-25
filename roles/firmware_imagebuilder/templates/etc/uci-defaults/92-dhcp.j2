@@ -29,8 +29,8 @@ uci set dhcp.lan.dhcpv4=server
 uci set dhcp.lan.dhcpv6=server
 uci set dhcp.lan.ra=server
 uci set dhcp.lan.dns_service=1
-uci set dhcp.lan.force="1"
-uci set dhcp.lan.ra_default="1"
+uci set dhcp.lan.force=1
+uci set dhcp.lan.ra_default=1
 
 uci del dhcp.lan.ra_flags || true
 uci add_list dhcp.lan.ra_flags=managed-config
@@ -55,8 +55,8 @@ uci set dhcp.guest.dhcpv4=server
 uci set dhcp.guest.dhcpv6=server
 uci set dhcp.guest.ra=server
 uci set dhcp.guest.dns_service=1
-uci set dhcp.guest.force="1"
-uci set dhcp.guest.ra_default="1"
+uci set dhcp.guest.force=1
+uci set dhcp.guest.ra_default=1
 
 uci del dhcp.guest.ra_flags || true
 uci add_list dhcp.guest.ra_flags=managed-config
@@ -78,8 +78,8 @@ uci set dhcp.iot.dhcpv4=server
 uci set dhcp.iot.dhcpv6=server
 uci set dhcp.iot.ra=server
 uci set dhcp.iot.dns_service=1
-uci set dhcp.iot.force="1"
-uci set dhcp.iot.ra_default="1"
+uci set dhcp.iot.force=1
+uci set dhcp.iot.ra_default=1
 
 uci del dhcp.iot.ra_flags || true
 uci add_list dhcp.iot.ra_flags=managed-config

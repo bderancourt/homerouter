@@ -152,11 +152,7 @@ filtering:
   blocking_mode: default
   parental_block_host: family-block.dns.adguard.com
   safebrowsing_block_host: standard-block.dns.adguard.com
-  rewrites:
-    - domain: openwrt.{{ domain }}
-      answer: 192.168.{{ admin_iphint }}.1
-    - domain: openwrt.{{ domain }}
-      answer: {{ ula_prefix }}:{{ admin_iphint }}::1
+  rewrites: []
   safe_fs_patterns:
     - /opt/adguardhome/work/userfilters/*
   safebrowsing_cache_size: 1048576
