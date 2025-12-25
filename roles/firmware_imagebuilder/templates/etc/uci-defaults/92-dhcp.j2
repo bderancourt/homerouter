@@ -2,14 +2,21 @@
 
 #######################################
 # DNS configuration
+# https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
+# https://openwrt.org/docs/guide-user/base-system/dhcp#all_options
 #######################################
 uci delete dhcp.@dnsmasq[0].server || true
 uci add_list dhcp.@dnsmasq[0].server='1.1.1.1'
+
+uci delete dhcp.@dnsmasq[0].notinterface || true
+uci add_list dhcp.@dnsmasq[0].notinterface='wan'
+uci add_list dhcp.@dnsmasq[0].notinterface='wan6'
 
 #######################################
 # Add DHCP configuration
 # https://openwrt.org/docs/guide-user/base-system/dhcp#dhcp_pools
 #######################################
+
 
 # DHCP for LAN
 #######################################
@@ -31,7 +38,10 @@ uci add_list dhcp.lan.ra_flags=other-config
 uci add_list dhcp.lan.ra_flags=home-agent
 
 uci del dhcp.lan.dhcp_option || true
-uci add_list dhcp.lan.dhcp_option="6,192.168.1.1"
+
+SUBNET="1"
+grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="9"
+uci add_list dhcp.lan.dhcp_option="6,192.168.$SUBNET.1"
 
 
 # DHCP for Guest

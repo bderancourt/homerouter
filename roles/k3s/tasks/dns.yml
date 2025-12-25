@@ -7,6 +7,14 @@
       - "/.{{ domain }}/192.168.{{ k3s_admin_vlan_id }}.1"
       - "/.{{ domain }}/{{ ula_prefix }}:{{ k3s_admin_vlan_id }}::1"
 
+- name: Configure DHCP option 138 for Omada Controller discovery
+  uci:
+    command: set
+    key: dhcp.lan.dhcp_option
+    value:
+      - "6,192.168.1.1"
+      - "138,192.168.1.1"
+
 - name: Commit dhcp changes
   uci:
     command: commit

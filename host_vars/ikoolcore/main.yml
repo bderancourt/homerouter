@@ -2,3 +2,4 @@
 acme_staging: 0
 ddns_enabled: 1
 wan_interface: eth3.100
+admin_iphint: 1

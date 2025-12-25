@@ -4,3 +4,4 @@ ddns_enabled: 0
 k3s_admin_vlan_id: 60
 k3s_external_vlan_id: 70
 wan_interface: eth3
+admin_iphint: 9

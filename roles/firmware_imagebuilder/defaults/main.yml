@@ -7,7 +7,11 @@
 
 firmware_build_dir: "{{ playbook_dir }}/build/"
 
-firmware_packages:
+firmware_packages_to_delete:
+  - dropbear
+  - luci-app-dropbear
+
+firmware_packages_to_add:
   # System & Utils
   - vim-full
   - vim-runtime
@@ -28,6 +32,7 @@ firmware_packages:
   - blkid
   - rng-tools
   - lm-sensors
+  - openssh-server
   - openssh-sftp-server
   - powertop
 
@@ -51,27 +56,3 @@ firmware_packages:
 
   # Networking & Kubernetes Requirements
   - kmod-atlantic
-  - kmod-br-netfilter
-  - kmod-ipt-ipset
-  - kmod-ipt-conntrack-extra
-  - kmod-ipt-extra
-  - kmod-nf-conntrack-netlink
-  - kmod-vxlan
-  - kmod-veth
-  - kmod-ipt-nat
-  - kmod-ipt-nat6
-  - kmod-ipt-nat-extra
-  - kmod-ikconfig
-  - kmod-dummy
-  - ipset
-  - iptables-nft
-  - ip6tables-nft
-  - iptables-mod-extra
-  - ip-full
-  - ca-certificates
-  - conntrack
-  - ip-bridge
-  - coreutils-sha256sum
-  - coreutils-stat
-  - curl
-  - drill

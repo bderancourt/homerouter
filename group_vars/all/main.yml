@@ -15,6 +15,7 @@ ssh_key: "{{ secret_ssh_key }}"
 domain: "{{ secret_domain }}"
 ula_prefix: "{{ secret_ula_prefix }}"
 
+ddns_domain: "{{ secret_ddns_domain }}"
 ddns_service_name: "{{ secret_ddns_service_name }}"
 ddns_username: "{{ secret_ddns_username }}"
 ddns_password: "{{ secret_ddns_password }}"

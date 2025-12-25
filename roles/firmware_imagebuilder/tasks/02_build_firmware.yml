@@ -52,11 +52,15 @@
     firmware_make_image_params: >
       PROFILE="generic"
       FILES="files"
-      PACKAGES="{{ firmware_packages | join(' ') }}"
+      PACKAGES="{{ (firmware_packages_to_add + firmware_packages_to_delete | map('regex_replace', '^', '-') | list) | join(' ') }}"
 
 - name: Show firmware_make_image_params vars_files
   ansible.builtin.debug:
     var: firmware_make_image_params
+
+# - name: Pause pour vérification manuelle
+#   ansible.builtin.pause:
+#     prompt: "Veuillez vérifier l'état de la command Make, puis appuyez sur Entrée"
 
 - name: Make image
   community.general.make:

@@ -39,7 +39,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: omada-controller-helm
+      app.kubernetes.io/name: omada-controller
   policyTypes:
   - Ingress
   ingress:
@@ -63,7 +63,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: omada-controller-helm
+      app.kubernetes.io/name: omada-controller
   policyTypes:
   - Ingress
   - Egress
@@ -72,26 +72,12 @@ spec:
   - ports:
     - protocol: UDP
       port: 27001
-    - protocol: UDP
-      port: 29810
-    - protocol: UDP
-      port: 19810
+      endPort: 19810
   # Device management (TCP)
   - ports:
     - protocol: TCP
       port: 29811
-    - protocol: TCP
-      port: 29812
-    - protocol: TCP
-      port: 29813
-    - protocol: TCP
-      port: 29814
-    - protocol: TCP
-      port: 29815
-    - protocol: TCP
-      port: 29816
-    - protocol: TCP
-      port: 29817
+      endPort: 29817
   egress:
   # Allow outbound to manage devices on LAN
   - to:
@@ -128,12 +114,70 @@ spec:
         enabled: true
         size: 500Mi
 
-    resources:
-      limits:
-        memory: 1536Mi
-      requests:
-        cpu: 250m
-        memory: 512Mi
+---
+# Service additionnel pour discovery/adoption depuis le LAN via externalIPs
+apiVersion: v1
+kind: Service
+metadata:
+  name: omada-controller-discovery
+  namespace: omada
+spec:
+  type: ClusterIP
+  externalIPs:
+    - 192.168.1.1  # IP du routeur sur br-lan
+  selector:
+    app.kubernetes.io/name: omada-controller
+  ports:
+    # Web interface for device upgrades
+    - name: manage-http
+      port: 8088
+      protocol: TCP
+      targetPort: 8088
+    - name: manage-https
+      port: 8043
+      protocol: TCP
+      targetPort: 8043
+    - name: portal-http
+      port: 8843
+      protocol: TCP
+      targetPort: 8843
+    # Discovery et adoption (UDP + TCP)
+    - name: app-discovery
+      port: 27001
+      protocol: TCP
+      targetPort: 27001
+    - name: udp-management
+      port: 19810
+      protocol: UDP
+      targetPort: 19810
+    - name: udp-discovery
+      port: 29810
+      protocol: UDP
+      targetPort: 29810
+    - name: tcp-manager-v1
+      port: 29811
+      protocol: TCP
+      targetPort: 29811
+    - name: tcp-adopt-v1
+      port: 29812
+      protocol: TCP
+      targetPort: 29812
+    - name: tcp-upgrade-v1
+      port: 29813
+      protocol: TCP
+      targetPort: 29813
+    - name: tcp-manager-v2
+      port: 29814
+      protocol: TCP
+      targetPort: 29814
+    - name: tcp-transfer-v2
+      port: 29815
+      protocol: TCP
+      targetPort: 29815
+    - name: tcp-rtty
+      port: 29816
+      protocol: TCP
+      targetPort: 29816
 ---
 # IngressRoute for Omada management portal (HTTPS backend)
 apiVersion: traefik.io/v1alpha1

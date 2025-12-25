@@ -3,5 +3,8 @@
   hosts: virtualbox
   gather_facts: false
 
+  vars:
+    acme_staging: true
+
   roles:
     - package_acme

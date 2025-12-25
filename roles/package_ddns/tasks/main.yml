@@ -33,8 +33,8 @@
       enabled: "{{ ddns_enabled }}"
       use_ipv6: 0
       service_name: "{{ ddns_service_name }}"
-      lookup_host: "{{ domain }}"
-      domain: "{{ domain }}"
+      lookup_host: "{{ ddns_domain }}"
+      domain: "{{ ddns_domain }}"
       username: "{{ ddns_username }}"
       password: "{{ ddns_password }}"
       use_https: 1
@@ -56,8 +56,8 @@
       enabled: "{{ ddns_enabled }}"
       use_ipv6: 1
       service_name: "{{ ddns_service_name }}"
-      lookup_host: "{{ domain }}"
-      domain: "{{ domain }}"
+      lookup_host: "{{ ddns_domain }}"
+      domain: "{{ ddns_domain }}"
       username: "{{ ddns_username }}"
       password: "{{ ddns_password }}"
       use_https: 1

@@ -29,12 +29,12 @@
     value:
       account_email: "{{ acme_email }}"
 
-- name: Configure ACME external certificate
+- name: Configure ACME external certificate {{ domain }}
   uci:
     command: section
     config: acme
     type: cert
-    name: "acme_cert"
+    name: "{{ domain | replace('.', '_') }}"
     value:
       enabled: 1
       domains:

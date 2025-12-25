@@ -1,5 +1,10 @@
 #!/bin/sh
 
+SUBNET="1"
+grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="9"
+LAN_IPV4="192.168.$SUBNET.1"
+LAN_IPV6="{{ ula_prefix }}:$SUBNET::1"
+
 #######################################
 # change root password
 #######################################
@@ -8,8 +13,6 @@ passwd root <<EOP
 {{ root_password }}
 {{ root_password }}
 EOP
-
-echo {{ ssh_key }} >> /etc/dropbear/authorized_keys
 
 # Replace ash by bash for root
 sed -i "/^root:/ s|/bin/ash|/bin/bash|" /etc/passwd
@@ -20,29 +23,27 @@ uci set system.@system[0].timezone='CET-1CEST,M3.5.0,M10.5.0/3'
 uci set system.@system[0].zonename='Europe/Paris'
 uci set system.@system[0].log_size='2048'
 uci set system.ntp.enable_server='1'
-uci del system.ntp.server
-uci add_list system.ntp.server="216.239.35.0"     # time.google.com
-uci add_list system.ntp.server="216.239.35.4"     # time.google.com
-uci add_list system.ntp.server="216.239.35.8"     # time.google.com
-uci add_list system.ntp.server="216.239.35.12"    # time.google.com
-uci add_list system.ntp.server="162.159.200.123"  # time.cloudflare.com
-uci add_list system.ntp.server="162.159.200.1"    # time.cloudflare.com
 
 # Secure SSH access
-uci set dropbear.@dropbear[0].Interface='lan'
-uci set dropbear.@dropbear[0].PasswordAuth='off'
-uci set dropbear.@dropbear[0].RootPasswordAuth='off'
+mkdir -p /root/.ssh
+chmod 700 /root/.ssh
+echo {{ ssh_key }} >> /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+# On commente les ListenAddress existants dans le fichier principal pour éviter les doublons
+sed -i 's/^ListenAddress/#ListenAddress/' /etc/ssh/sshd_config
+echo "ListenAddress $LAN_IPV4" > /etc/ssh/sshd_config.d/openwrt.conf
+echo "ListenAddress $LAN_IPV6" >> /etc/ssh/sshd_config.d/openwrt.conf
+service sshd restart
 
 uci set luci_statistics.collectd_sensors.enable='1'
 
 # Configure uHTTPd to listen only on LAN interface
 uci del uhttpd.main.listen_http || true
 uci del uhttpd.main.listen_https || true
+uci add_list uhttpd.main.listen_https="$LAN_IPV4:443"
+uci add_list uhttpd.main.listen_https="[$LAN_IPV6]:443"
 
-SUBNET="1"
-grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="9"
-uci add_list uhttpd.main.listen_https="192.168.$SUBNET.1:443"
-uci add_list uhttpd.main.listen_https="[{{ ula_prefix }}:$SUBNET::1]:443"
+echo "options dummy numdummies=2" > /etc/modules.conf
 
 uci commit
 exit 0

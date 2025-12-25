@@ -53,9 +53,9 @@ uci set firewall.$GUEST_WAN_FORWARDING.src='guest'
 uci set firewall.$GUEST_WAN_FORWARDING.dest='wan'
 
 # IoT to WAN
-LAN_IOT_FORWARDING=$(uci add firewall forwarding)
-uci set firewall.$LAN_IOT_FORWARDING.src='iot'
-uci set firewall.$LAN_IOT_FORWARDING.dest='wan'
+IOT_WAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$IOT_WAN_FORWARDING.src='iot'
+uci set firewall.$IOT_WAN_FORWARDING.dest='wan'
 
 #######################################
 # Firewall rules: Allow DNS, DHCP, ICMP, NTP to router
