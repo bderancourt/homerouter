@@ -1,6 +1,6 @@
 ---
 - name: Setup ACME certificates on OpenWRT
-  hosts: ikoolcore
+  hosts: virtualbox
   gather_facts: false
 
   roles:
