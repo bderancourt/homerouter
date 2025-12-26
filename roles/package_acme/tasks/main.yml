@@ -21,13 +21,11 @@
 
 - name: Configure ACME account
   uci:
-    command: section
-    config: acme
-    type: acme
-    find-by:
-      debug: 0
+    command: set
+    key: acme.@acme[0]
     value:
       account_email: "{{ acme_email }}"
+      debug: 0
 
 - name: Configure ACME external certificate {{ domain }}
   uci:

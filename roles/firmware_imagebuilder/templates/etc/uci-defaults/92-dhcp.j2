@@ -1,5 +1,18 @@
 #!/bin/sh
 
+# Detect if running in virtual environment
+grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
+IS_VIRTUAL=$?
+
+ADMIN_SUBNET_ID='1'
+GUEST_SUBNET_ID='2'
+IOT_SUBNET_ID='3'
+if [ $IS_VIRTUAL -eq 0 ]; then
+    ADMIN_SUBNET_ID='91'
+    GUEST_SUBNET_ID='92'
+    IOT_SUBNET_ID='93'
+fi
+
 #######################################
 # DNS configuration
 # https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
@@ -17,77 +30,33 @@ uci add_list dhcp.@dnsmasq[0].notinterface='wan6'
 # https://openwrt.org/docs/guide-user/base-system/dhcp#dhcp_pools
 #######################################
 
+for net in "lan:$ADMIN_SUBNET_ID" "guest:$GUEST_SUBNET_ID" "iot:$IOT_SUBNET_ID"; do
+    section="${net%%:*}"
+    subnet="${net##*:}"
 
-# DHCP for LAN
-#######################################
-uci set dhcp.lan=dhcp
-uci set dhcp.lan.interface=lan
-uci set dhcp.lan.start=100
-uci set dhcp.lan.limit=150
-uci set dhcp.lan.leasetime=12h
-uci set dhcp.lan.dhcpv4=server
-uci set dhcp.lan.dhcpv6=server
-uci set dhcp.lan.ra=server
-uci set dhcp.lan.dns_service=1
-uci set dhcp.lan.force=1
-uci set dhcp.lan.ra_default=1
+    uci set dhcp."$section"=dhcp
+    uci set dhcp."$section".interface="$section"
+    uci set dhcp."$section".start=100
+    uci set dhcp."$section".limit=150
+    uci set dhcp."$section".leasetime=12h
+    uci set dhcp."$section".dhcpv4=server
+    uci set dhcp."$section".dhcpv6=server
+    uci set dhcp."$section".ra=server
+    uci set dhcp."$section".dns_service=1
+    uci set dhcp."$section".force=1
+    uci set dhcp."$section".ra_default=1
 
-uci del dhcp.lan.ra_flags || true
-uci add_list dhcp.lan.ra_flags=managed-config
-uci add_list dhcp.lan.ra_flags=other-config
-uci add_list dhcp.lan.ra_flags=home-agent
+    uci del dhcp."$section".ra_flags || true
+    uci add_list dhcp."$section".ra_flags=managed-config
+    uci add_list dhcp."$section".ra_flags=other-config
+    uci add_list dhcp."$section".ra_flags=home-agent
 
-uci del dhcp.lan.dhcp_option || true
-
-SUBNET="1"
-grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="9"
-uci add_list dhcp.lan.dhcp_option="6,192.168.$SUBNET.1"
-
-
-# DHCP for Guest
-#######################################
-uci set dhcp.guest=dhcp
-uci set dhcp.guest.interface=guest
-uci set dhcp.guest.start=100
-uci set dhcp.guest.limit=150
-uci set dhcp.guest.leasetime=12h
-uci set dhcp.guest.dhcpv4=server
-uci set dhcp.guest.dhcpv6=server
-uci set dhcp.guest.ra=server
-uci set dhcp.guest.dns_service=1
-uci set dhcp.guest.force=1
-uci set dhcp.guest.ra_default=1
-
-uci del dhcp.guest.ra_flags || true
-uci add_list dhcp.guest.ra_flags=managed-config
-uci add_list dhcp.guest.ra_flags=other-config
-uci add_list dhcp.guest.ra_flags=home-agent
-
-uci del dhcp.guest.dhcp_option || true
-uci add_list dhcp.guest.dhcp_option="6,192.168.2.1"
-
-
-# DHCP for IoT
-#######################################
-uci set dhcp.iot=dhcp
-uci set dhcp.iot.interface=iot
-uci set dhcp.iot.start=100
-uci set dhcp.iot.limit=150
-uci set dhcp.iot.leasetime=12h
-uci set dhcp.iot.dhcpv4=server
-uci set dhcp.iot.dhcpv6=server
-uci set dhcp.iot.ra=server
-uci set dhcp.iot.dns_service=1
-uci set dhcp.iot.force=1
-uci set dhcp.iot.ra_default=1
-
-uci del dhcp.iot.ra_flags || true
-uci add_list dhcp.iot.ra_flags=managed-config
-uci add_list dhcp.iot.ra_flags=other-config
-uci add_list dhcp.iot.ra_flags=home-agent
-
-uci del dhcp.iot.dhcp_option || true
-uci add_list dhcp.iot.dhcp_option="6,192.168.3.1"
+    uci del dhcp."$section".dhcp_option || true
+    uci add_list dhcp."$section".dhcp_option="6,192.168.$subnet.1"
+    
+    # Option 138 for Omada Controller discovery (only on LAN)
+    [ "$section" = "lan" ] && uci add_list dhcp."$section".dhcp_option="138,192.168.$subnet.1"
+done
 
 
 #######################################
@@ -98,7 +67,7 @@ uci add_list dhcp.iot.dhcp_option="6,192.168.3.1"
 uci set dhcp.eap=host
 uci set dhcp.eap.name=eap
 uci set dhcp.eap.mac=20:36:26:D2:65:30
-uci set dhcp.eap.ip=192.168.1.90
+uci set dhcp.eap.ip=192.168.$ADMIN_SUBNET_ID.90
 uci set dhcp.eap.hostid=90
 uci set dhcp.eap.dns=1
 
@@ -106,35 +75,35 @@ uci set dhcp.eap.dns=1
 uci set dhcp.shellyvr=host
 uci set dhcp.shellyvr.name=shellyvr
 uci set dhcp.shellyvr.mac=98:CD:AC:2C:FB:D0
-uci set dhcp.shellyvr.ip=192.168.3.10
+uci set dhcp.shellyvr.ip=192.168.$IOT_SUBNET_ID.10
 uci set dhcp.shellyvr.dns=1
 
 # Static lease for Shelly plug 1
 uci set dhcp.shellyplug1=host
 uci set dhcp.shellyplug1.name=shellyplug1
 uci set dhcp.shellyplug1.mac=C4:5B:BE:D6:BD:A1
-uci set dhcp.shellyplug1.ip=192.168.3.11
+uci set dhcp.shellyplug1.ip=192.168.$IOT_SUBNET_ID.11
 uci set dhcp.shellyplug1.dns=1
 
 # Static lease for Shelly plug 2
 uci set dhcp.shellyplug2=host
 uci set dhcp.shellyplug2.name=shellyplug2
 uci set dhcp.shellyplug2.mac=E8:68:E7:F1:8D:59
-uci set dhcp.shellyplug2.ip=192.168.3.12
+uci set dhcp.shellyplug2.ip=192.168.$IOT_SUBNET_ID.12
 uci set dhcp.shellyplug2.dns=1
 
 # Static lease for Roborock vacuum
 uci set dhcp.roborock=host
 uci set dhcp.roborock.name=roborock
 uci set dhcp.roborock.mac=B0:4A:39:2A:19:F2
-uci set dhcp.roborock.ip=192.168.3.13
+uci set dhcp.roborock.ip=192.168.$IOT_SUBNET_ID.13
 uci set dhcp.roborock.dns=1
 
 # Static lease for printer
 uci set dhcp.printer=host
 uci set dhcp.printer.name=printer
 uci set dhcp.printer.mac=40:23:43:D9:F3:A4
-uci set dhcp.printer.ip=192.168.3.14
+uci set dhcp.printer.ip=192.168.$IOT_SUBNET_ID.14
 uci set dhcp.printer.dns=1
 
 uci commit dhcp

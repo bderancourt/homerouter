@@ -8,9 +8,9 @@
     value:
       proto: static
       device: dummy0
-      ipaddr: 192.168.{{ k3s_admin_vlan_id }}.1
+      ipaddr: 192.168.{{ k3s_admin_subnet_id }}.1
       netmask: 255.255.255.0
-      ip6hint: "{{ k3s_admin_vlan_id }}"
+      ip6hint: "{{ k3s_admin_subnet_id }}"
       ip6assign: 64
 
 - name: Create network interface k3s_external
@@ -22,9 +22,9 @@
     value:
       proto: static
       device: dummy1
-      ipaddr: 192.168.{{ k3s_external_vlan_id }}.1
+      ipaddr: 192.168.{{ k3s_external_subnet_id }}.1
       netmask: 255.255.255.0
-      ip6hint: "{{ k3s_external_vlan_id }}"
+      ip6hint: "{{ k3s_external_subnet_id }}"
       ip6assign: 64
 
 - name: Commit network

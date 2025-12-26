@@ -5,4 +5,4 @@ metadata:
   namespace: kube-system
 data:
   local-dns.override: |
-    forward . 192.168.{{ k3s_admin_vlan_id }}.1
+    forward . 192.168.{{ k3s_admin_subnet_id }}.1

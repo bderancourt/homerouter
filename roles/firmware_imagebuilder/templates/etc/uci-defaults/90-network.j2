@@ -12,7 +12,16 @@ uci set network.globals.ula_prefix='{{ ula_prefix }}::/48'
 # Detect if running in virtual environment
 grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
 IS_VIRTUAL=$?
-
+WAN_IFACE='eth3.100'
+ADMIN_SUBNET_ID='1'
+GUEST_SUBNET_ID='2'
+IOT_SUBNET_ID='3'
+if [ $IS_VIRTUAL -eq 0 ]; then
+    WAN_IFACE='eth3'
+    ADMIN_SUBNET_ID='91'
+    GUEST_SUBNET_ID='92'
+    IOT_SUBNET_ID='93'
+fi
 
 #######################################
 # Clean existing custom devices to avoid duplicates
@@ -24,37 +33,28 @@ while uci -q delete network.@device[0]; do :; done
 #######################################
 # WAN interface device eth3
 #######################################
-# Skip for VirtualBox
-if [ $IS_VIRTUAL -ne 0 ]; then
-    ETH3_DEVICE=$(uci add network device)
-    uci set network.$ETH3_DEVICE.name='eth3'
-    uci set network.$ETH3_DEVICE.macaddr='{{ bbox_mac }}'
-
-    ETH3_100_DEVICE=$(uci add network device)
-    uci set network.$ETH3_100_DEVICE.name='eth3.100'
-    uci set network.$ETH3_100_DEVICE.type='8021q'
-    uci set network.$ETH3_100_DEVICE.ifname='eth3'
-    uci set network.$ETH3_100_DEVICE.vid='100'
-    uci set network.$ETH3_100_DEVICE.macaddr='{{ bbox_mac }}'
-fi
+ETH3_DEVICE=$(uci add network device)
+uci set network.$ETH3_DEVICE.name='eth3'
+uci set network.$ETH3_DEVICE.macaddr='{{ bbox_mac }}'
 
 
 #######################################
-# VLAN devices
+# VLAN devices per NIC
 #######################################
+
+# LAN VLAN 1 on eth1
+ETH1_1_DEVICE=$(uci add network device)
+uci set network.$ETH1_1_DEVICE.name='eth1.99'
+uci set network.$ETH1_1_DEVICE.type='8021q'
+uci set network.$ETH1_1_DEVICE.ifname='eth1'
+uci set network.$ETH1_1_DEVICE.vid='99'
+
 # Guest VLAN 2 on eth1
 ETH1_2_DEVICE=$(uci add network device)
 uci set network.$ETH1_2_DEVICE.name='eth1.2'
 uci set network.$ETH1_2_DEVICE.type='8021q'
 uci set network.$ETH1_2_DEVICE.ifname='eth1'
 uci set network.$ETH1_2_DEVICE.vid='2'
-
-# Guest VLAN 2 on eth2
-ETH2_2_DEVICE=$(uci add network device)
-uci set network.$ETH2_2_DEVICE.name='eth2.2'
-uci set network.$ETH2_2_DEVICE.type='8021q'
-uci set network.$ETH2_2_DEVICE.ifname='eth2'
-uci set network.$ETH2_2_DEVICE.vid='2'
 
 # IoT VLAN 3 on eth1
 ETH1_3_DEVICE=$(uci add network device)
@@ -63,12 +63,27 @@ uci set network.$ETH1_3_DEVICE.type='8021q'
 uci set network.$ETH1_3_DEVICE.ifname='eth1'
 uci set network.$ETH1_3_DEVICE.vid='3'
 
+# Guest VLAN 2 on eth2
+ETH2_2_DEVICE=$(uci add network device)
+uci set network.$ETH2_2_DEVICE.name='eth2.2'
+uci set network.$ETH2_2_DEVICE.type='8021q'
+uci set network.$ETH2_2_DEVICE.ifname='eth2'
+uci set network.$ETH2_2_DEVICE.vid='2'
+
 # IoT VLAN 3 on eth2
 ETH2_3_DEVICE=$(uci add network device)
 uci set network.$ETH2_3_DEVICE.name='eth2.3'
 uci set network.$ETH2_3_DEVICE.type='8021q'
 uci set network.$ETH2_3_DEVICE.ifname='eth2'
 uci set network.$ETH2_3_DEVICE.vid='3'
+
+# WAN VLAN 100 on eth3 (Bouygues Telecom requirement)
+ETH3_100_DEVICE=$(uci add network device)
+uci set network.$ETH3_100_DEVICE.name='eth3.100'
+uci set network.$ETH3_100_DEVICE.type='8021q'
+uci set network.$ETH3_100_DEVICE.ifname='eth3'
+uci set network.$ETH3_100_DEVICE.vid='100'
+uci set network.$ETH3_100_DEVICE.macaddr='{{ bbox_mac }}'
 
 
 #######################################
@@ -78,7 +93,7 @@ uci set network.$ETH2_3_DEVICE.vid='3'
 BR_LAN_DEVICE=$(uci add network device)
 uci set network.$BR_LAN_DEVICE.name='br-lan'
 uci set network.$BR_LAN_DEVICE.type='bridge'
-uci add_list network.$BR_LAN_DEVICE.ports='eth1'
+uci add_list network.$BR_LAN_DEVICE.ports='eth1.99'
 uci add_list network.$BR_LAN_DEVICE.ports='eth2'
 
 # Guest bridge
@@ -103,11 +118,7 @@ uci add_list network.$BR_IOT_DEVICE.ports='eth2.3'
 
 # WAN interface
 uci set network.wan=interface
-if [ $IS_VIRTUAL -eq 0 ]; then
-    uci set network.wan.device='eth3'
-else
-    uci set network.wan.device='eth3.100'
-fi
+uci set network.wan.device="$WAN_IFACE"
 uci set network.wan.proto='dhcp'
 uci set network.wan.vendorid='BYGTELIAD'
 uci set network.wan.norelease='1'
@@ -117,11 +128,7 @@ uci set network.wan.peerdns='0'
 
 # WAN6 interface
 uci set network.wan6=interface
-if [ $IS_VIRTUAL -eq 0 ]; then
-    uci set network.wan6.device='eth3'
-else
-    uci set network.wan6.device='eth3.100'
-fi
+uci set network.wan6.device="$WAN_IFACE"
 uci set network.wan6.proto='dhcpv6'
 uci set network.wan6.norelease='1'
 uci set network.wan6.reqprefix='auto'
@@ -136,29 +143,26 @@ uci set network.lan.device='br-lan'
 uci set network.lan.proto='static'
 uci set network.lan.netmask='255.255.255.0'
 uci set network.lan.ip6assign='64'
-if [ $IS_VIRTUAL -eq 0 ]; then
-    uci set network.lan.ipaddr='192.168.9.1'
-    uci set network.lan.ip6hint='9'
-else
-    uci set network.lan.ipaddr='192.168.1.1'
-    uci set network.lan.ip6hint='1'
-fi
+uci set network.lan.ipaddr="192.168.${ADMIN_SUBNET_ID}.1"
+uci set network.lan.ip6hint="$ADMIN_SUBNET_ID"
 
 # Guest interface
 uci set network.guest=interface
 uci set network.guest.device='br-guest'
 uci set network.guest.proto='static'
-uci set network.guest.ipaddr='192.168.2.1'
+uci set network.guest.ipaddr="192.168.${GUEST_SUBNET_ID}.1"
 uci set network.guest.netmask='255.255.255.0'
 uci set network.guest.ip6assign='64'
-uci set network.guest.ip6hint='2'
+uci set network.guest.ip6hint="$GUEST_SUBNET_ID"
 
 # IoT interface
 uci set network.iot=interface
 uci set network.iot.device='br-iot'
 uci set network.iot.proto='static'
-uci set network.iot.ipaddr='192.168.3.1'
+uci set network.iot.ipaddr="192.168.${IOT_SUBNET_ID}.1"
 uci set network.iot.netmask='255.255.255.0'
+uci set network.iot.ip6assign='64'
+uci set network.iot.ip6hint="$IOT_SUBNET_ID"
 
 uci commit network
 exit 0

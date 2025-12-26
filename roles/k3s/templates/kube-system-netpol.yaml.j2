@@ -37,7 +37,7 @@ spec:
   # Allow DNS forwarding to host DNS (192.168.4.1)
   - to:
     - ipBlock:
-        cidr: 192.168.{{ k3s_admin_vlan_id }}.1/32
+        cidr: 192.168.{{ k3s_admin_subnet_id }}.1/32
     ports:
     - protocol: UDP
       port: 53

@@ -4,8 +4,8 @@
     command: set
     key: dhcp.@dnsmasq[0].address
     value:
-      - "/.{{ domain }}/192.168.{{ k3s_admin_vlan_id }}.1"
-      - "/.{{ domain }}/{{ ula_prefix }}:{{ k3s_admin_vlan_id }}::1"
+      - "/.{{ domain }}/192.168.{{ k3s_admin_subnet_id }}.1"
+      - "/.{{ domain }}/{{ ula_prefix }}:{{ k3s_admin_subnet_id }}::1"
 
 - name: Configure DHCP option 138 for Omada Controller discovery
   uci:

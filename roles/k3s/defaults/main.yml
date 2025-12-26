@@ -1,7 +1,7 @@
 k3s_url: "https://github.com/k3s-io/k3s/releases/download/v1.34.2%2Bk3s1/k3s"
 helm_url: "https://get.helm.sh/helm-v4.0.1-linux-amd64.tar.gz"
-k3s_admin_vlan_id: 4
-k3s_external_vlan_id: 5
+k3s_admin_subnet_id: 4
+k3s_external_subnet_id: 5
 k3s_token: "TLtRdxiiCtrm1VDL9xEJCWPGn9ETpwXKzsxfewlAC3U="
 # Authelia secrets (générer avec openssl rand -base64 32)
 authelia_jwt_secret: "CHANGEME_BASE64_32_CHARS"

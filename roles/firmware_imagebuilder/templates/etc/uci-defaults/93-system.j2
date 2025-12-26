@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SUBNET="1"
-grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="9"
+grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="91"
 LAN_IPV4="192.168.$SUBNET.1"
 LAN_IPV6="{{ ula_prefix }}:$SUBNET::1"
 
@@ -40,6 +40,8 @@ uci set luci_statistics.collectd_sensors.enable='1'
 # Configure uHTTPd to listen only on LAN interface
 uci del uhttpd.main.listen_http || true
 uci del uhttpd.main.listen_https || true
+uci add_list uhttpd.main.listen_http="$LAN_IPV4:80"
+uci add_list uhttpd.main.listen_http="[$LAN_IPV6]:80"
 uci add_list uhttpd.main.listen_https="$LAN_IPV4:443"
 uci add_list uhttpd.main.listen_https="[$LAN_IPV6]:443"
 

@@ -90,10 +90,10 @@
     value:
       name: Redirect LAN to k3s_admin 443 to 8443 (IPv4)
       src: lan
-      src_dip: 192.168.{{ k3s_admin_vlan_id }}.1
+      src_dip: 192.168.{{ k3s_admin_subnet_id }}.1
       src_dport: 443
       dest: k3s_admin
-      dest_ip: 192.168.{{ k3s_admin_vlan_id }}.1
+      dest_ip: 192.168.{{ k3s_admin_subnet_id }}.1
       dest_port: 8443
       proto: tcp
       family: ipv4
@@ -108,10 +108,10 @@
     value:
       name: Redirect LAN to k3s_admin 443 to 8443 (IPv6)
       src: lan
-      src_dip: "{{ ula_prefix }}:{{ k3s_admin_vlan_id }}::1"
+      src_dip: "{{ ula_prefix }}:{{ k3s_admin_subnet_id }}::1"
       src_dport: 443
       dest: k3s_admin
-      dest_ip: "{{ ula_prefix }}:{{ k3s_admin_vlan_id }}::1"
+      dest_ip: "{{ ula_prefix }}:{{ k3s_admin_subnet_id }}::1"
       dest_port: 8443
       proto: tcp
       family: ipv6
@@ -126,10 +126,10 @@
     value:
       name: Redirect k3s_external 443 to 8443 (IPv4)
       src: k3s_external
-      src_dip: 192.168.{{ k3s_external_vlan_id }}.1
+      src_dip: 192.168.{{ k3s_external_subnet_id }}.1
       src_dport: 443
       dest: k3s_external
-      dest_ip: 192.168.{{ k3s_external_vlan_id }}.1
+      dest_ip: 192.168.{{ k3s_external_subnet_id }}.1
       dest_port: 8443
       proto: tcp
       family: ipv4
@@ -144,10 +144,10 @@
     value:
       name: Redirect k3s_external 443 to 8443 (IPv6)
       src: k3s_external
-      src_dip: "{{ ula_prefix }}:{{ k3s_external_vlan_id }}::1"
+      src_dip: "{{ ula_prefix }}:{{ k3s_external_subnet_id }}::1"
       src_dport: 443
       dest: k3s_external
-      dest_ip: "{{ ula_prefix }}:{{ k3s_external_vlan_id }}::1"
+      dest_ip: "{{ ula_prefix }}:{{ k3s_external_subnet_id }}::1"
       dest_port: 8443
       proto: tcp
       family: ipv6
@@ -164,7 +164,7 @@
       src: wan
       src_dport: 443
       dest: k3s_external
-      dest_ip: 192.168.{{ k3s_external_vlan_id }}.1
+      dest_ip: 192.168.{{ k3s_external_subnet_id }}.1
       dest_port: 8443
       proto: tcp
       family: ipv4
@@ -200,7 +200,7 @@
       src: wan
       src_dport: 443
       dest: k3s_external
-      dest_ip: "{{ ula_prefix }}:{{ k3s_external_vlan_id }}::1"
+      dest_ip: "{{ ula_prefix }}:{{ k3s_external_subnet_id }}::1"
       dest_port: 8443
       proto: tcp
       family: ipv6
