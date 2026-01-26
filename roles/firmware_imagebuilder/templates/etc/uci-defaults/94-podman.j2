@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Stop podman service first
+/etc/init.d/podman stop
+
+# Podman storage configuration
+mkdir -p /srv/containers/storage
+
+# Update storage configuration
+sed -i 's|^graphroot.*|graphroot = "/srv/containers/storage"|' /etc/containers/storage.conf
+
+# Cleanup old storage location (before starting with new location)
+[ -d "/var/lib/containers/storage" ] && rm -rf /var/lib/containers/storage
+
+# Start podman service with new configuration
+/etc/init.d/podman start
+
+exit 0

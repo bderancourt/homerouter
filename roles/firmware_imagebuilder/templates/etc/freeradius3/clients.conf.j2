@@ -1,0 +1,23 @@
+# FreeRADIUS Clients Configuration
+# Defines which NAS (Network Access Servers) can communicate with the RADIUS server
+
+#######################################
+# Localhost - for local testing
+#######################################
+client localhost {
+    ipaddr = 127.0.0.1
+    secret = {{ freeradius_shared_secret }}
+    require_message_authenticator = no
+    shortname = localhost
+}
+
+#######################################
+# TP-Link EAP773 WiFi Access Point
+#######################################
+client eap773 {
+    ipaddr = 192.168.9.90
+    secret = {{ freeradius_shared_secret }}
+    require_message_authenticator = yes
+    shortname = eap773
+    nas_type = other
+}

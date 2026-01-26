@@ -4,13 +4,12 @@
 grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
 IS_VIRTUAL=$?
 
-ADMIN_SUBNET_ID='1'
-GUEST_SUBNET_ID='2'
-IOT_SUBNET_ID='3'
+LAN_SUBNET_ID='2'
+GUEST_SUBNET_ID='3'
+IOT_SUBNET_ID='4'
+MGNT_SUBNET_ID='9'
 if [ $IS_VIRTUAL -eq 0 ]; then
-    ADMIN_SUBNET_ID='91'
-    GUEST_SUBNET_ID='92'
-    IOT_SUBNET_ID='93'
+    MGNT_SUBNET_ID='99'
 fi
 
 #######################################
@@ -21,16 +20,25 @@ fi
 uci delete dhcp.@dnsmasq[0].server || true
 uci add_list dhcp.@dnsmasq[0].server='1.1.1.1'
 
-uci delete dhcp.@dnsmasq[0].notinterface || true
-uci add_list dhcp.@dnsmasq[0].notinterface='wan'
-uci add_list dhcp.@dnsmasq[0].notinterface='wan6'
+# Bind dnsmasq only on specific interfaces (not podman/podext)
+# This allows aardvark-dns to handle DNS for containers
+uci delete dhcp.@dnsmasq[0].interface || true
+uci add_list dhcp.@dnsmasq[0].interface='mgnt'
+uci add_list dhcp.@dnsmasq[0].interface='lan'
+uci add_list dhcp.@dnsmasq[0].interface='guest'
+uci add_list dhcp.@dnsmasq[0].interface='iot'
+uci add_list dhcp.@dnsmasq[0].interface='lo'
+
+# Bind on each interface explicitly
+uci set dhcp.@dnsmasq[0].nonwildcard='1'
+uci set dhcp.@dnsmasq[0].localise_queries='1'
 
 #######################################
 # Add DHCP configuration
 # https://openwrt.org/docs/guide-user/base-system/dhcp#dhcp_pools
 #######################################
 
-for net in "lan:$ADMIN_SUBNET_ID" "guest:$GUEST_SUBNET_ID" "iot:$IOT_SUBNET_ID"; do
+for net in "mgnt:$MGNT_SUBNET_ID" "lan:$LAN_SUBNET_ID" "guest:$GUEST_SUBNET_ID" "iot:$IOT_SUBNET_ID"; do
     section="${net%%:*}"
     subnet="${net##*:}"
 
@@ -52,10 +60,18 @@ for net in "lan:$ADMIN_SUBNET_ID" "guest:$GUEST_SUBNET_ID" "iot:$IOT_SUBNET_ID";
     uci add_list dhcp."$section".ra_flags=home-agent
 
     uci del dhcp."$section".dhcp_option || true
-    uci add_list dhcp."$section".dhcp_option="6,192.168.$subnet.1"
-    
-    # Option 138 for Omada Controller discovery (only on LAN)
-    [ "$section" = "lan" ] && uci add_list dhcp."$section".dhcp_option="138,192.168.$subnet.1"
+
+    # Guest network uses public DNS (Cloudflare), others use local router DNS
+    if [ "$section" = "guest" ]; then
+        uci add_list dhcp."$section".dhcp_option="6,1.1.1.1,1.0.0.1"
+        uci del dhcp.guest.dns_service || true
+        uci del dhcp.guest.dns || true
+        uci add_list dhcp.guest.dns='2606:4700:4700::1111'
+        uci add_list dhcp.guest.dns='2606:4700:4700::1001'
+    else
+        uci add_list dhcp."$section".dhcp_option="6,192.168.$subnet.1"
+        uci set dhcp."$section".dns_service=1
+    fi
 done
 
 
@@ -63,13 +79,15 @@ done
 # Static DHCP leases
 #######################################
 
-# Static lease for EAP
+# Static lease for EAP (Omada Access Point)
 uci set dhcp.eap=host
 uci set dhcp.eap.name=eap
 uci set dhcp.eap.mac=20:36:26:D2:65:30
-uci set dhcp.eap.ip=192.168.$ADMIN_SUBNET_ID.90
+uci set dhcp.eap.ip=192.168.$MGNT_SUBNET_ID.90
 uci set dhcp.eap.hostid=90
 uci set dhcp.eap.dns=1
+uci del dhcp.eap.dhcp_option || true
+uci add_list dhcp.eap.dhcp_option="138,192.168.$MGNT_SUBNET_ID.1"
 
 # Static lease for Shelly switch VR
 uci set dhcp.shellyvr=host

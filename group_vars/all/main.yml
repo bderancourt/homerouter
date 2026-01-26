@@ -40,3 +40,8 @@ authelia_storage_encryption_key: "{{ secret_authelia_storage_encryption_key }}"
 authelia_admin_password: "{{ secret_authelia_admin_password }}"
 
 k3s_token: "{{ secret_k3s_token }}"
+
+vpn_private_key: "{{ secret_vpn_private_key }}"
+vpn_preshared_key: "{{ secret_vpn_preshared_key }}"
+vpn_peer_public_key: "{{ secret_vpn_peer_public_key }}"
+vpn_endpoint_host: "{{ secret_vpn_endpoint_host }}"

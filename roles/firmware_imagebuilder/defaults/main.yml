@@ -35,6 +35,15 @@ firmware_packages_to_add:
   - openssh-server
   - openssh-sftp-server
   - powertop
+  - podman
+  - iptables-nft
+  - ip6tables-nft
+  - kmod-ipt-nat
+  - kmod-ipt-conntrack
+  - kmod-ipt-extra
+  - iptables-mod-extra
+  - tcpdump
+  - curl
 
   # Python
   - python3-light
@@ -52,7 +61,54 @@ firmware_packages_to_add:
   - luci-app-disks-info
   - luci-app-cpu-status-mini
   - luci-app-statistics
+  - luci-proto-wireguard
   - collectd-mod-sensors
 
   # Networking & Kubernetes Requirements
   - kmod-atlantic
+
+  # FreeRADIUS Server (WiFi: PEAP-MSCHAPv2 / Wired: MAB)
+  - freeradius3                          # Serveur RADIUS principal
+  - freeradius3-mod-files                # Lecture des fichiers de config (authorize, clients.conf)
+  - freeradius3-mod-eap-peap             # PEAP - Tunnel TLS chiffré pour WiFi avec mot de passe
+  - freeradius3-mod-eap-mschapv2         # MS-CHAPv2 - Authentification par mot de passe dans tunnel PEAP
+  - freeradius3-mod-pap                  # PAP - Authentification MAC (MAB) pour connexions filaires
+  - freeradius3-mod-preprocess           # Preprocessing des requêtes (hints, huntgroups)
+  - freeradius3-mod-attr-filter          # Filtrage des attributs RADIUS dans les réponses
+  - freeradius3-utils                    # Outils de test (radtest, radclient, raddebug)
+
+# FreeRADIUS clients configuration
+# Shared secret for RADIUS communication between authenticator (hostapd) and RADIUS server
+freeradius_shared_secret: "testing123"  # TODO: Change to a secure random value in production
+
+# Guest WiFi default password - any unknown MAC with this password goes to guest VLAN
+freeradius_guest_password: "testing123"  # TODO: Change to a secure random value in production
+freeradius_guest_vlan_id: 3  # Guest VLAN
+
+# WiFi clients with password authentication (PEAP-MSCHAPv2)
+# Use username/password - VLAN assigned based on username
+freeradius_wifi_clients:
+  - mac: "9c:65:eb:d1:45:07"
+    password: "testing123"  # TODO: Change to a secure random value in production
+    vlan_id: 99
+    comment: "Laptop - MGNT VLAN"
+  - mac: "fc:41:16:c1:cd:97"
+    password: "testing123"  # TODO: Change to a secure random value in production
+    vlan_id: 99
+    comment: "Pixel ben - MGNT VLAN"
+
+# Wired clients with MAC authentication only (MAB - no password prompt)
+# These will be assigned to VLANs dynamically on eth0
+freeradius_wired_clients:
+  - mac: "aa:bb:cc:dd:ee:00"
+    vlan_id: 2  # LAN
+    comment: "Laptop Ethernet"
+  - mac: "11:22:33:44:55:00"
+    vlan_id: 3  # Guest
+    comment: "Desktop Ethernet"
+  - mac: "22:33:44:55:66:00"
+    vlan_id: 4  # IoT
+    comment: "IoT Device"
+  - mac: "33:44:55:66:77:00"
+    vlan_id: 9  # MGNT
+    comment: "Management Device"

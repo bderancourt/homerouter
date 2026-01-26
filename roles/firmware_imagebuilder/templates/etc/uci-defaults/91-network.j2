@@ -6,6 +6,7 @@
 #######################################
 # Global settings
 #######################################
+
 uci set network.globals.packet_steering='1'
 uci set network.globals.ula_prefix='{{ ula_prefix }}::/48'
 
@@ -13,14 +14,15 @@ uci set network.globals.ula_prefix='{{ ula_prefix }}::/48'
 grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
 IS_VIRTUAL=$?
 WAN_IFACE='eth3.100'
-ADMIN_SUBNET_ID='1'
-GUEST_SUBNET_ID='2'
-IOT_SUBNET_ID='3'
+LAN_SUBNET_ID='2'
+GUEST_SUBNET_ID='3'
+IOT_SUBNET_ID='4'
+PODMAN_SUBNET_ID='7'
+PODEXT_SUBNET_ID='8'
+MGNT_SUBNET_ID='9'
 if [ $IS_VIRTUAL -eq 0 ]; then
     WAN_IFACE='eth3'
-    ADMIN_SUBNET_ID='91'
-    GUEST_SUBNET_ID='92'
-    IOT_SUBNET_ID='93'
+    MGNT_SUBNET_ID='99'
 fi
 
 #######################################
@@ -41,41 +43,54 @@ uci set network.$ETH3_DEVICE.macaddr='{{ bbox_mac }}'
 #######################################
 # VLAN devices per NIC
 #######################################
+# MGNT VLAN 99 on eth1 (AP wifi)
+ETH1_99_DEVICE=$(uci add network device)
+uci set network.$ETH1_99_DEVICE.name='eth1.99'
+uci set network.$ETH1_99_DEVICE.type='8021q'
+uci set network.$ETH1_99_DEVICE.ifname='eth1'
+uci set network.$ETH1_99_DEVICE.vid='99'
 
-# LAN VLAN 1 on eth1
-ETH1_1_DEVICE=$(uci add network device)
-uci set network.$ETH1_1_DEVICE.name='eth1.99'
-uci set network.$ETH1_1_DEVICE.type='8021q'
-uci set network.$ETH1_1_DEVICE.ifname='eth1'
-uci set network.$ETH1_1_DEVICE.vid='99'
-
-# Guest VLAN 2 on eth1
+# LAN VLAN 2 on eth1 (AP wifi)
 ETH1_2_DEVICE=$(uci add network device)
 uci set network.$ETH1_2_DEVICE.name='eth1.2'
 uci set network.$ETH1_2_DEVICE.type='8021q'
 uci set network.$ETH1_2_DEVICE.ifname='eth1'
 uci set network.$ETH1_2_DEVICE.vid='2'
 
-# IoT VLAN 3 on eth1
+# GUEST VLAN 3 on eth1 (AP wifi)
 ETH1_3_DEVICE=$(uci add network device)
 uci set network.$ETH1_3_DEVICE.name='eth1.3'
 uci set network.$ETH1_3_DEVICE.type='8021q'
 uci set network.$ETH1_3_DEVICE.ifname='eth1'
 uci set network.$ETH1_3_DEVICE.vid='3'
 
-# Guest VLAN 2 on eth2
+# IOT VLAN 4 on eth1 (AP wifi)
+ETH1_4_DEVICE=$(uci add network device)
+uci set network.$ETH1_4_DEVICE.name='eth1.4'
+uci set network.$ETH1_4_DEVICE.type='8021q'
+uci set network.$ETH1_4_DEVICE.ifname='eth1'
+uci set network.$ETH1_4_DEVICE.vid='4'
+
+# LAN VLAN 2 on eth2 (topton 8505)
 ETH2_2_DEVICE=$(uci add network device)
 uci set network.$ETH2_2_DEVICE.name='eth2.2'
 uci set network.$ETH2_2_DEVICE.type='8021q'
 uci set network.$ETH2_2_DEVICE.ifname='eth2'
 uci set network.$ETH2_2_DEVICE.vid='2'
 
-# IoT VLAN 3 on eth2
+# Guest VLAN 3 on eth2 (topton 8505)
 ETH2_3_DEVICE=$(uci add network device)
 uci set network.$ETH2_3_DEVICE.name='eth2.3'
 uci set network.$ETH2_3_DEVICE.type='8021q'
 uci set network.$ETH2_3_DEVICE.ifname='eth2'
 uci set network.$ETH2_3_DEVICE.vid='3'
+
+# IoT VLAN 4 on eth2 (topton 8505)
+ETH2_4_DEVICE=$(uci add network device)
+uci set network.$ETH2_4_DEVICE.name='eth2.4'
+uci set network.$ETH2_4_DEVICE.type='8021q'
+uci set network.$ETH2_4_DEVICE.ifname='eth2'
+uci set network.$ETH2_4_DEVICE.vid='4'
 
 # WAN VLAN 100 on eth3 (Bouygues Telecom requirement)
 ETH3_100_DEVICE=$(uci add network device)
@@ -89,33 +104,51 @@ uci set network.$ETH3_100_DEVICE.macaddr='{{ bbox_mac }}'
 #######################################
 # Bridge devices
 #######################################
+# MGNT bridge
+BR_MGNT_DEVICE=$(uci add network device)
+uci set network.$BR_MGNT_DEVICE.name='br-mgnt'
+uci set network.$BR_MGNT_DEVICE.type='bridge'
+uci add_list network.$BR_MGNT_DEVICE.ports='eth0'
+uci add_list network.$BR_MGNT_DEVICE.ports='eth1.99'
+uci add_list network.$BR_MGNT_DEVICE.ports='eth2'
+
 # LAN bridge
 BR_LAN_DEVICE=$(uci add network device)
 uci set network.$BR_LAN_DEVICE.name='br-lan'
 uci set network.$BR_LAN_DEVICE.type='bridge'
-uci add_list network.$BR_LAN_DEVICE.ports='eth1.99'
-uci add_list network.$BR_LAN_DEVICE.ports='eth2'
+uci add_list network.$BR_LAN_DEVICE.ports='eth1.2'
+uci add_list network.$BR_LAN_DEVICE.ports='eth2.2'
 
 # Guest bridge
 BR_GUEST_DEVICE=$(uci add network device)
 uci set network.$BR_GUEST_DEVICE.name='br-guest'
 uci set network.$BR_GUEST_DEVICE.type='bridge'
-uci add_list network.$BR_GUEST_DEVICE.ports='eth0'
-uci add_list network.$BR_GUEST_DEVICE.ports='eth1.2'
-uci add_list network.$BR_GUEST_DEVICE.ports='eth2.2'
+uci add_list network.$BR_GUEST_DEVICE.ports='eth1.3'
+uci add_list network.$BR_GUEST_DEVICE.ports='eth2.3'
 
 # IoT bridge
 BR_IOT_DEVICE=$(uci add network device)
 uci set network.$BR_IOT_DEVICE.name='br-iot'
 uci set network.$BR_IOT_DEVICE.type='bridge'
-uci add_list network.$BR_IOT_DEVICE.ports='eth1.3'
-uci add_list network.$BR_IOT_DEVICE.ports='eth2.3'
+uci add_list network.$BR_IOT_DEVICE.ports='eth1.4'
+uci add_list network.$BR_IOT_DEVICE.ports='eth2.4'
+
+# Podman bridge (for netavark)
+BR_PODMAN_DEVICE=$(uci add network device)
+uci set network.$BR_PODMAN_DEVICE.name='podman0'
+uci set network.$BR_PODMAN_DEVICE.type='bridge'
+uci set network.$BR_PODMAN_DEVICE.bridge_empty='1'
+
+# Podext bridge (for netavark)
+BR_PODEXT_DEVICE=$(uci add network device)
+uci set network.$BR_PODEXT_DEVICE.name='podext0'
+uci set network.$BR_PODEXT_DEVICE.type='bridge'
+uci set network.$BR_PODEXT_DEVICE.bridge_empty='1'
 
 
 #######################################
 # Network interfaces
 #######################################
-
 # WAN interface
 uci set network.wan=interface
 uci set network.wan.device="$WAN_IFACE"
@@ -136,6 +169,16 @@ uci set network.wan6.reqaddress='none'
 uci set network.wan6.ip6hint='0'
 uci set network.wan6.ip6assign='64'
 uci set network.wan6.peerdns='0'
+uci set network.wan6.sourcefilter='0'
+
+# MGNT interface
+uci set network.mgnt=interface
+uci set network.mgnt.device='br-mgnt'
+uci set network.mgnt.proto='static'
+uci set network.mgnt.netmask='255.255.255.0'
+uci set network.mgnt.ip6assign='64'
+uci set network.mgnt.ipaddr="192.168.${MGNT_SUBNET_ID}.1"
+uci set network.mgnt.ip6hint="$MGNT_SUBNET_ID"
 
 # LAN interface
 uci set network.lan=interface
@@ -143,8 +186,8 @@ uci set network.lan.device='br-lan'
 uci set network.lan.proto='static'
 uci set network.lan.netmask='255.255.255.0'
 uci set network.lan.ip6assign='64'
-uci set network.lan.ipaddr="192.168.${ADMIN_SUBNET_ID}.1"
-uci set network.lan.ip6hint="$ADMIN_SUBNET_ID"
+uci set network.lan.ipaddr="192.168.${LAN_SUBNET_ID}.1"
+uci set network.lan.ip6hint="$LAN_SUBNET_ID"
 
 # Guest interface
 uci set network.guest=interface
@@ -163,6 +206,44 @@ uci set network.iot.ipaddr="192.168.${IOT_SUBNET_ID}.1"
 uci set network.iot.netmask='255.255.255.0'
 uci set network.iot.ip6assign='64'
 uci set network.iot.ip6hint="$IOT_SUBNET_ID"
+
+# Podman interface (for netavark)
+uci set network.podman0=interface
+uci set network.podman0.device='podman0'
+uci set network.podman0.proto='static'
+uci set network.podman0.ipaddr="192.168.${PODMAN_SUBNET_ID}.1"
+uci set network.podman0.netmask='255.255.255.0'
+uci set network.podman0.ip6assign='64'
+uci set network.podman0.ip6hint="$PODMAN_SUBNET_ID"
+
+# Podext interface (for netavark)
+uci set network.podext0=interface
+uci set network.podext0.device='podext0'
+uci set network.podext0.proto='static'
+uci set network.podext0.ipaddr="192.168.${PODEXT_SUBNET_ID}.1"
+uci set network.podext0.netmask='255.255.255.0'
+uci set network.podext0.ip6assign='64'
+uci set network.podext0.ip6hint="$PODEXT_SUBNET_ID"
+
+
+#######################################
+# WireGuard VPN
+#######################################
+uci set network.wg0=interface
+uci set network.wg0.proto='wireguard'
+uci set network.wg0.private_key='{{ vpn_private_key }}'
+uci add_list network.wg0.addresses='10.0.0.2/24'
+
+# Configuration du Peer (Serveur distant)
+uci add network wireguard_wg0
+uci set network.@wireguard_wg0[-1].public_key='{{  vpn_peer_public_key }}'
+uci set network.@wireguard_wg0[-1].preshared_key='{{ vpn_preshared_key }}'
+uci set network.@wireguard_wg0[-1].endpoint_host='{{ vpn_endpoint_host }}'
+uci set network.@wireguard_wg0[-1].endpoint_port='51820'
+uci set network.@wireguard_wg0[-1].route_allowed_ips='1'
+uci set network.@wireguard_wg0[-1].persistent_keepalive='25'
+uci add_list network.@wireguard_wg0[-1].allowed_ips='10.0.0.1/24'      # Tunnel peer endpoint
+uci add_list network.@wireguard_wg0[-1].allowed_ips='192.168.1.0/24'   # Remote LAN
 
 uci commit network
 exit 0

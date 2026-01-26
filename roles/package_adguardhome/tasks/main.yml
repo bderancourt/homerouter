@@ -56,3 +56,9 @@
     mode: u=rw,g=r,o=r
   notify:
     - Restart AdGuardHome
+
+- name: Ensure AdGuard Home is enabled and started
+  ansible.builtin.service:
+    name: adguardhome
+    state: started
+    enabled: true

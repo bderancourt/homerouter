@@ -8,3 +8,4 @@
   ansible.builtin.service:
     name: adguardhome
     state: restarted
+    enabled: true

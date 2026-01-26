@@ -1,9 +1,9 @@
 #!/bin/sh
 
-SUBNET="1"
-grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="91"
-LAN_IPV4="192.168.$SUBNET.1"
-LAN_IPV6="{{ ula_prefix }}:$SUBNET::1"
+SUBNET="9"
+grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="99"
+MGNT_IPV4="192.168.$SUBNET.1"
+MGNT_IPV6="{{ ula_prefix }}:$SUBNET::1"
 
 #######################################
 # change root password
@@ -29,23 +29,18 @@ mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 echo {{ ssh_key }} >> /root/.ssh/authorized_keys
 chmod 600 /root/.ssh/authorized_keys
-# On commente les ListenAddress existants dans le fichier principal pour éviter les doublons
-sed -i 's/^ListenAddress/#ListenAddress/' /etc/ssh/sshd_config
-echo "ListenAddress $LAN_IPV4" > /etc/ssh/sshd_config.d/openwrt.conf
-echo "ListenAddress $LAN_IPV6" >> /etc/ssh/sshd_config.d/openwrt.conf
+# Restart SSH to apply configuration
 service sshd restart
 
 uci set luci_statistics.collectd_sensors.enable='1'
 
-# Configure uHTTPd to listen only on LAN interface
+# Configure uHTTPd to listen only on MGNT interface
 uci del uhttpd.main.listen_http || true
 uci del uhttpd.main.listen_https || true
-uci add_list uhttpd.main.listen_http="$LAN_IPV4:80"
-uci add_list uhttpd.main.listen_http="[$LAN_IPV6]:80"
-uci add_list uhttpd.main.listen_https="$LAN_IPV4:443"
-uci add_list uhttpd.main.listen_https="[$LAN_IPV6]:443"
-
-echo "options dummy numdummies=2" > /etc/modules.conf
+uci add_list uhttpd.main.listen_http="$MGNT_IPV4:80"
+uci add_list uhttpd.main.listen_http="[$MGNT_IPV6]:80"
+uci add_list uhttpd.main.listen_https="$MGNT_IPV4:443"
+uci add_list uhttpd.main.listen_https="[$MGNT_IPV6]:443"
 
 uci commit
 exit 0

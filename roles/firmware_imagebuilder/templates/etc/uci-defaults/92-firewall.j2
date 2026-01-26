@@ -1,0 +1,359 @@
+#!/bin/sh
+
+# Firewall configuration for OpenWRT
+# This script configures firewall zones, forwarding rules, and access rules
+
+#######################################
+# Clean existing firewall configuration
+#######################################
+# Remove all existing firewall rules
+while uci -q delete firewall.@rule[0]; do :; done
+
+# Remove all zones
+while uci -q delete firewall.@zone[0]; do :; done
+
+# Remove all forwarding rules
+while uci -q delete firewall.@forwarding[0]; do :; done
+
+# Remove all redirects
+while uci -q delete firewall.@redirect[0]; do :; done
+
+#######################################
+# Firewall defaults
+#######################################
+uci set firewall.@defaults[0].syn_flood='1'
+uci set firewall.@defaults[0].input='REJECT'
+uci set firewall.@defaults[0].output='ACCEPT'
+uci set firewall.@defaults[0].forward='REJECT'
+
+#######################################
+# Essential WAN rules (OpenWRT defaults for IPv4/IPv6)
+#######################################
+
+# Allow DHCP Renew from WAN
+DHCP_RENEW=$(uci add firewall rule)
+uci set firewall.$DHCP_RENEW.name='Allow-DHCP-Renew'
+uci set firewall.$DHCP_RENEW.src='wan'
+uci set firewall.$DHCP_RENEW.proto='udp'
+uci set firewall.$DHCP_RENEW.dest_port='68'
+uci set firewall.$DHCP_RENEW.target='ACCEPT'
+uci set firewall.$DHCP_RENEW.family='ipv4'
+
+# Allow Ping from WAN
+PING=$(uci add firewall rule)
+uci set firewall.$PING.name='Allow-Ping'
+uci set firewall.$PING.src='wan'
+uci set firewall.$PING.proto='icmp'
+uci set firewall.$PING.icmp_type='echo-request'
+uci set firewall.$PING.family='ipv4'
+uci set firewall.$PING.target='ACCEPT'
+
+# Allow IGMP from WAN
+IGMP=$(uci add firewall rule)
+uci set firewall.$IGMP.name='Allow-IGMP'
+uci set firewall.$IGMP.src='wan'
+uci set firewall.$IGMP.proto='igmp'
+uci set firewall.$IGMP.family='ipv4'
+uci set firewall.$IGMP.target='ACCEPT'
+
+# Allow DHCPv6 from WAN
+DHCPV6=$(uci add firewall rule)
+uci set firewall.$DHCPV6.name='Allow-DHCPv6'
+uci set firewall.$DHCPV6.src='wan'
+uci set firewall.$DHCPV6.proto='udp'
+uci set firewall.$DHCPV6.dest_port='546'
+uci set firewall.$DHCPV6.family='ipv6'
+uci set firewall.$DHCPV6.target='ACCEPT'
+
+# Allow MLD (Multicast Listener Discovery) from WAN
+MLD=$(uci add firewall rule)
+uci set firewall.$MLD.name='Allow-MLD'
+uci set firewall.$MLD.src='wan'
+uci set firewall.$MLD.proto='icmp'
+uci set firewall.$MLD.src_ip='fe80::/10'
+uci del firewall.$MLD.icmp_type
+uci add_list firewall.$MLD.icmp_type='130/0'
+uci add_list firewall.$MLD.icmp_type='131/0'
+uci add_list firewall.$MLD.icmp_type='132/0'
+uci add_list firewall.$MLD.icmp_type='143/0'
+uci set firewall.$MLD.family='ipv6'
+uci set firewall.$MLD.target='ACCEPT'
+
+# Allow ICMPv6 Input from WAN
+ICMPV6_INPUT=$(uci add firewall rule)
+uci set firewall.$ICMPV6_INPUT.name='Allow-ICMPv6-Input'
+uci set firewall.$ICMPV6_INPUT.src='wan'
+uci set firewall.$ICMPV6_INPUT.proto='icmp'
+uci del firewall.$ICMPV6_INPUT.icmp_type
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='echo-request'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='echo-reply'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='destination-unreachable'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='packet-too-big'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='time-exceeded'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='bad-header'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='unknown-header-type'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='router-solicitation'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='neighbour-solicitation'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='router-advertisement'
+uci add_list firewall.$ICMPV6_INPUT.icmp_type='neighbour-advertisement'
+uci set firewall.$ICMPV6_INPUT.limit='1000/sec'
+uci set firewall.$ICMPV6_INPUT.family='ipv6'
+uci set firewall.$ICMPV6_INPUT.target='ACCEPT'
+
+# Allow ICMPv6 Forward from WAN
+ICMPV6_FORWARD=$(uci add firewall rule)
+uci set firewall.$ICMPV6_FORWARD.name='Allow-ICMPv6-Forward'
+uci set firewall.$ICMPV6_FORWARD.src='wan'
+uci set firewall.$ICMPV6_FORWARD.dest='*'
+uci set firewall.$ICMPV6_FORWARD.proto='icmp'
+uci del firewall.$ICMPV6_FORWARD.icmp_type
+uci add_list firewall.$ICMPV6_FORWARD.icmp_type='echo-request'
+uci add_list firewall.$ICMPV6_FORWARD.icmp_type='echo-reply'
+uci add_list firewall.$ICMPV6_FORWARD.icmp_type='destination-unreachable'
+uci add_list firewall.$ICMPV6_FORWARD.icmp_type='packet-too-big'
+uci add_list firewall.$ICMPV6_FORWARD.icmp_type='time-exceeded'
+uci add_list firewall.$ICMPV6_FORWARD.icmp_type='bad-header'
+uci add_list firewall.$ICMPV6_FORWARD.icmp_type='unknown-header-type'
+uci set firewall.$ICMPV6_FORWARD.limit='1000/sec'
+uci set firewall.$ICMPV6_FORWARD.family='ipv6'
+uci set firewall.$ICMPV6_FORWARD.target='ACCEPT'
+
+#######################################
+# Firewall zones
+#######################################
+
+# LAN zone
+LAN_ZONE=$(uci add firewall zone)
+uci set firewall.$LAN_ZONE.name='lan'
+uci del firewall.$LAN_ZONE.network
+uci add_list firewall.$LAN_ZONE.network='lan'
+uci set firewall.$LAN_ZONE.input='REJECT'
+uci set firewall.$LAN_ZONE.output='ACCEPT'
+uci set firewall.$LAN_ZONE.forward='REJECT'
+
+# WAN zone
+WAN_ZONE=$(uci add firewall zone)
+uci set firewall.$WAN_ZONE.name='wan'
+uci del firewall.$WAN_ZONE.network
+uci add_list firewall.$WAN_ZONE.network='wan'
+uci add_list firewall.$WAN_ZONE.network='wan6'
+uci set firewall.$WAN_ZONE.input='REJECT'
+uci set firewall.$WAN_ZONE.output='ACCEPT'
+uci set firewall.$WAN_ZONE.forward='REJECT'
+uci set firewall.$WAN_ZONE.masq='1'
+uci set firewall.$WAN_ZONE.masq6='1'
+uci set firewall.$WAN_ZONE.mtu_fix='1'
+uci set firewall.$WAN_ZONE.log='1'
+uci set firewall.$WAN_ZONE.log_limit='10/minute'
+
+# MGNT zone (Management)
+MGNT_ZONE=$(uci add firewall zone)
+uci set firewall.$MGNT_ZONE.name='mgnt'
+uci del firewall.$MGNT_ZONE.network
+uci add_list firewall.$MGNT_ZONE.network='mgnt'
+uci add_list firewall.$MGNT_ZONE.network='wg0'
+uci set firewall.$MGNT_ZONE.input='ACCEPT'
+uci set firewall.$MGNT_ZONE.output='ACCEPT'
+uci set firewall.$MGNT_ZONE.forward='ACCEPT'
+
+# Guest zone
+GUEST_ZONE=$(uci add firewall zone)
+uci set firewall.$GUEST_ZONE.name='guest'
+uci del firewall.$GUEST_ZONE.network
+uci add_list firewall.$GUEST_ZONE.network='guest'
+uci set firewall.$GUEST_ZONE.input='REJECT'
+uci set firewall.$GUEST_ZONE.output='ACCEPT'
+uci set firewall.$GUEST_ZONE.forward='REJECT'
+
+# IoT zone
+IOT_ZONE=$(uci add firewall zone)
+uci set firewall.$IOT_ZONE.name='iot'
+uci del firewall.$IOT_ZONE.network
+uci add_list firewall.$IOT_ZONE.network='iot'
+uci set firewall.$IOT_ZONE.input='REJECT'
+uci set firewall.$IOT_ZONE.output='ACCEPT'
+uci set firewall.$IOT_ZONE.forward='REJECT'
+
+# PODMAN zone (Internal Podman services - LAN only)
+PODMAN_ZONE=$(uci add firewall zone)
+uci set firewall.$PODMAN_ZONE.name='podman'
+uci del firewall.$PODMAN_ZONE.network
+uci add_list firewall.$PODMAN_ZONE.network='podman0'
+uci set firewall.$PODMAN_ZONE.input='REJECT'
+uci set firewall.$PODMAN_ZONE.output='ACCEPT'
+uci set firewall.$PODMAN_ZONE.forward='REJECT'
+
+# PODEXT zone (Public Podman services - Internet exposed)
+PODEXT_ZONE=$(uci add firewall zone)
+uci set firewall.$PODEXT_ZONE.name='podext'
+uci del firewall.$PODEXT_ZONE.network
+uci add_list firewall.$PODEXT_ZONE.network='podext0'
+uci set firewall.$PODEXT_ZONE.input='REJECT'
+uci set firewall.$PODEXT_ZONE.output='ACCEPT'
+uci set firewall.$PODEXT_ZONE.forward='REJECT'
+
+#######################################
+# Forwarding rules
+#######################################
+
+# MGNT to WAN, IoT, Sorgues
+MGNT_WAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$MGNT_WAN_FORWARDING.src='mgnt'
+uci set firewall.$MGNT_WAN_FORWARDING.dest='wan'
+
+MGNT_IOT_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$MGNT_IOT_FORWARDING.src='mgnt'
+uci set firewall.$MGNT_IOT_FORWARDING.dest='iot'
+
+# MGNT to PODMAN (management access)
+MGNT_PODMAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$MGNT_PODMAN_FORWARDING.src='mgnt'
+uci set firewall.$MGNT_PODMAN_FORWARDING.dest='podman'
+
+# MGNT to PODEXT (management access)
+MGNT_PODEXT_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$MGNT_PODEXT_FORWARDING.src='mgnt'
+uci set firewall.$MGNT_PODEXT_FORWARDING.dest='podext'
+
+# LAN to WAN
+LAN_WAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$LAN_WAN_FORWARDING.src='lan'
+uci set firewall.$LAN_WAN_FORWARDING.dest='wan'
+
+# LAN to IoT
+LAN_IOT_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$LAN_IOT_FORWARDING.src='lan'
+uci set firewall.$LAN_IOT_FORWARDING.dest='iot'
+
+# Guest to WAN
+GUEST_WAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$GUEST_WAN_FORWARDING.src='guest'
+uci set firewall.$GUEST_WAN_FORWARDING.dest='wan'
+
+# IoT to WAN
+IOT_WAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$IOT_WAN_FORWARDING.src='iot'
+uci set firewall.$IOT_WAN_FORWARDING.dest='wan'
+
+# PODMAN to WAN (internal services can reach Internet)
+PODMAN_WAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$PODMAN_WAN_FORWARDING.src='podman'
+uci set firewall.$PODMAN_WAN_FORWARDING.dest='wan'
+
+
+#######################################
+# Firewall rules: WAN access
+#######################################
+
+# Allow SSH on port 222 from WAN
+# SSH_WAN_RULE=$(uci add firewall rule)
+# uci set firewall.$SSH_WAN_RULE.name='Allow-WAN-SSH'
+# uci set firewall.$SSH_WAN_RULE.src='wan'
+# uci set firewall.$SSH_WAN_RULE.proto='tcp'
+# uci set firewall.$SSH_WAN_RULE.dest_port='222'
+# uci set firewall.$SSH_WAN_RULE.target='ACCEPT'
+
+# Allow HTTP/HTTPS from WAN to PODEXT (public services via Traefik)
+HTTP_WAN_PODEXT=$(uci add firewall rule)
+uci set firewall.$HTTP_WAN_PODEXT.name='Allow-WAN-HTTP-PODEXT'
+uci set firewall.$HTTP_WAN_PODEXT.src='wan'
+uci set firewall.$HTTP_WAN_PODEXT.dest='podext'
+uci set firewall.$HTTP_WAN_PODEXT.proto='tcp'
+uci set firewall.$HTTP_WAN_PODEXT.dest_port='80 443'
+uci set firewall.$HTTP_WAN_PODEXT.target='ACCEPT'
+
+
+
+#######################################
+# Firewall rules: Allow DNS, DHCP, ICMP, NTP to router
+#######################################
+
+for zone in lan guest iot; do
+  zone_upper=$(echo "$zone" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+
+  # Allow DNS (port 53) from zone to Router
+  DNS_RULE=$(uci add firewall rule)
+  uci set firewall.$DNS_RULE.name="Allow-${zone_upper}-DNS"
+  uci set firewall.$DNS_RULE.src="$zone"
+  uci set firewall.$DNS_RULE.proto='tcp udp'
+  uci set firewall.$DNS_RULE.dest_port='53'
+  uci set firewall.$DNS_RULE.target='ACCEPT'
+
+  # Allow DHCP (port 67) from zone to Router
+  DHCP_RULE=$(uci add firewall rule)
+  uci set firewall.$DHCP_RULE.name="Allow-${zone_upper}-DHCP"
+  uci set firewall.$DHCP_RULE.src="$zone"
+  uci set firewall.$DHCP_RULE.src_port='68'
+  uci set firewall.$DHCP_RULE.proto='udp'
+  uci set firewall.$DHCP_RULE.dest_port='67'
+  uci set firewall.$DHCP_RULE.family='ipv4'
+  uci set firewall.$DHCP_RULE.target='ACCEPT'
+
+  # Allow DHCPv6 (port 547) from zone to Router
+  DHCPV6_RULE=$(uci add firewall rule)
+  uci set firewall.$DHCPV6_RULE.name="Allow-${zone_upper}-DHCPv6"
+  uci set firewall.$DHCPV6_RULE.src="$zone"
+  uci set firewall.$DHCPV6_RULE.src_port='546'
+  uci set firewall.$DHCPV6_RULE.proto='udp'
+  uci set firewall.$DHCPV6_RULE.dest_port='547'
+  uci set firewall.$DHCPV6_RULE.family='ipv6'
+  uci set firewall.$DHCPV6_RULE.target='ACCEPT'
+
+  # Allow ICMP (ping) from zone to Router
+  ICMP_RULE=$(uci add firewall rule)
+  uci set firewall.$ICMP_RULE.name="Allow-${zone_upper}-ICMP"
+  uci set firewall.$ICMP_RULE.src="$zone"
+  uci set firewall.$ICMP_RULE.proto='icmp'
+  uci set firewall.$ICMP_RULE.family='ipv4'
+  uci set firewall.$ICMP_RULE.target='ACCEPT'
+
+  # Allow ICMPv6 from zone to Router
+  ICMPV6_RULE=$(uci add firewall rule)
+  uci set firewall.$ICMPV6_RULE.name="Allow-${zone_upper}-ICMPv6"
+  uci set firewall.$ICMPV6_RULE.src="$zone"
+  uci set firewall.$ICMPV6_RULE.proto='icmpv6'
+  uci set firewall.$ICMPV6_RULE.family='ipv6'
+  uci set firewall.$ICMPV6_RULE.target='ACCEPT'
+
+  # Allow NTP from zone to Router
+  NTP_RULE=$(uci add firewall rule)
+  uci set firewall.$NTP_RULE.name="Allow-${zone_upper}-NTP"
+  uci set firewall.$NTP_RULE.src="$zone"
+  uci set firewall.$NTP_RULE.proto='udp'
+  uci set firewall.$NTP_RULE.dest_port='123'
+  uci set firewall.$NTP_RULE.target='ACCEPT'
+done
+
+# Allow DNS from PODMAN to Router (for aardvark-dns integration)
+PODMAN_DNS=$(uci add firewall rule)
+uci set firewall.$PODMAN_DNS.name='Allow-Podint-DNS'
+uci set firewall.$PODMAN_DNS.src='podman'
+uci set firewall.$PODMAN_DNS.proto='tcp udp'
+uci set firewall.$PODMAN_DNS.dest_port='53'
+uci set firewall.$PODMAN_DNS.target='ACCEPT'
+
+# Allow DNS from PODEXT to Router (for aardvark-dns integration)
+PODEXT_DNS=$(uci add firewall rule)
+uci set firewall.$PODEXT_DNS.name='Allow-Podext-DNS'
+uci set firewall.$PODEXT_DNS.src='podext'
+uci set firewall.$PODEXT_DNS.proto='tcp udp'
+uci set firewall.$PODEXT_DNS.dest_port='53'
+uci set firewall.$PODEXT_DNS.target='ACCEPT'
+
+for zone in mgnt lan iot; do
+  zone_upper=$(echo "$zone" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+
+  # DNS interception: Redirect DNS requests to router's DNS server
+  DNS_REDIRECT=$(uci add firewall redirect)
+  uci set firewall.$DNS_REDIRECT.name="DNS_intercept_${zone}"
+  uci set firewall.$DNS_REDIRECT.src="$zone"
+  uci set firewall.$DNS_REDIRECT.src_dport='53'
+  uci set firewall.$DNS_REDIRECT.proto='tcp udp'
+  uci set firewall.$DNS_REDIRECT.target='DNAT'
+  uci set firewall.$DNS_REDIRECT.dest="$zone"
+  uci set firewall.$DNS_REDIRECT.dest_port='53'
+  uci set firewall.$DNS_REDIRECT.family='any'
+done
+
+uci commit firewall
+exit 0
