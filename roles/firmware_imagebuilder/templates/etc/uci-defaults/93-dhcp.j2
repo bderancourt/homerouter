@@ -1,6 +1,17 @@
 #!/bin/sh
 
+LOGFILE="/root/uci-defaults.log"
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] [93-dhcp] $*" >> "$LOGFILE"
+}
+
+log "======================================"
+log "Starting 93-dhcp configuration"
+log "======================================"
+
 # Detect if running in virtual environment
+log "Detecting virtual environment"
 grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
 IS_VIRTUAL=$?
 
@@ -10,38 +21,50 @@ IOT_SUBNET_ID='4'
 MGNT_SUBNET_ID='9'
 if [ $IS_VIRTUAL -eq 0 ]; then
     MGNT_SUBNET_ID='99'
+    log "Virtual environment detected, using MGNT subnet 99"
+else
+    log "Physical environment detected, using MGNT subnet 9"
 fi
+log "Subnet IDs: LAN=$LAN_SUBNET_ID, GUEST=$GUEST_SUBNET_ID, IOT=$IOT_SUBNET_ID, MGNT=$MGNT_SUBNET_ID"
 
 #######################################
 # DNS configuration
 # https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
 # https://openwrt.org/docs/guide-user/base-system/dhcp#all_options
 #######################################
+log "Configuring DNS settings"
 uci delete dhcp.@dnsmasq[0].server || true
 uci add_list dhcp.@dnsmasq[0].server='1.1.1.1'
+log "DNS upstream server set to 1.1.1.1"
 
 # Bind dnsmasq only on specific interfaces (not podman/podext)
 # This allows aardvark-dns to handle DNS for containers
+log "Binding dnsmasq to specific interfaces"
 uci delete dhcp.@dnsmasq[0].interface || true
 uci add_list dhcp.@dnsmasq[0].interface='mgnt'
 uci add_list dhcp.@dnsmasq[0].interface='lan'
 uci add_list dhcp.@dnsmasq[0].interface='guest'
 uci add_list dhcp.@dnsmasq[0].interface='iot'
 uci add_list dhcp.@dnsmasq[0].interface='lo'
+log "dnsmasq bound to interfaces: mgnt, lan, guest, iot, lo"
 
 # Bind on each interface explicitly
 uci set dhcp.@dnsmasq[0].nonwildcard='1'
 uci set dhcp.@dnsmasq[0].localise_queries='1'
+log "dnsmasq set to non-wildcard mode with localized queries"
 
 #######################################
 # Add DHCP configuration
 # https://openwrt.org/docs/guide-user/base-system/dhcp#dhcp_pools
 #######################################
 
+log "Configuring DHCP pools for all zones"
 for net in "mgnt:$MGNT_SUBNET_ID" "lan:$LAN_SUBNET_ID" "guest:$GUEST_SUBNET_ID" "iot:$IOT_SUBNET_ID"; do
     section="${net%%:*}"
     subnet="${net##*:}"
-
+    log "========================================"
+    log "Configuring DHCP pool for $section (subnet 192.168.$subnet.0/24)"
+    log "Creating DHCP section for $section"
     uci set dhcp."$section"=dhcp
     uci set dhcp."$section".interface="$section"
     uci set dhcp."$section".start=100
@@ -53,33 +76,42 @@ for net in "mgnt:$MGNT_SUBNET_ID" "lan:$LAN_SUBNET_ID" "guest:$GUEST_SUBNET_ID" 
     uci set dhcp."$section".dns_service=1
     uci set dhcp."$section".force=1
     uci set dhcp."$section".ra_default=1
+    log "$section: DHCP range 100-250, lease 12h, DHCPv4/v6 enabled"
+    log "$section: DHCP range 100-250, lease 12h, DHCPv4/v6 enabled"
 
     uci del dhcp."$section".ra_flags || true
     uci add_list dhcp."$section".ra_flags=managed-config
     uci add_list dhcp."$section".ra_flags=other-config
     uci add_list dhcp."$section".ra_flags=home-agent
+    log "$section: RA flags set (managed-config, other-config, home-agent)"
 
     uci del dhcp."$section".dhcp_option || true
 
     # Guest network uses public DNS (Cloudflare), others use local router DNS
     if [ "$section" = "guest" ]; then
+        log "$section: Using public DNS (Cloudflare 1.1.1.1)"
         uci add_list dhcp."$section".dhcp_option="6,1.1.1.1,1.0.0.1"
         uci del dhcp.guest.dns_service || true
         uci del dhcp.guest.dns || true
         uci add_list dhcp.guest.dns='2606:4700:4700::1111'
         uci add_list dhcp.guest.dns='2606:4700:4700::1001'
     else
+        log "$section: Using local router DNS (192.168.$subnet.1)"
         uci add_list dhcp."$section".dhcp_option="6,192.168.$subnet.1"
         uci set dhcp."$section".dns_service=1
     fi
+    log "DHCP pool for $section configured successfully"
 done
+log "All DHCP pools configured"
 
 
 #######################################
 # Static DHCP leases
 #######################################
 
+log "Configuring static DHCP leases"
 # Static lease for EAP (Omada Access Point)
+log "Adding static lease: eap (20:36:26:D2:65:30) -> 192.168.$MGNT_SUBNET_ID.90"
 uci set dhcp.eap=host
 uci set dhcp.eap.name=eap
 uci set dhcp.eap.mac=20:36:26:D2:65:30
@@ -90,6 +122,7 @@ uci del dhcp.eap.dhcp_option || true
 uci add_list dhcp.eap.dhcp_option="138,192.168.$MGNT_SUBNET_ID.1"
 
 # Static lease for Shelly switch VR
+log "Adding static lease: shellyvr (98:CD:AC:2C:FB:D0) -> 192.168.$IOT_SUBNET_ID.10"
 uci set dhcp.shellyvr=host
 uci set dhcp.shellyvr.name=shellyvr
 uci set dhcp.shellyvr.mac=98:CD:AC:2C:FB:D0
@@ -97,6 +130,7 @@ uci set dhcp.shellyvr.ip=192.168.$IOT_SUBNET_ID.10
 uci set dhcp.shellyvr.dns=1
 
 # Static lease for Shelly plug 1
+log "Adding static lease: shellyplug1 (C4:5B:BE:D6:BD:A1) -> 192.168.$IOT_SUBNET_ID.11"
 uci set dhcp.shellyplug1=host
 uci set dhcp.shellyplug1.name=shellyplug1
 uci set dhcp.shellyplug1.mac=C4:5B:BE:D6:BD:A1
@@ -104,6 +138,7 @@ uci set dhcp.shellyplug1.ip=192.168.$IOT_SUBNET_ID.11
 uci set dhcp.shellyplug1.dns=1
 
 # Static lease for Shelly plug 2
+log "Adding static lease: shellyplug2 (E8:68:E7:F1:8D:59) -> 192.168.$IOT_SUBNET_ID.12"
 uci set dhcp.shellyplug2=host
 uci set dhcp.shellyplug2.name=shellyplug2
 uci set dhcp.shellyplug2.mac=E8:68:E7:F1:8D:59
@@ -111,6 +146,7 @@ uci set dhcp.shellyplug2.ip=192.168.$IOT_SUBNET_ID.12
 uci set dhcp.shellyplug2.dns=1
 
 # Static lease for Roborock vacuum
+log "Adding static lease: roborock (B0:4A:39:2A:19:F2) -> 192.168.$IOT_SUBNET_ID.13"
 uci set dhcp.roborock=host
 uci set dhcp.roborock.name=roborock
 uci set dhcp.roborock.mac=B0:4A:39:2A:19:F2
@@ -118,11 +154,16 @@ uci set dhcp.roborock.ip=192.168.$IOT_SUBNET_ID.13
 uci set dhcp.roborock.dns=1
 
 # Static lease for printer
+log "Adding static lease: printer (40:23:43:D9:F3:A4) -> 192.168.$IOT_SUBNET_ID.14"
 uci set dhcp.printer=host
 uci set dhcp.printer.name=printer
 uci set dhcp.printer.mac=40:23:43:D9:F3:A4
 uci set dhcp.printer.ip=192.168.$IOT_SUBNET_ID.14
 uci set dhcp.printer.dns=1
+log "All static DHCP leases configured"
 
+log "Committing DHCP configuration"
 uci commit dhcp
+log "93-dhcp configuration completed successfully"
+log "======================================"
 exit 0

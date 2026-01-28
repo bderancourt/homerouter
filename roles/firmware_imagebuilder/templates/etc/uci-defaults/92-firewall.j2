@@ -1,35 +1,65 @@
 #!/bin/sh
 
+LOGFILE="/root/uci-defaults.log"
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] [92-firewall] $*" >> "$LOGFILE"
+}
+
+log "======================================"
+log "Starting 92-firewall configuration"
+log "======================================"
+
 # Firewall configuration for OpenWRT
 # This script configures firewall zones, forwarding rules, and access rules
 
 #######################################
 # Clean existing firewall configuration
 #######################################
+log "Cleaning existing firewall configuration"
 # Remove all existing firewall rules
-while uci -q delete firewall.@rule[0]; do :; done
+RULE_COUNT=0
+while uci -q delete firewall.@rule[0]; do 
+    RULE_COUNT=$((RULE_COUNT + 1))
+done
+log "Removed $RULE_COUNT existing firewall rules"
 
 # Remove all zones
-while uci -q delete firewall.@zone[0]; do :; done
+ZONE_COUNT=0
+while uci -q delete firewall.@zone[0]; do 
+    ZONE_COUNT=$((ZONE_COUNT + 1))
+done
+log "Removed $ZONE_COUNT existing firewall zones"
 
 # Remove all forwarding rules
-while uci -q delete firewall.@forwarding[0]; do :; done
+FWD_COUNT=0
+while uci -q delete firewall.@forwarding[0]; do 
+    FWD_COUNT=$((FWD_COUNT + 1))
+done
+log "Removed $FWD_COUNT existing forwarding rules"
 
 # Remove all redirects
-while uci -q delete firewall.@redirect[0]; do :; done
+RDR_COUNT=0
+while uci -q delete firewall.@redirect[0]; do 
+    RDR_COUNT=$((RDR_COUNT + 1))
+done
+log "Removed $RDR_COUNT existing redirects"
 
 #######################################
 # Firewall defaults
 #######################################
+log "Configuring firewall defaults"
 uci set firewall.@defaults[0].syn_flood='1'
 uci set firewall.@defaults[0].input='REJECT'
 uci set firewall.@defaults[0].output='ACCEPT'
 uci set firewall.@defaults[0].forward='REJECT'
+log "Firewall defaults: syn_flood enabled, input=REJECT, output=ACCEPT, forward=REJECT"
 
 #######################################
 # Essential WAN rules (OpenWRT defaults for IPv4/IPv6)
 #######################################
 
+log "Creating essential WAN rules"
 # Allow DHCP Renew from WAN
 DHCP_RENEW=$(uci add firewall rule)
 uci set firewall.$DHCP_RENEW.name='Allow-DHCP-Renew'
@@ -38,8 +68,10 @@ uci set firewall.$DHCP_RENEW.proto='udp'
 uci set firewall.$DHCP_RENEW.dest_port='68'
 uci set firewall.$DHCP_RENEW.target='ACCEPT'
 uci set firewall.$DHCP_RENEW.family='ipv4'
+log "Created rule: Allow-DHCP-Renew from WAN"
 
 # Allow Ping from WAN
+log "Creating rule: Allow-Ping from WAN"
 PING=$(uci add firewall rule)
 uci set firewall.$PING.name='Allow-Ping'
 uci set firewall.$PING.src='wan'
@@ -47,16 +79,20 @@ uci set firewall.$PING.proto='icmp'
 uci set firewall.$PING.icmp_type='echo-request'
 uci set firewall.$PING.family='ipv4'
 uci set firewall.$PING.target='ACCEPT'
+log "Created rule: Allow-Ping from WAN"
 
 # Allow IGMP from WAN
+log "Creating rule: Allow-IGMP from WAN"
 IGMP=$(uci add firewall rule)
 uci set firewall.$IGMP.name='Allow-IGMP'
 uci set firewall.$IGMP.src='wan'
 uci set firewall.$IGMP.proto='igmp'
 uci set firewall.$IGMP.family='ipv4'
 uci set firewall.$IGMP.target='ACCEPT'
+log "Created rule: Allow-IGMP from WAN"
 
 # Allow DHCPv6 from WAN
+log "Creating rule: Allow-DHCPv6 from WAN"
 DHCPV6=$(uci add firewall rule)
 uci set firewall.$DHCPV6.name='Allow-DHCPv6'
 uci set firewall.$DHCPV6.src='wan'
@@ -64,8 +100,10 @@ uci set firewall.$DHCPV6.proto='udp'
 uci set firewall.$DHCPV6.dest_port='546'
 uci set firewall.$DHCPV6.family='ipv6'
 uci set firewall.$DHCPV6.target='ACCEPT'
+log "Created rule: Allow-DHCPv6 from WAN"
 
 # Allow MLD (Multicast Listener Discovery) from WAN
+log "Creating rule: Allow-MLD from WAN"
 MLD=$(uci add firewall rule)
 uci set firewall.$MLD.name='Allow-MLD'
 uci set firewall.$MLD.src='wan'
@@ -78,8 +116,10 @@ uci add_list firewall.$MLD.icmp_type='132/0'
 uci add_list firewall.$MLD.icmp_type='143/0'
 uci set firewall.$MLD.family='ipv6'
 uci set firewall.$MLD.target='ACCEPT'
+log "Created rule: Allow-MLD from WAN"
 
 # Allow ICMPv6 Input from WAN
+log "Creating rule: Allow-ICMPv6-Input from WAN"
 ICMPV6_INPUT=$(uci add firewall rule)
 uci set firewall.$ICMPV6_INPUT.name='Allow-ICMPv6-Input'
 uci set firewall.$ICMPV6_INPUT.src='wan'
@@ -99,8 +139,10 @@ uci add_list firewall.$ICMPV6_INPUT.icmp_type='neighbour-advertisement'
 uci set firewall.$ICMPV6_INPUT.limit='1000/sec'
 uci set firewall.$ICMPV6_INPUT.family='ipv6'
 uci set firewall.$ICMPV6_INPUT.target='ACCEPT'
+log "Created rule: Allow-ICMPv6-Input from WAN"
 
 # Allow ICMPv6 Forward from WAN
+log "Creating rule: Allow-ICMPv6-Forward from WAN"
 ICMPV6_FORWARD=$(uci add firewall rule)
 uci set firewall.$ICMPV6_FORWARD.name='Allow-ICMPv6-Forward'
 uci set firewall.$ICMPV6_FORWARD.src='wan'
@@ -117,12 +159,16 @@ uci add_list firewall.$ICMPV6_FORWARD.icmp_type='unknown-header-type'
 uci set firewall.$ICMPV6_FORWARD.limit='1000/sec'
 uci set firewall.$ICMPV6_FORWARD.family='ipv6'
 uci set firewall.$ICMPV6_FORWARD.target='ACCEPT'
+log "Created rule: Allow-ICMPv6-Forward from WAN"
+log "All essential WAN rules created"
 
 #######################################
 # Firewall zones
 #######################################
 
+log "Creating firewall zones"
 # LAN zone
+log "Creating LAN zone"
 LAN_ZONE=$(uci add firewall zone)
 uci set firewall.$LAN_ZONE.name='lan'
 uci del firewall.$LAN_ZONE.network
@@ -130,8 +176,10 @@ uci add_list firewall.$LAN_ZONE.network='lan'
 uci set firewall.$LAN_ZONE.input='REJECT'
 uci set firewall.$LAN_ZONE.output='ACCEPT'
 uci set firewall.$LAN_ZONE.forward='REJECT'
+log "LAN zone created: input=REJECT, output=ACCEPT, forward=REJECT"
 
 # WAN zone
+log "Creating WAN zone"
 WAN_ZONE=$(uci add firewall zone)
 uci set firewall.$WAN_ZONE.name='wan'
 uci del firewall.$WAN_ZONE.network
@@ -145,8 +193,10 @@ uci set firewall.$WAN_ZONE.masq6='1'
 uci set firewall.$WAN_ZONE.mtu_fix='1'
 uci set firewall.$WAN_ZONE.log='1'
 uci set firewall.$WAN_ZONE.log_limit='10/minute'
+log "WAN zone created: input=REJECT, output=ACCEPT, forward=REJECT, masq enabled"
 
 # MGNT zone (Management)
+log "Creating MGNT zone"
 MGNT_ZONE=$(uci add firewall zone)
 uci set firewall.$MGNT_ZONE.name='mgnt'
 uci del firewall.$MGNT_ZONE.network
@@ -155,8 +205,10 @@ uci add_list firewall.$MGNT_ZONE.network='wg0'
 uci set firewall.$MGNT_ZONE.input='ACCEPT'
 uci set firewall.$MGNT_ZONE.output='ACCEPT'
 uci set firewall.$MGNT_ZONE.forward='ACCEPT'
+log "MGNT zone created: input=ACCEPT, output=ACCEPT, forward=ACCEPT"
 
 # Guest zone
+log "Creating GUEST zone"
 GUEST_ZONE=$(uci add firewall zone)
 uci set firewall.$GUEST_ZONE.name='guest'
 uci del firewall.$GUEST_ZONE.network
@@ -164,8 +216,10 @@ uci add_list firewall.$GUEST_ZONE.network='guest'
 uci set firewall.$GUEST_ZONE.input='REJECT'
 uci set firewall.$GUEST_ZONE.output='ACCEPT'
 uci set firewall.$GUEST_ZONE.forward='REJECT'
+log "GUEST zone created: input=REJECT, output=ACCEPT, forward=REJECT"
 
 # IoT zone
+log "Creating IOT zone"
 IOT_ZONE=$(uci add firewall zone)
 uci set firewall.$IOT_ZONE.name='iot'
 uci del firewall.$IOT_ZONE.network
@@ -173,78 +227,112 @@ uci add_list firewall.$IOT_ZONE.network='iot'
 uci set firewall.$IOT_ZONE.input='REJECT'
 uci set firewall.$IOT_ZONE.output='ACCEPT'
 uci set firewall.$IOT_ZONE.forward='REJECT'
+log "IOT zone created: input=REJECT, output=ACCEPT, forward=REJECT"
 
-# PODMAN zone (Internal Podman services - LAN only)
-PODMAN_ZONE=$(uci add firewall zone)
-uci set firewall.$PODMAN_ZONE.name='podman'
-uci del firewall.$PODMAN_ZONE.network
-uci add_list firewall.$PODMAN_ZONE.network='podman0'
-uci set firewall.$PODMAN_ZONE.input='REJECT'
-uci set firewall.$PODMAN_ZONE.output='ACCEPT'
-uci set firewall.$PODMAN_ZONE.forward='REJECT'
+# Traefik-int zone (Internal Docker services - LAN only)
+log "Creating Traefik-int zone for internal Docker services"
+TRAEFIK_INT_ZONE=$(uci add firewall zone)
+uci set firewall.$TRAEFIK_INT_ZONE.name='traefik-int'
+uci del firewall.$TRAEFIK_INT_ZONE.network
+uci add_list firewall.$TRAEFIK_INT_ZONE.network='traefik_int'
+uci set firewall.$TRAEFIK_INT_ZONE.input='REJECT'
+uci set firewall.$TRAEFIK_INT_ZONE.output='ACCEPT'
+uci set firewall.$TRAEFIK_INT_ZONE.forward='REJECT'
+log "Traefik-int zone created: network=traefik_int"
 
-# PODEXT zone (Public Podman services - Internet exposed)
-PODEXT_ZONE=$(uci add firewall zone)
-uci set firewall.$PODEXT_ZONE.name='podext'
-uci del firewall.$PODEXT_ZONE.network
-uci add_list firewall.$PODEXT_ZONE.network='podext0'
-uci set firewall.$PODEXT_ZONE.input='REJECT'
-uci set firewall.$PODEXT_ZONE.output='ACCEPT'
-uci set firewall.$PODEXT_ZONE.forward='REJECT'
+# Traefik-ext zone (Public Docker services - Internet exposed)
+log "Creating Traefik-ext zone for public Docker services"
+TRAEFIK_EXT_ZONE=$(uci add firewall zone)
+uci set firewall.$TRAEFIK_EXT_ZONE.name='traefik-ext'
+uci del firewall.$TRAEFIK_EXT_ZONE.network
+uci add_list firewall.$TRAEFIK_EXT_ZONE.network='traefik_ext'
+uci set firewall.$TRAEFIK_EXT_ZONE.input='REJECT'
+uci set firewall.$TRAEFIK_EXT_ZONE.output='ACCEPT'
+uci set firewall.$TRAEFIK_EXT_ZONE.forward='REJECT'
+log "Traefik-ext zone created: network=traefik_ext, input=REJECT, output=ACCEPT, forward=REJECT"
+log "All firewall zones created successfully"
 
 #######################################
 # Forwarding rules
 #######################################
 
+log "Creating forwarding rules"
 # MGNT to WAN, IoT, Sorgues
+log "Creating forwarding: MGNT -> WAN"
 MGNT_WAN_FORWARDING=$(uci add firewall forwarding)
 uci set firewall.$MGNT_WAN_FORWARDING.src='mgnt'
 uci set firewall.$MGNT_WAN_FORWARDING.dest='wan'
+log "Forwarding MGNT -> WAN created"
 
+log "Creating forwarding: MGNT -> IoT"
 MGNT_IOT_FORWARDING=$(uci add firewall forwarding)
 uci set firewall.$MGNT_IOT_FORWARDING.src='mgnt'
 uci set firewall.$MGNT_IOT_FORWARDING.dest='iot'
+log "Forwarding MGNT -> IoT created"
 
-# MGNT to PODMAN (management access)
-MGNT_PODMAN_FORWARDING=$(uci add firewall forwarding)
-uci set firewall.$MGNT_PODMAN_FORWARDING.src='mgnt'
-uci set firewall.$MGNT_PODMAN_FORWARDING.dest='podman'
+# MGNT to traefik-int (management access)
+log "Creating forwarding: MGNT -> Traefik-int"
+MGNT_TRAEFIK_INT_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$MGNT_TRAEFIK_INT_FORWARDING.src='mgnt'
+uci set firewall.$MGNT_TRAEFIK_INT_FORWARDING.dest='traefik-int'
+log "Forwarding MGNT -> Traefik-int created"
 
-# MGNT to PODEXT (management access)
-MGNT_PODEXT_FORWARDING=$(uci add firewall forwarding)
-uci set firewall.$MGNT_PODEXT_FORWARDING.src='mgnt'
-uci set firewall.$MGNT_PODEXT_FORWARDING.dest='podext'
+# MGNT to traefik-ext (management access)
+log "Creating forwarding: MGNT -> Traefik-ext"
+MGNT_TRAEFIK_EXT_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$MGNT_TRAEFIK_EXT_FORWARDING.src='mgnt'
+uci set firewall.$MGNT_TRAEFIK_EXT_FORWARDING.dest='traefik-ext'
+log "Forwarding MGNT -> Traefik-ext created"
 
 # LAN to WAN
+log "Creating forwarding: LAN -> WAN"
 LAN_WAN_FORWARDING=$(uci add firewall forwarding)
 uci set firewall.$LAN_WAN_FORWARDING.src='lan'
 uci set firewall.$LAN_WAN_FORWARDING.dest='wan'
+log "Forwarding LAN -> WAN created"
 
 # LAN to IoT
+log "Creating forwarding: LAN -> IoT"
 LAN_IOT_FORWARDING=$(uci add firewall forwarding)
 uci set firewall.$LAN_IOT_FORWARDING.src='lan'
 uci set firewall.$LAN_IOT_FORWARDING.dest='iot'
+log "Forwarding LAN -> IoT created"
 
 # Guest to WAN
+log "Creating forwarding: Guest -> WAN"
 GUEST_WAN_FORWARDING=$(uci add firewall forwarding)
 uci set firewall.$GUEST_WAN_FORWARDING.src='guest'
 uci set firewall.$GUEST_WAN_FORWARDING.dest='wan'
+log "Forwarding Guest -> WAN created"
 
 # IoT to WAN
+log "Creating forwarding: IoT -> WAN"
 IOT_WAN_FORWARDING=$(uci add firewall forwarding)
 uci set firewall.$IOT_WAN_FORWARDING.src='iot'
 uci set firewall.$IOT_WAN_FORWARDING.dest='wan'
+log "Forwarding IoT -> WAN created"
 
-# PODMAN to WAN (internal services can reach Internet)
-PODMAN_WAN_FORWARDING=$(uci add firewall forwarding)
-uci set firewall.$PODMAN_WAN_FORWARDING.src='podman'
-uci set firewall.$PODMAN_WAN_FORWARDING.dest='wan'
+# Traefik-int to WAN (internal services can reach Internet)
+log "Creating forwarding: Traefik-int -> WAN"
+TRAEFIK_INT_WAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$TRAEFIK_INT_WAN_FORWARDING.src='traefik-int'
+uci set firewall.$TRAEFIK_INT_WAN_FORWARDING.dest='wan'
+log "Forwarding Traefik-int -> WAN created"
+
+# Traefik-ext to WAN (public services can reach Internet)
+log "Creating forwarding: Traefik-ext -> WAN"
+TRAEFIK_EXT_WAN_FORWARDING=$(uci add firewall forwarding)
+uci set firewall.$TRAEFIK_EXT_WAN_FORWARDING.src='traefik-ext'
+uci set firewall.$TRAEFIK_EXT_WAN_FORWARDING.dest='wan'
+log "Forwarding Traefik-ext -> WAN created"
+log "All forwarding rules created successfully"
 
 
 #######################################
 # Firewall rules: WAN access
 #######################################
 
+log "Creating WAN access rules"
 # Allow SSH on port 222 from WAN
 # SSH_WAN_RULE=$(uci add firewall rule)
 # uci set firewall.$SSH_WAN_RULE.name='Allow-WAN-SSH'
@@ -253,14 +341,16 @@ uci set firewall.$PODMAN_WAN_FORWARDING.dest='wan'
 # uci set firewall.$SSH_WAN_RULE.dest_port='222'
 # uci set firewall.$SSH_WAN_RULE.target='ACCEPT'
 
-# Allow HTTP/HTTPS from WAN to PODEXT (public services via Traefik)
-HTTP_WAN_PODEXT=$(uci add firewall rule)
-uci set firewall.$HTTP_WAN_PODEXT.name='Allow-WAN-HTTP-PODEXT'
-uci set firewall.$HTTP_WAN_PODEXT.src='wan'
-uci set firewall.$HTTP_WAN_PODEXT.dest='podext'
-uci set firewall.$HTTP_WAN_PODEXT.proto='tcp'
-uci set firewall.$HTTP_WAN_PODEXT.dest_port='80 443'
-uci set firewall.$HTTP_WAN_PODEXT.target='ACCEPT'
+# Allow HTTP/HTTPS from WAN to traefik-ext (public services via Traefik)
+log "Creating rule: Allow HTTP/HTTPS from WAN to Traefik-ext"
+HTTP_WAN_TRAEFIK_EXT=$(uci add firewall rule)
+uci set firewall.$HTTP_WAN_TRAEFIK_EXT.name='Allow-WAN-HTTP-traefik-ext'
+uci set firewall.$HTTP_WAN_TRAEFIK_EXT.src='wan'
+uci set firewall.$HTTP_WAN_TRAEFIK_EXT.dest='traefik-ext'
+uci set firewall.$HTTP_WAN_TRAEFIK_EXT.proto='tcp'
+uci set firewall.$HTTP_WAN_TRAEFIK_EXT.dest_port='80 443'
+uci set firewall.$HTTP_WAN_TRAEFIK_EXT.target='ACCEPT'
+log "WAN HTTP/HTTPS access to Traefik-ext enabled"
 
 
 
@@ -268,18 +358,23 @@ uci set firewall.$HTTP_WAN_PODEXT.target='ACCEPT'
 # Firewall rules: Allow DNS, DHCP, ICMP, NTP to router
 #######################################
 
+log "Creating DNS/DHCP/ICMP/NTP rules for zones: lan, guest, iot"
 for zone in lan guest iot; do
   zone_upper=$(echo "$zone" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+  log "Creating rules for $zone_upper zone"
 
   # Allow DNS (port 53) from zone to Router
+  log "Creating DNS rule for $zone_upper"
   DNS_RULE=$(uci add firewall rule)
   uci set firewall.$DNS_RULE.name="Allow-${zone_upper}-DNS"
   uci set firewall.$DNS_RULE.src="$zone"
   uci set firewall.$DNS_RULE.proto='tcp udp'
   uci set firewall.$DNS_RULE.dest_port='53'
   uci set firewall.$DNS_RULE.target='ACCEPT'
+  log "DNS rule for $zone_upper created"
 
   # Allow DHCP (port 67) from zone to Router
+  log "Creating DHCP rule for $zone_upper"
   DHCP_RULE=$(uci add firewall rule)
   uci set firewall.$DHCP_RULE.name="Allow-${zone_upper}-DHCP"
   uci set firewall.$DHCP_RULE.src="$zone"
@@ -288,8 +383,10 @@ for zone in lan guest iot; do
   uci set firewall.$DHCP_RULE.dest_port='67'
   uci set firewall.$DHCP_RULE.family='ipv4'
   uci set firewall.$DHCP_RULE.target='ACCEPT'
+  log "DHCP rule for $zone_upper created"
 
   # Allow DHCPv6 (port 547) from zone to Router
+  log "Creating DHCPv6 rule for $zone_upper"
   DHCPV6_RULE=$(uci add firewall rule)
   uci set firewall.$DHCPV6_RULE.name="Allow-${zone_upper}-DHCPv6"
   uci set firewall.$DHCPV6_RULE.src="$zone"
@@ -298,52 +395,66 @@ for zone in lan guest iot; do
   uci set firewall.$DHCPV6_RULE.dest_port='547'
   uci set firewall.$DHCPV6_RULE.family='ipv6'
   uci set firewall.$DHCPV6_RULE.target='ACCEPT'
+  log "DHCPv6 rule for $zone_upper created"
 
   # Allow ICMP (ping) from zone to Router
+  log "Creating ICMP rule for $zone_upper"
   ICMP_RULE=$(uci add firewall rule)
   uci set firewall.$ICMP_RULE.name="Allow-${zone_upper}-ICMP"
   uci set firewall.$ICMP_RULE.src="$zone"
   uci set firewall.$ICMP_RULE.proto='icmp'
   uci set firewall.$ICMP_RULE.family='ipv4'
   uci set firewall.$ICMP_RULE.target='ACCEPT'
+  log "ICMP rule for $zone_upper created"
 
   # Allow ICMPv6 from zone to Router
+  log "Creating ICMPv6 rule for $zone_upper"
   ICMPV6_RULE=$(uci add firewall rule)
   uci set firewall.$ICMPV6_RULE.name="Allow-${zone_upper}-ICMPv6"
   uci set firewall.$ICMPV6_RULE.src="$zone"
   uci set firewall.$ICMPV6_RULE.proto='icmpv6'
   uci set firewall.$ICMPV6_RULE.family='ipv6'
   uci set firewall.$ICMPV6_RULE.target='ACCEPT'
+  log "ICMPv6 rule for $zone_upper created"
 
   # Allow NTP from zone to Router
+  log "Creating NTP rule for $zone_upper"
   NTP_RULE=$(uci add firewall rule)
   uci set firewall.$NTP_RULE.name="Allow-${zone_upper}-NTP"
   uci set firewall.$NTP_RULE.src="$zone"
   uci set firewall.$NTP_RULE.proto='udp'
   uci set firewall.$NTP_RULE.dest_port='123'
   uci set firewall.$NTP_RULE.target='ACCEPT'
+  log "NTP rule for $zone_upper created"
+  log "All rules for $zone_upper zone created"
 done
 
-# Allow DNS from PODMAN to Router (for aardvark-dns integration)
-PODMAN_DNS=$(uci add firewall rule)
-uci set firewall.$PODMAN_DNS.name='Allow-Podint-DNS'
-uci set firewall.$PODMAN_DNS.src='podman'
-uci set firewall.$PODMAN_DNS.proto='tcp udp'
-uci set firewall.$PODMAN_DNS.dest_port='53'
-uci set firewall.$PODMAN_DNS.target='ACCEPT'
+log "Creating DNS rules for Traefik zones"
+# Allow DNS from traefik-int to Router
+TRAEFIK_INT_DNS=$(uci add firewall rule)
+uci set firewall.$TRAEFIK_INT_DNS.name='Allow-Traefik-int-DNS'
+uci set firewall.$TRAEFIK_INT_DNS.src='traefik-int'
+uci set firewall.$TRAEFIK_INT_DNS.proto='tcp udp'
+uci set firewall.$TRAEFIK_INT_DNS.dest_port='53'
+uci set firewall.$TRAEFIK_INT_DNS.target='ACCEPT'
+log "DNS rule for Traefik-int created"
 
-# Allow DNS from PODEXT to Router (for aardvark-dns integration)
-PODEXT_DNS=$(uci add firewall rule)
-uci set firewall.$PODEXT_DNS.name='Allow-Podext-DNS'
-uci set firewall.$PODEXT_DNS.src='podext'
-uci set firewall.$PODEXT_DNS.proto='tcp udp'
-uci set firewall.$PODEXT_DNS.dest_port='53'
-uci set firewall.$PODEXT_DNS.target='ACCEPT'
+# Allow DNS from traefik-ext to Router
+TRAEFIK_EXT_DNS=$(uci add firewall rule)
+uci set firewall.$TRAEFIK_EXT_DNS.name='Allow-Traefik-ext-DNS'
+uci set firewall.$TRAEFIK_EXT_DNS.src='traefik-ext'
+uci set firewall.$TRAEFIK_EXT_DNS.proto='tcp udp'
+uci set firewall.$TRAEFIK_EXT_DNS.dest_port='53'
+uci set firewall.$TRAEFIK_EXT_DNS.target='ACCEPT'
+log "DNS rule for Traefik-ext created"
 
+log "Creating DNS redirect rules for zones: mgnt, lan, iot"
 for zone in mgnt lan iot; do
   zone_upper=$(echo "$zone" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+  log "Creating DNS redirect for $zone_upper zone"
 
   # DNS interception: Redirect DNS requests to router's DNS server
+  log "Adding redirect rule for $zone_upper"
   DNS_REDIRECT=$(uci add firewall redirect)
   uci set firewall.$DNS_REDIRECT.name="DNS_intercept_${zone}"
   uci set firewall.$DNS_REDIRECT.src="$zone"
@@ -353,7 +464,11 @@ for zone in mgnt lan iot; do
   uci set firewall.$DNS_REDIRECT.dest="$zone"
   uci set firewall.$DNS_REDIRECT.dest_port='53'
   uci set firewall.$DNS_REDIRECT.family='any'
+  log "DNS redirect for $zone_upper zone created"
 done
 
+log "Committing firewall configuration"
 uci commit firewall
+log "92-firewall configuration completed successfully"
+log "======================================"
 exit 0

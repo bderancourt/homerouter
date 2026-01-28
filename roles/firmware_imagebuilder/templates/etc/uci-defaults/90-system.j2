@@ -1,46 +1,77 @@
 #!/bin/sh
 
+LOGFILE="/root/uci-defaults.log"
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] [90-system] $*" >> "$LOGFILE"
+}
+
+log "======================================"
+log "Starting 90-system configuration"
+log "======================================"
+
 SUBNET="9"
 grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias && SUBNET="99"
+log "Detected subnet: $SUBNET"
 MGNT_IPV4="192.168.$SUBNET.1"
 MGNT_IPV6="{{ ula_prefix }}:$SUBNET::1"
+log "MGNT IPv4: $MGNT_IPV4, IPv6: $MGNT_IPV6"
 
 #######################################
 # change root password
 #######################################
 
+log "Changing root password"
 passwd root <<EOP
 {{ root_password }}
 {{ root_password }}
 EOP
+log "Root password changed successfully"
 
 # Replace ash by bash for root
+log "Changing root shell from ash to bash"
 sed -i "/^root:/ s|/bin/ash|/bin/bash|" /etc/passwd
+log "Root shell changed to bash"
 
+log "Setting permissions on /root/*.sh"
 chmod u=rwx,g=,o= /root/*.sh
+log "Permissions set successfully"
 
+log "Configuring system timezone and NTP"
 uci set system.@system[0].timezone='CET-1CEST,M3.5.0,M10.5.0/3'
 uci set system.@system[0].zonename='Europe/Paris'
 uci set system.@system[0].log_size='2048'
 uci set system.ntp.enable_server='1'
+log "System timezone set to Europe/Paris, log size 2048, NTP server enabled"
 
 # Secure SSH access
+log "Configuring SSH access"
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 echo {{ ssh_key }} >> /root/.ssh/authorized_keys
 chmod 600 /root/.ssh/authorized_keys
+log "SSH authorized_keys configured"
 # Restart SSH to apply configuration
+log "Restarting SSH service"
 service sshd restart
+log "SSH service restarted"
 
+log "Enabling collectd sensors"
 uci set luci_statistics.collectd_sensors.enable='1'
+log "Collectd sensors enabled"
 
 # Configure uHTTPd to listen only on MGNT interface
+log "Configuring uHTTPd to listen only on MGNT interface"
 uci del uhttpd.main.listen_http || true
 uci del uhttpd.main.listen_https || true
 uci add_list uhttpd.main.listen_http="$MGNT_IPV4:80"
 uci add_list uhttpd.main.listen_http="[$MGNT_IPV6]:80"
 uci add_list uhttpd.main.listen_https="$MGNT_IPV4:443"
 uci add_list uhttpd.main.listen_https="[$MGNT_IPV6]:443"
+log "uHTTPd configured: HTTP/HTTPS on $MGNT_IPV4 and $MGNT_IPV6"
 
+log "Committing system configuration"
 uci commit
+log "90-system configuration completed successfully"
+log "======================================"
 exit 0

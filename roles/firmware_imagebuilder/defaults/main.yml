@@ -24,6 +24,8 @@ firmware_packages_to_add:
   - gzip
   - unzip
   - wget-ssl
+  - tcpdump
+  - curl
   - usbutils
   - pciutils
   - shadow-utils
@@ -35,15 +37,7 @@ firmware_packages_to_add:
   - openssh-server
   - openssh-sftp-server
   - powertop
-  - podman
-  - iptables-nft
-  - ip6tables-nft
-  - kmod-ipt-nat
-  - kmod-ipt-conntrack
-  - kmod-ipt-extra
-  - iptables-mod-extra
-  - tcpdump
-  - curl
+  - luci-app-dockerman
 
   # Python
   - python3-light
@@ -66,6 +60,8 @@ firmware_packages_to_add:
 
   # Networking & Kubernetes Requirements
   - kmod-atlantic
+  - kmod-dummy
+  - kmod-macvlan
 
   # FreeRADIUS Server (WiFi: PEAP-MSCHAPv2 / Wired: MAB)
   - freeradius3                          # Serveur RADIUS principal

@@ -42,6 +42,18 @@
   changed_when: partprobe_result.rc == 0
   when: is_free_space
 
+- name: Stop Podman service to free resources
+  ansible.builtin.service:
+    name: dockerd
+    state: stopped
+  failed_when: false
+  when: is_free_space
+
+- name: Sync filesystem before remount
+  ansible.builtin.command: sync
+  changed_when: false
+  when: is_free_space
+
 - name: Remount root filesystem as read-only
   ansible.posix.mount:
     path: /
