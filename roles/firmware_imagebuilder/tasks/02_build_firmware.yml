@@ -31,7 +31,6 @@
   loop:
     - "{{ firmware_extracted_dir }}/files/etc/uci-defaults"
     - "{{ firmware_extracted_dir }}/files/etc/freeradius3/mods-config/files"
-    - "{{ firmware_extracted_dir }}/files/etc/containers/networks"
 
 - name: Recursively process all templates using filetree
   ansible.builtin.template:
