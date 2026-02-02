@@ -1,0 +1,339 @@
+name: bnl
+
+services:
+  ### Traefik Reverse Proxy ###
+  traefik:
+    image: docker.io/traefik:v3
+    restart: unless-stopped
+    depends_on:
+      - socket-proxy-traefik
+    dns:
+      - 192.168.7.1
+    dns_search:
+      - {{ domain }}
+    environment:
+      - LEGO_DISABLE_CNAME_SUPPORT=true
+      - OVH_ENDPOINT=ovh-eu
+      - TRAEFIK_CERTIFICATESRESOLVERS_MYRESOLVER_ACME_EMAIL={{ acme_email }}
+      - OVH_APPLICATION_KEY={{ acme_application_key }}
+      - OVH_APPLICATION_SECRET={{ acme_application_secret }}
+      - OVH_CONSUMER_KEY={{ acme_consumer_key }}
+      - OVH_ZONE=vbox.ovh
+    volumes:
+      - /root/docker/volumes/traefik:/data
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --log.level=DEBUG
+      - --accesslog=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.endpoint=tcp://socket-proxy-traefik:2375
+      - --serverstransport.insecureskipverify=true
+
+      # Internal entrypoints IPv4 (traefik_int network)
+      - --entrypoints.web4.address=192.168.7.10:80
+      - --entrypoints.web4.http.redirections.entryPoint.to=websecure4
+      - --entrypoints.web4.http.redirections.entryPoint.scheme=https
+      - --entrypoints.websecure4.address=192.168.7.10:443
+      # Internal entrypoints IPv6 (traefik_int network)
+      - --entrypoints.web6.address=[{{ ula_prefix }}:7::10]:80
+      - --entrypoints.web6.http.redirections.entryPoint.to=websecure6
+      - --entrypoints.web6.http.redirections.entryPoint.scheme=https
+      - --entrypoints.websecure6.address=[{{ ula_prefix }}:7::10]:443
+
+      # External entrypoints IPv4 (traefik_ext network)
+      - --entrypoints.web-ext4.address=192.168.8.10:80
+      - --entrypoints.web-ext4.http.redirections.entryPoint.to=websecure-ext4
+      - --entrypoints.web-ext4.http.redirections.entryPoint.scheme=https
+      - --entrypoints.websecure-ext4.address=192.168.8.10:443
+      # External entrypoints IPv6 (traefik_ext network)
+      - --entrypoints.web-ext6.address=[{{ ula_prefix }}:8::10]:80
+      - --entrypoints.web-ext6.http.redirections.entryPoint.to=websecure-ext6
+      - --entrypoints.web-ext6.http.redirections.entryPoint.scheme=https
+      - --entrypoints.websecure-ext6.address=[{{ ula_prefix }}:8::10]:443
+
+      # ACME Let's Encrypt DNS Challenge Resolver for traefik
+      - --certificatesresolvers.traefik_resolver.acme.storage=/data/acme_traefik.json
+      - --certificatesresolvers.traefik_resolver.acme.dnschallenge=true
+      - --certificatesresolvers.traefik_resolver.acme.dnschallenge.provider=ovh
+      - --certificatesresolvers.traefik_resolver.acme.dnschallenge.delaybeforecheck=0
+      # DNS Resolver for Wildcards (*.secure.cigale.ovh)
+      - --certificatesresolvers.teleport_resolver.acme.storage=/data/acme_teleport.json
+      - --certificatesresolvers.teleport_resolver.acme.dnschallenge=true
+      - --certificatesresolvers.teleport_resolver.acme.dnschallenge.provider=ovh
+      - --certificatesresolvers.teleport_resolver.acme.dnschallenge.delaybeforecheck=0
+      - --ping=true
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    networks:
+      traefik_int:
+        ipv4_address: 192.168.7.10
+        ipv6_address: {{ ula_prefix }}:7::10
+      traefik_ext:
+        ipv4_address: 192.168.8.10
+        ipv6_address: {{ ula_prefix }}:8::10
+      socket-proxy-traefik:
+      teleport:
+      omada:
+
+  ### Teleport Secure Access ###
+  teleport:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM public.ecr.aws/gravitational/teleport-distroless:18
+        COPY --from=busybox:musl /bin/wget /usr/local/bin/wget
+    image: teleport-custom:18
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3025:3025"
+      - "127.0.0.1:3024:3024"
+    env_file:
+      - /run/secrets/rendered/teleport.env
+    volumes:
+      - ./teleport.yaml:/etc/teleport/teleport.yaml:ro
+      - /root/docker/volumes/teleport:/var/lib/teleport
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/healthz"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    networks:
+      - teleport
+      - omada
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: bnl_teleport
+      # Teleport Wildcard Router
+      traefik.http.routers.teleport.rule: Host(`secure.{{ domain }}`) || HostRegexp(`^.+\.secure\.{{ domain }}$`)
+      traefik.http.routers.teleport.entrypoints: websecure
+      traefik.http.routers.teleport.tls: "true"
+      traefik.http.routers.teleport.tls.certresolver: teleport_resolver
+      traefik.http.routers.teleport.tls.domains[0].main: "secure.{{ domain }}"
+      traefik.http.routers.teleport.tls.domains[0].sans: "*.secure.{{ domain }}"
+      traefik.http.routers.teleport.service: teleport
+      # Service definition (HTTPS backend on port 3080)
+      traefik.http.services.teleport.loadbalancer.server.port: "3080"
+      traefik.http.services.teleport.loadbalancer.server.scheme: https
+
+
+  ### Omada Controller ###
+  omada:
+    image: mbentley/omada-controller:6
+    restart: unless-stopped
+    stop_grace_period: 60s
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
+    volumes:
+      - /root/docker/volumes/omada/data:/opt/tplink/EAPController/data
+      - /root/docker/volumes/omada/logs:/opt/tplink/EAPController/logs
+    ports:
+      - "8088:8088"
+      - "8043:8043"
+      - "8843:8843"
+      - "19810:19810/udp"
+      - "27001:27001/udp"
+      - "29810:29810/udp"
+      - "29811-29817:29811-29817/tcp"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.omada.rule=Host(`omada.{{ domain }}`)
+      - traefik.http.routers.omada.entrypoints=websecure4,websecure6
+      - traefik.http.routers.omada.tls=true
+      - traefik.http.routers.omada.tls.certresolver=traefik_resolver
+      - traefik.http.services.omada.loadbalancer.server.port=8043
+      - traefik.http.services.omada.loadbalancer.server.scheme=https
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --no-check-certificate https://127.0.0.1:8043/login || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+      start_interval: 1s
+    networks:
+      - omada
+
+  ### Firefox (Management Browser) ###
+  firefox:
+    image: lscr.io/linuxserver/firefox:1146.0.1
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        mode: "non-blocking"
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Paris
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    networks:
+      - lan
+
+  ### Beszel Hub (Monitoring Dashboard) ###
+  beszel-hub:
+    image: docker.io/henrygd/beszel:0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      AUTO_LOGIN: admin@cigale.ovh
+    volumes:
+      - /root/docker/volumes/beszel-hub:/beszel_data
+    healthcheck:
+      # The URL is relative to the container, not the host
+      test: ['CMD', '/beszel', 'health', '--url', 'http://localhost:8090']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    networks:
+      - beszel
+
+  ### Beszel Agent (Host Monitoring) ###
+  beszel-agent:
+    image: docker.io/henrygd/beszel-agent-intel:0
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - socket-proxy-lan
+    cap_add:
+      - CAP_PERFMON
+      - SYS_RAWIO # required for S.M.A.R.T. data
+      - SYS_ADMIN # required for some SMART operations
+    # devices:
+      # - /dev/dri/card0:/dev/dri/card0 # required for Intel GPU data
+      # - /dev/sda:/dev/sda # SMART monitoring
+      # - /dev/sdb:/dev/sdb # SMART monitoring
+      # - /dev/sdc:/dev/sdc # SMART monitoring
+      # - /dev/sdd:/dev/sdd # SMART monitoring
+    environment:
+      LISTEN: 45876
+      KEY: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILieYydEAMXcjIJHjXMEa6YV7eBPhLzPE/VrkSM3B6Ew'
+      TOKEN: 93495136-27e1-47e9-8a4f-9e8e667c4cb5
+      HUB_URL: http://127.0.0.1:8090
+      DOCKER_HOST: tcp://127.0.0.1:2375
+      SMART_DEVICES: "/dev/sda,/dev/sdb,/dev/sdc,/dev/sdd"
+    volumes:
+      # Systemd monitoring
+      - /run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
+      # Fallback for systemd monitoring
+      - /run/systemd/private:/var/run/systemd/private:ro
+      # Udev for device discovery
+      - /run/udev:/run/udev:ro
+      # Host sysfs (read-only) for sensor discovery
+      - /sys:/sys:ro
+    healthcheck:
+      test: ['CMD', '/agent', 'health']
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+
+  ### Docker Socket Proxies ###
+  # utilisé par traefik
+  socket-proxy-traefik:
+    image: docker.io/linuxserver/socket-proxy:3.2.10
+    restart: unless-stopped
+    environment:
+      CONTAINERS: "1"
+      EVENTS: "1"
+      NETWORKS: "1"
+      VERSION: "1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2375"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    networks:
+      - socket-proxy-traefik
+
+  # utilisé par beszel-agent et dozzle
+  socket-proxy-lan:
+    image: docker.io/linuxserver/socket-proxy:3.2.10
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:2375:2375"
+    environment:
+      CONTAINERS: "1"
+      IMAGES: "1"
+      INFO: "1"
+      NETWORKS: "1"
+      LOGS: "1"
+      EVENTS: "1"
+      STATS: "1"
+      VERSION: "1"
+      # Write permissions for Dockge
+      POST: "1"
+      DELETE: "1"
+      BUILD: "1"
+      VOLUMES: "1"
+      EXEC: "1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2375"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    networks:
+      - beszel
+
+###  Docker Networks ###
+networks:
+  # traefik et socket-proxy-traefik
+  socket-proxy-traefik:
+    driver: bridge
+  # teleport, unifi, unifi-db, omada, omada-db, dozzle, beszel-hub, beszel-agent, frigate, firefox, mosquitto, socket-proxy-lan
+  beszel:
+    driver: bridge
+  # teleport, traefik
+  teleport:
+    driver: bridge
+  # Docker macvlan network: traefik_int
+  traefik_int:
+    driver: macvlan
+    driver_opts:
+      parent: mac0.7
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 192.168.7.0/24
+          gateway: 192.168.7.1
+        - subnet: {{ ula_prefix }}:7::/64
+  # Docker macvlan network: traefik_ext
+  traefik_ext:
+    driver: macvlan
+    driver_opts:
+      parent: mac0.8
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 192.168.8.0/24
+          gateway: 192.168.8.1
+        - subnet: {{ ula_prefix }}:8::/64

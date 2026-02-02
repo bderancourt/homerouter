@@ -29,6 +29,7 @@
     state: directory
     mode: u=rwx,g=rx,o=rx
   loop:
+    - "{{ firmware_extracted_dir }}/files/etc/config"
     - "{{ firmware_extracted_dir }}/files/etc/uci-defaults"
     - "{{ firmware_extracted_dir }}/files/etc/freeradius3/mods-config/files"
 

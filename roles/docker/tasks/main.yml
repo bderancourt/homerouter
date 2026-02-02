@@ -1,0 +1,26 @@
+---
+- name: Create Docker compose volume directories
+  ansible.builtin.file:
+    path: /root/docker/volumes/{{ item }}
+    state: directory
+    mode: '0755'
+  loop:
+    - traefik
+    - omada/data
+    - omada/logs
+    - omada-db
+    - firefox
+    - beszel-hub
+    - beszel-agent
+    - socket-proxy-lan
+
+- name: Deploy compose file
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: /root/docker/compose.yaml
+    mode: '0644'
+
+- name: Start compose stack
+  community.docker.docker_compose_v2:
+    project_src: /root/docker
+    state: present

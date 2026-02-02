@@ -1,0 +1,7 @@
+---
+- name: Install Docker on OpenWRT
+  hosts: virtualbox
+  gather_facts: false
+
+  roles:
+    - docker

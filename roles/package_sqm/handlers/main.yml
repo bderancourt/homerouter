@@ -1,4 +1,0 @@
----
-- name: Reload config
-  ansible.builtin.command: reload_config
-  changed_when: true

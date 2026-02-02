@@ -45,3 +45,7 @@ vpn_private_key: "{{ secret_vpn_private_key }}"
 vpn_preshared_key: "{{ secret_vpn_preshared_key }}"
 vpn_peer_public_key: "{{ secret_vpn_peer_public_key }}"
 vpn_endpoint_host: "{{ secret_vpn_endpoint_host }}"
+
+acme_application_key: "{{ secret_acme_application_key }}"
+acme_application_secret: "{{ secret_acme_application_secret }}"
+acme_consumer_key: "{{ secret_acme_consumer_key }}"

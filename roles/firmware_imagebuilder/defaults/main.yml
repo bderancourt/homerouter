@@ -30,6 +30,7 @@ firmware_packages_to_add:
   - pciutils
   - shadow-utils
   - findutils
+  - coreutils-timeout
   - lsblk
   - blkid
   - rng-tools
@@ -37,7 +38,7 @@ firmware_packages_to_add:
   - openssh-server
   - openssh-sftp-server
   - powertop
-  - luci-app-dockerman
+  - avahi-dbus-daemon
 
   # Python
   - python3-light
@@ -49,12 +50,15 @@ firmware_packages_to_add:
   - python3-openssl
   - python3-cryptography
 
-  # LuCI / Web Interface
+  # LuCI Apps
   - luci-ssl
   - luci-app-temp-status
   - luci-app-disks-info
   - luci-app-cpu-status-mini
   - luci-app-statistics
+  - luci-app-sqm
+  - luci-app-ddns
+  - luci-app-dockerman
   - luci-proto-wireguard
   - collectd-mod-sensors
 

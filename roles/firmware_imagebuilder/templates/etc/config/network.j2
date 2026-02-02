@@ -1,0 +1,195 @@
+
+config interface 'loopback'
+        option device 'lo'
+        option proto 'static'
+        option ipaddr '127.0.0.1'
+        option netmask '255.0.0.0'
+
+config globals 'globals'
+        option ula_prefix '{{ ula_prefix }}::/48'
+        option packet_steering '1'
+
+config device
+        option name 'eth3'
+        option macaddr '{{ bbox_mac }}'
+
+config device
+        option name 'eth1.99'
+        option type '8021q'
+        option ifname 'eth1'
+        option vid '99'
+
+config device
+        option name 'eth1.2'
+        option type '8021q'
+        option ifname 'eth1'
+        option vid '2'
+
+config device
+        option name 'eth1.3'
+        option type '8021q'
+        option ifname 'eth1'
+        option vid '3'
+
+config device
+        option name 'eth1.4'
+        option type '8021q'
+        option ifname 'eth1'
+        option vid '4'
+
+config device
+        option name 'eth2.2'
+        option type '8021q'
+        option ifname 'eth2'
+        option vid '2'
+
+config device
+        option name 'eth2.3'
+        option type '8021q'
+        option ifname 'eth2'
+        option vid '3'
+
+config device
+        option name 'eth2.4'
+        option type '8021q'
+        option ifname 'eth2'
+        option vid '4'
+
+config device
+        option name 'eth3.100'
+        option type '8021q'
+        option ifname 'eth3'
+        option vid '100'
+        option macaddr '{{ bbox_mac }}'
+
+config device
+        option name 'br-mgnt'
+        option type 'bridge'
+        list ports 'eth0'
+        list ports 'eth1.99'
+        list ports 'eth2'
+
+config device
+        option name 'br-lan'
+        option type 'bridge'
+        list ports 'eth1.2'
+        list ports 'eth2.2'
+
+config device
+        option name 'br-guest'
+        option type 'bridge'
+        list ports 'eth1.3'
+        list ports 'eth2.3'
+
+config device
+        option name 'br-iot'
+        option type 'bridge'
+        list ports 'eth1.4'
+        list ports 'eth2.4'
+
+config device
+        option name 'dummy0.7'
+        option type '8021q'
+        option ifname 'dummy0'
+        option vid '7'
+
+config device
+        option name 'dummy0.8'
+        option type '8021q'
+        option ifname 'dummy0'
+        option vid '8'
+
+config device
+        option name 'mac0.7'
+        option type 'macvlan'
+        option mode 'bridge'
+        option ifname 'dummy0.7'
+
+config device
+        option name 'mac0.8'
+        option type 'macvlan'
+        option mode 'bridge'
+        option ifname 'dummy0.8'
+
+config interface 'wan'
+        option device 'eth3'
+        option proto 'dhcp'
+        option vendorid 'BYGTELIAD'
+        option norelease '1'
+        option ipv6 '0'
+        option hostname '*'
+        option peerdns '0'
+
+config interface 'wan6'
+        option device 'eth3'
+        option proto 'dhcpv6'
+        option norelease '1'
+        option reqprefix 'auto'
+        option reqaddress 'none'
+        option ip6hint '0'
+        option ip6assign '64'
+        option peerdns '0'
+        option sourcefilter '0'
+
+config interface 'wg0'
+        option proto 'wireguard'
+        option private_key '{{ vpn_private_key }}'
+        list addresses '10.0.0.2/24'
+
+config wireguard_wg0
+        option public_key '{{ vpn_peer_public_key }}'
+        option preshared_key '{{ vpn_preshared_key }}'
+        option endpoint_host '{{ vpn_endpoint_host }}'
+        option endpoint_port '51820'
+        option route_allowed_ips '1'
+        option persistent_keepalive '25'
+        list allowed_ips '10.0.0.1/24'
+        list allowed_ips '192.168.1.0/24'
+
+config interface 'lan'
+        option device 'br-lan'
+        option proto 'static'
+        option ipaddr '192.168.2.1'
+        option netmask '255.255.255.0'
+        option ip6assign '64'
+        option ip6hint '2'
+
+config interface 'guest'
+        option device 'br-guest'
+        option proto 'static'
+        option ipaddr '192.168.3.1'
+        option netmask '255.255.255.0'
+        option ip6assign '64'
+        option ip6hint '3'
+
+config interface 'iot'
+        option device 'br-iot'
+        option proto 'static'
+        option ipaddr '192.168.4.1'
+        option netmask '255.255.255.0'
+        option ip6assign '64'
+        option ip6hint '4'
+
+config interface 'mgnt'
+        option device 'br-mgnt'
+        option proto 'static'
+        option netmask '255.255.255.0'
+        option ip6assign '64'
+        option ipaddr '192.168.9.1'
+        option ip6hint '9'
+
+config interface 'traefik_int'
+        option device 'mac0.7'
+        option proto 'static'
+        option ipaddr '192.168.7.1'
+        option netmask '255.255.255.0'
+        option ip6assign '64'
+        option ip6hint '7'
+
+config interface 'traefik_ext'
+        option device 'mac0.8'
+        option proto 'static'
+        option ipaddr '192.168.8.1'
+        option netmask '255.255.255.0'
+        option ip6assign '64'
+        option ip6hint '8'
