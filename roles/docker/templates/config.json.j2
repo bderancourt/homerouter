@@ -1,0 +1,7 @@
+{
+	"auths": {
+		"https://index.docker.io/v1/": {
+			"auth": "{{ (docker_registry_username ~ ':' ~ docker_registry_password) | b64encode }}"
+		}
+	}
+}

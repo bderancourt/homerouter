@@ -1,0 +1,80 @@
+version: v3
+teleport:
+  nodename: bnl
+  data_dir: /var/lib/teleport
+  diag_addr: "0.0.0.0:3000"
+  log:
+    output: stdout
+    severity: INFO
+
+auth_service:
+  enabled: "yes"
+  cluster_name: "secure.{{ domain }}"
+  listen_addr: 0.0.0.0:3025
+  tokens:
+    - "proxy,node,app,instance:{{ teleport_token }}"
+  authentication:
+    default_session_ttl: 24h
+    type: local
+    second_factor: on
+    webauthn:
+      rp_id: "secure.{{ domain }}"
+
+proxy_service:
+  enabled: "yes"
+  listen_addr: 0.0.0.0:3023
+  web_listen_addr: 0.0.0.0:3080
+  tunnel_listen_addr: 0.0.0.0:3024
+  public_addr: secure.{{ domain }}:443
+
+ssh_service:
+  enabled: "no"
+
+kubernetes_service:
+  enabled: "no"
+
+db_service:
+  enabled: "no"
+
+
+### https://goteleport.com/docs/enroll-resources/application-access/protect-apps/connecting-apps/
+### https://goteleport.com/docs/enroll-resources/application-access/troubleshooting-apps/
+app_service:
+  enabled: "yes"
+  apps:
+
+  - name: "omada"
+    public_addr: "omada.secure.{{ domain }}"
+    uri: "https://omada:8043"
+    insecure_skip_verify: true # Omada uses self-signed cert
+    rewrite:
+      redirect:
+        - "omada.secure.{{ domain }}"
+      headers:
+        - "Host: omada.secure.{{ domain }}"
+    labels:
+      type: "network"
+
+    ## Monitoring / Management
+  - name: "traefik"
+    uri: "http://traefik:8080/dashboard/"
+    rewrite:
+      redirect:
+        - "traefik.secure.{{ domain }}"
+    labels:
+      type: "docker"
+
+  - name: "dozzle"
+    uri: "http://dozzle:8080"
+    labels:
+      type: "docker"
+
+  - name: "beszel"
+    uri: "http://beszel-hub:8090"
+    labels:
+      type: "docker"
+
+  - name: "browser"
+    uri: "http://firefox:3000"
+    labels:
+      type: "mgmt"

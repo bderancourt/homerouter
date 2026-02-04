@@ -3,7 +3,7 @@ config defaults
         option syn_flood '1'
         option input 'REJECT'
         option output 'ACCEPT'
-        option forward 'ACCEPT'
+        option forward 'REJECT'
 
 config rule
         option name 'Allow-DHCP-Renew'
@@ -126,15 +126,15 @@ config zone
         option forward 'REJECT'
 
 config zone
-        option name 'traefik_int'
-        list network 'traefik_int'
+        option name 'traefint'
+        list network 'traefint'
         option input 'REJECT'
         option output 'ACCEPT'
         option forward 'REJECT'
 
 config zone
-        option name 'traefik_ext'
-        list network 'traefik_ext'
+        option name 'traefext'
+        list network 'traefext'
         option input 'REJECT'
         option output 'ACCEPT'
         option forward 'REJECT'
@@ -149,19 +149,11 @@ config forwarding
 
 config forwarding
         option src 'mgnt'
-        option dest 'traefik_int'
+        option dest 'traefint'
 
 config forwarding
         option src 'mgnt'
-        option dest 'traefik_ext'
-
-config forwarding
-        option src 'traefik_int'
-        option dest 'wan'
-
-config forwarding
-        option src 'wan'
-        option dest 'traefik_ext'
+        option dest 'traefext'
 
 config forwarding
         option src 'lan'
@@ -170,6 +162,10 @@ config forwarding
 config forwarding
         option src 'lan'
         option dest 'iot'
+
+config forwarding
+        option src 'traefint'
+        option dest 'wan'
 
 config forwarding
         option src 'guest'
@@ -228,11 +224,41 @@ config rule
 
 {% endfor %}
 config rule
-        option name 'Allow-TRAEFIK_INT-DNS'
-        option src 'traefik_int'
+        option name 'Allow-TRAEFINT-DNS'
+        option src 'traefint'
         option proto 'tcp udp'
         option dest_port '53'
         option target 'ACCEPT'
+
+config rule
+        option name 'Allow-TRAEFEXT-DNS'
+        option src 'traefext'
+        option proto 'tcp udp'
+        option dest_port '53'
+        option target 'ACCEPT'
+
+# HTTP/HTTPS redirect from WAN to traefext
+config redirect
+        option name 'HTTP_WAN_to_Traefext'
+        option src 'wan'
+        option src_dport '80'
+        option proto 'tcp'
+        option target 'DNAT'
+        option dest 'traefext'
+        option dest_ip '192.168.8.2'
+        option dest_port '80'
+        option family 'ipv4'
+
+config redirect
+        option name 'HTTPS_WAN_to_Traefext'
+        option src 'wan'
+        option src_dport '443'
+        option proto 'tcp'
+        option target 'DNAT'
+        option dest 'traefext'
+        option dest_ip '192.168.8.2'
+        option dest_port '443'
+        option family 'ipv4'
 
 {% for zone in ['mgnt', 'lan', 'iot'] %}
 config redirect
@@ -246,48 +272,3 @@ config redirect
         option family 'any'
 
 {% endfor %}
-
-# HTTP/HTTPS redirect from WAN to Traefik (traefik_ext)
-config redirect
-        option name 'HTTP_to_Traefik'
-        option src 'wan'
-        option src_dport '80'
-        option proto 'tcp'
-        option target 'DNAT'
-        option dest 'traefik_ext'
-        option dest_ip '192.168.8.10'
-        option dest_port '80'
-        option family 'ipv4'
-
-config redirect
-        option name 'HTTPS_to_Traefik'
-        option src 'wan'
-        option src_dport '443'
-        option proto 'tcp'
-        option target 'DNAT'
-        option dest 'traefik_ext'
-        option dest_ip '192.168.8.10'
-        option dest_port '443'
-        option family 'ipv4'
-
-config redirect
-        option name 'HTTP_to_Traefik_v6'
-        option src 'wan'
-        option src_dport '80'
-        option proto 'tcp'
-        option target 'DNAT'
-        option dest 'traefik_ext'
-        option dest_ip '{{ ula_prefix }}:8::10'
-        option dest_port '80'
-        option family 'ipv6'
-
-config redirect
-        option name 'HTTPS_to_Traefik_v6'
-        option src 'wan'
-        option src_dport '443'
-        option proto 'tcp'
-        option target 'DNAT'
-        option dest 'traefik_ext'
-        option dest_ip '{{ ula_prefix }}:8::10'
-        option dest_port '443'
-        option family 'ipv6'

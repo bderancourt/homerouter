@@ -87,30 +87,6 @@ config device
         list ports 'eth1.4'
         list ports 'eth2.4'
 
-config device
-        option name 'dummy0.7'
-        option type '8021q'
-        option ifname 'dummy0'
-        option vid '7'
-
-config device
-        option name 'dummy0.8'
-        option type '8021q'
-        option ifname 'dummy0'
-        option vid '8'
-
-config device
-        option name 'mac0.7'
-        option type 'macvlan'
-        option mode 'bridge'
-        option ifname 'dummy0.7'
-
-config device
-        option name 'mac0.8'
-        option type 'macvlan'
-        option mode 'bridge'
-        option ifname 'dummy0.8'
-
 config interface 'wan'
         option device 'eth3'
         option proto 'dhcp'
@@ -178,16 +154,16 @@ config interface 'mgnt'
         option ipaddr '192.168.9.1'
         option ip6hint '9'
 
-config interface 'traefik_int'
-        option device 'mac0.7'
+config interface 'traefint'
+        option device 'br-traefint'
         option proto 'static'
         option ipaddr '192.168.7.1'
         option netmask '255.255.255.0'
         option ip6assign '64'
         option ip6hint '7'
 
-config interface 'traefik_ext'
-        option device 'mac0.8'
+config interface 'traefext'
+        option device 'br-traefext'
         option proto 'static'
         option ipaddr '192.168.8.1'
         option netmask '255.255.255.0'
