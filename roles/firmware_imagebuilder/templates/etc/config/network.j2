@@ -20,12 +20,6 @@ config device
         option vid '99'
 
 config device
-        option name 'eth1.2'
-        option type '8021q'
-        option ifname 'eth1'
-        option vid '2'
-
-config device
         option name 'eth1.3'
         option type '8021q'
         option ifname 'eth1'
@@ -63,17 +57,11 @@ config device
         option macaddr '{{ bbox_mac }}'
 
 config device
-        option name 'br-mgnt'
-        option type 'bridge'
-        list ports 'eth0'
-        list ports 'eth1.99'
-        list ports 'eth2'
-
-config device
         option name 'br-lan'
         option type 'bridge'
+        list ports 'eth0'
         list ports 'eth1.2'
-        list ports 'eth2.2'
+        list ports 'eth2'
 
 config device
         option name 'br-guest'
@@ -146,26 +134,10 @@ config interface 'iot'
         option ip6assign '64'
         option ip6hint '4'
 
-config interface 'mgnt'
-        option device 'br-mgnt'
+config interface 'docker'
+        option device 'docker0'
         option proto 'static'
-        option netmask '255.255.255.0'
-        option ip6assign '64'
         option ipaddr '192.168.9.1'
+        option netmask '255.255.255.0'
+        option ip6assign '64'
         option ip6hint '9'
-
-config interface 'traefint'
-        option device 'br-traefint'
-        option proto 'static'
-        option ipaddr '192.168.7.1'
-        option netmask '255.255.255.0'
-        option ip6assign '64'
-        option ip6hint '7'
-
-config interface 'traefext'
-        option device 'br-traefext'
-        option proto 'static'
-        option ipaddr '192.168.8.1'
-        option netmask '255.255.255.0'
-        option ip6assign '64'
-        option ip6hint '8'

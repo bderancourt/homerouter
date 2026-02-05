@@ -10,28 +10,6 @@ log "======================================"
 log "Starting 90-system configuration"
 log "======================================"
 
-# Detect if running in virtual environment
-log "Detecting virtual environment"
-grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
-IS_VIRTUAL=$?
-WAN_IFACE='eth3.100'
-MGNT_SUBNET_ID='9'
-if [ $IS_VIRTUAL -eq 0 ]; then
-    WAN_IFACE='eth3'
-    MGNT_SUBNET_ID='99'
-    log "Virtual environment detected"
-else
-    log "Physical environment detected"
-fi
-log "WAN interface: $WAN_IFACE, MGNT subnet: $MGNT_SUBNET_ID"
-uci set network.wan.device="$WAN_IFACE"
-uci set network.wan6.device="$WAN_IFACE"
-uci set network.mgnt.ipaddr="192.168.$MGNT_SUBNET_ID.1"
-uci set network.mgnt.ip6hint="$MGNT_SUBNET_ID"
-uci delete dhcp.mgnt.dhcp_option || true
-uci set dhcp.mgnt.dhcp_option="6,192.168.$MGNT_SUBNET_ID.1"
-uci commit
-reload_config
 
 #######################################
 # change root password
@@ -69,26 +47,21 @@ log "Enabling collectd sensors"
 uci set luci_statistics.collectd_sensors.enable='1'
 log "Collectd sensors enabled"
 
-# Configure uHTTPd to listen only on MGNT interface
-log "Configuring uHTTPd to listen only on MGNT interface"
-MGNT_IPV4="192.168.$MGNT_SUBNET_ID.1"
-MGNT_IPV6="{{ ula_prefix }}:$MGNT_SUBNET_ID::1"
-uci del uhttpd.main.listen_http || true
-uci del uhttpd.main.listen_https || true
-uci add_list uhttpd.main.listen_http="$MGNT_IPV4:80"
-uci add_list uhttpd.main.listen_http="[$MGNT_IPV6]:80"
-uci add_list uhttpd.main.listen_https="$MGNT_IPV4:443"
-uci add_list uhttpd.main.listen_https="[$MGNT_IPV6]:443"
-log "uHTTPd configured: HTTP/HTTPS on $MGNT_IPV4 and $MGNT_IPV6"
-
-log "Configuring SQM to use WAN interface"
-uci set sqm.wan.interface="$WAN_IFACE"
-log "SQM configured successfully"
-
-log "Setting DDNS services enabled state"
-uci set ddns.{{ ddns_service_name | replace('.', '_') }}_v4.enabled='$IS_VIRTUAL'
-uci set ddns.{{ ddns_service_name | replace('.', '_') }}_v6.enabled='$IS_VIRTUAL'
-log "DDNS enabled state set successfully"
+# Detect if running in virtual environment
+log "Detecting virtual environment"
+grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
+IS_VIRTUAL=$?
+if [ $IS_VIRTUAL -eq 0 ]; then
+    log "Virtual environment detected"
+    uci set network.wan.device="eth3"
+    uci set network.wan6.device="eth3"
+    uci set network.lan.ipaddr="192.168.99.1"
+    uci set sqm.wan.interface="eth3"
+    uci set ddns.{{ ddns_service_name | replace('.', '_') }}_v4.enabled='0'
+    uci set ddns.{{ ddns_service_name | replace('.', '_') }}_v6.enabled='0'
+else
+    log "Physical environment detected"
+fi
 
 log "Committing system configuration"
 uci commit

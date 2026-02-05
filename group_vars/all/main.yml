@@ -2,8 +2,12 @@
 ansible_python_interpreter: /usr/bin/python3.11
 ansible_user: root
 firmware_version: 24.10.5
-# datadrive_mount_dir: /data
-docker_data_dir: /data/docker
+wan_interface: eth3.100
+cigale_subnet_id: 1
+lan_subnet_id: 2
+guest_subnet_id: 3
+iot_subnet_id: 4
+docker_subnet_id: 9
 
 acme_key: /etc/acme/{{ domain }}_ecc/{{ domain }}.key
 acme_cert: /etc/acme/{{ domain }}_ecc/fullchain.cer

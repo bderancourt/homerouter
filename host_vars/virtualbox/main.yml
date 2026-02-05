@@ -2,8 +2,4 @@
 acme_staging: 1
 ddns_enabled: 0
 wan_interface: eth3
-admin_subnet_id: 91
-guest_subnet_id: 92
-iot_subnet_id: 93
-k3s_admin_subnet_id: 94
-k3s_external_subnet_id: 95
+lan_subnet_id: 99

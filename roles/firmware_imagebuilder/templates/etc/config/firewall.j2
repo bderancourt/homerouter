@@ -86,9 +86,10 @@ config rule
 config zone
         option name 'lan'
         list network 'lan'
-        option input 'REJECT'
+        list network 'wg0'
+        option input 'ACCEPT'
         option output 'ACCEPT'
-        option forward 'REJECT'
+        option forward 'ACCEPT'
 
 config zone
         option name 'wan'
@@ -104,14 +105,6 @@ config zone
         option log_limit '10/minute'
 
 config zone
-        option name 'mgnt'
-        list network 'mgnt'
-        list network 'wg0'
-        option input 'ACCEPT'
-        option output 'ACCEPT'
-        option forward 'ACCEPT'
-
-config zone
         option name 'guest'
         list network 'guest'
         option input 'REJECT'
@@ -125,35 +118,16 @@ config zone
         option output 'ACCEPT'
         option forward 'REJECT'
 
-config zone
-        option name 'traefint'
-        list network 'traefint'
+config zone 'docker'
+        option name 'docker'
+        list network 'docker'
         option input 'REJECT'
         option output 'ACCEPT'
-        option forward 'REJECT'
-
-config zone
-        option name 'traefext'
-        list network 'traefext'
-        option input 'REJECT'
-        option output 'ACCEPT'
-        option forward 'REJECT'
+        option forward 'ACCEPT'
 
 config forwarding
-        option src 'mgnt'
-        option dest 'wan'
-
-config forwarding
-        option src 'mgnt'
-        option dest 'iot'
-
-config forwarding
-        option src 'mgnt'
-        option dest 'traefint'
-
-config forwarding
-        option src 'mgnt'
-        option dest 'traefext'
+        option src 'lan'
+        option dest 'docker'
 
 config forwarding
         option src 'lan'
@@ -164,7 +138,7 @@ config forwarding
         option dest 'iot'
 
 config forwarding
-        option src 'traefint'
+        option src 'docker'
         option dest 'wan'
 
 config forwarding
@@ -222,47 +196,8 @@ config rule
         option dest_port '123'
         option target 'ACCEPT'
 
-{% endfor %}
-config rule
-        option name 'Allow-TRAEFINT-DNS'
-        option src 'traefint'
-        option proto 'tcp udp'
-        option dest_port '53'
-        option target 'ACCEPT'
-
-config rule
-        option name 'Allow-TRAEFEXT-DNS'
-        option src 'traefext'
-        option proto 'tcp udp'
-        option dest_port '53'
-        option target 'ACCEPT'
-
-# HTTP/HTTPS redirect from WAN to traefext
 config redirect
-        option name 'HTTP_WAN_to_Traefext'
-        option src 'wan'
-        option src_dport '80'
-        option proto 'tcp'
-        option target 'DNAT'
-        option dest 'traefext'
-        option dest_ip '192.168.8.2'
-        option dest_port '80'
-        option family 'ipv4'
-
-config redirect
-        option name 'HTTPS_WAN_to_Traefext'
-        option src 'wan'
-        option src_dport '443'
-        option proto 'tcp'
-        option target 'DNAT'
-        option dest 'traefext'
-        option dest_ip '192.168.8.2'
-        option dest_port '443'
-        option family 'ipv4'
-
-{% for zone in ['mgnt', 'lan', 'iot'] %}
-config redirect
-        option name 'DNS_intercept_{{ zone }}'
+        option name 'DNS_intercept_{{ zone | capitalize }}'
         option src '{{ zone }}'
         option src_dport '53'
         option proto 'tcp udp'
@@ -272,3 +207,33 @@ config redirect
         option family 'any'
 
 {% endfor %}
+config rule
+        option name 'Allow-DOCKER-DNS'
+        option src 'docker'
+        option proto 'tcp udp'
+        option dest_port '53'
+        option target 'ACCEPT'
+
+# HTTP/HTTPS redirect from WAN to docker
+config redirect
+        option name 'HTTP_WAN_to_Docker'
+        option src 'wan'
+        option src_dport '80'
+        option proto 'tcp'
+        option target 'DNAT'
+        option dest 'docker'
+        option dest_ip '192.168.8.2'
+        option dest_port '80'
+        option family 'ipv4'
+
+config redirect
+        option name 'HTTPS_WAN_to_Docker'
+        option src 'wan'
+        option src_dport '443'
+        option proto 'tcp'
+        option target 'DNAT'
+        option dest 'docker'
+        option dest_ip '192.168.8.2'
+        option dest_port '444'
+        option family 'ipv4'
+

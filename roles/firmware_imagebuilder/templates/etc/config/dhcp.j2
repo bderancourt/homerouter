@@ -21,7 +21,6 @@ config dnsmasq
         option filter_aaaa '0'
         option filter_a '0'
         list server '1.1.1.1'
-        list interface 'mgnt'
         list interface 'lan'
         list interface 'guest'
         list interface 'iot'
@@ -40,7 +39,7 @@ config odhcpd 'odhcpd'
 
 {% for zone in [
     {'name': 'lan', 'ip': '192.168.2.1'},
-    {'name': 'mgnt', 'ip': '192.168.99.1'},
+    {'name': 'guest', 'ip': '192.168.3.1'},
     {'name': 'iot', 'ip': '192.168.4.1'}
 ] %}
 config dhcp '{{ zone.name }}'
@@ -61,31 +60,15 @@ config dhcp '{{ zone.name }}'
         list dhcp_option '6,{{ zone.ip }}'
 
 {% endfor %}
-config dhcp 'guest'
-        option interface 'guest'
-        option start '100'
-        option limit '150'
-        option leasetime '12h'
-        option dhcpv4 'server'
-        option dhcpv6 'server'
-        option ra 'server'
-        option force '1'
-        option ra_default '1'
-        list ra_flags 'managed-config'
-        list ra_flags 'other-config'
-        list ra_flags 'home-agent'
-        list dhcp_option '6,1.1.1.1,1.0.0.1'
-        list dns '2606:4700:4700::1111'
-        list dns '2606:4700:4700::1001'
 
-
+# Static leases
 config host 'eap'
         option name 'eap'
         option mac '20:36:26:D2:65:30'
-        option ip '192.168.9.90'
+        option ip '192.168.2.90'
         option hostid '90'
         option dns '1'
-        list dhcp_option '138,192.168.9.1'
+        list dhcp_option '138,192.168.2.1'
 
 config host 'shellyvr'
         option name 'shellyvr'
