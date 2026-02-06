@@ -121,6 +121,7 @@ config zone
 config zone 'docker'
         option name 'docker'
         list network 'docker'
+        list device 'dc-+'
         option input 'REJECT'
         option output 'ACCEPT'
         option forward 'ACCEPT'
@@ -149,7 +150,7 @@ config forwarding
         option src 'iot'
         option dest 'wan'
 
-{% for zone in ['lan', 'guest', 'iot'] %}
+{% for zone in [ 'guest', 'iot'] %}
 config rule
         option name 'Allow-{{ zone | capitalize }}-DNS'
         option src '{{ zone }}'
@@ -207,6 +208,16 @@ config redirect
         option family 'any'
 
 {% endfor %}
+config redirect
+        option name 'DNS_intercept_LAN'
+        option src 'lan'
+        option src_dport '53'
+        option proto 'tcp udp'
+        option target 'DNAT'
+        option dest 'lan'
+        option dest_port '53'
+        option family 'any'
+
 config rule
         option name 'Allow-DOCKER-DNS'
         option src 'docker'

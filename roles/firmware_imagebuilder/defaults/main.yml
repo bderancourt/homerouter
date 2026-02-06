@@ -64,6 +64,7 @@ firmware_packages_to_add:
 
   # Networking & Kubernetes Requirements
   - kmod-atlantic
+  - kmod-dummy
 
   # FreeRADIUS Server (WiFi: PEAP-MSCHAPv2 / Wired: MAB)
   - freeradius3                          # Serveur RADIUS principal

@@ -134,6 +134,11 @@ config interface 'iot'
         option ip6assign '64'
         option ip6hint '4'
 
+config device
+        option type 'bridge'
+        option name 'docker0'
+        list ports 'dummy0'
+
 config interface 'docker'
         option device 'docker0'
         option proto 'static'

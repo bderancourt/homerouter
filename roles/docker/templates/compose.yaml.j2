@@ -6,11 +6,8 @@ services:
     image: docker.io/traefik:v3
     restart: unless-stopped
     depends_on:
-      - socket-proxy-traefik
-    dns:
-      - 192.168.7.1
-    dns_search:
-      - {{ domain }}
+      socket-proxy-traefik:
+        condition: service_healthy
     environment:
       - LEGO_DISABLE_CNAME_SUPPORT=true
       - OVH_ENDPOINT=ovh-eu
@@ -19,8 +16,13 @@ services:
       - OVH_APPLICATION_SECRET={{ acme_application_secret }}
       - OVH_CONSUMER_KEY={{ acme_consumer_key }}
       - OVH_ZONE=vbox.ovh
+    dns:
+      - 192.168.{{ docker_subnet_id }}.1
     volumes:
       - /root/docker/volumes/traefik:/data
+    ports:
+      - "192.168.9.1:443:443"
+      - "192.168.9.1:444:444"
     command:
       - --api.dashboard=true
       - --api.insecure=true
@@ -32,27 +34,21 @@ services:
       - --serverstransport.insecureskipverify=true
 
       # Internal entrypoints (traefik_int network)
-      - --entrypoints.web.address=192.168.7.2:80
-      - --entrypoints.web.http.redirections.entryPoint.to=websecure
-      - --entrypoints.web.http.redirections.entryPoint.scheme=https
-      - --entrypoints.websecure.address=192.168.7.2:443
-
-      # External entrypoints (traefik_ext network)
-      - --entrypoints.web-ext.address=192.168.8.2:80
-      - --entrypoints.web-ext.http.redirections.entryPoint.to=websecure-ext
-      - --entrypoints.web-ext.http.redirections.entryPoint.scheme=https
-      - --entrypoints.websecure-ext.address=192.168.8.2:443
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure-ext.address=:444
 
       # ACME Let's Encrypt DNS Challenge Resolver for traefik
       - --certificatesresolvers.traefik_resolver.acme.storage=/data/acme_traefik.json
       - --certificatesresolvers.traefik_resolver.acme.dnschallenge=true
       - --certificatesresolvers.traefik_resolver.acme.dnschallenge.provider=ovh
       - --certificatesresolvers.traefik_resolver.acme.dnschallenge.delaybeforecheck=0
+      - --certificatesresolvers.traefik_resolver.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
       # DNS Resolver for Wildcards (*.secure.cigale.ovh)
       - --certificatesresolvers.teleport_resolver.acme.storage=/data/acme_teleport.json
       - --certificatesresolvers.teleport_resolver.acme.dnschallenge=true
       - --certificatesresolvers.teleport_resolver.acme.dnschallenge.provider=ovh
       - --certificatesresolvers.teleport_resolver.acme.dnschallenge.delaybeforecheck=0
+      - --certificatesresolvers.teleport_resolver.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
       - --ping=true
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
@@ -62,16 +58,9 @@ services:
       start_period: 10s
       start_interval: 1s
     networks:
-      traefext:
-        ipv4_address: 192.168.8.2
-        ipv6_address: {{ ula_prefix }}:8::2
-      traefint:
-        ipv4_address: 192.168.7.2
-        ipv6_address: {{ ula_prefix }}:7::2
       socket-proxy-traefik:
       teleport:
       omada:
-
 
   ### Teleport Secure Access ###
   teleport:
@@ -301,37 +290,25 @@ networks:
   # traefik et socket-proxy-traefik
   socket-proxy-traefik:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: dc-sockproxy
   # teleport, unifi, unifi-db, omada, omada-db, dozzle, beszel-hub, beszel-agent, frigate, firefox, mosquitto, socket-proxy-lan
   beszel:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: dc-beszel
   # teleport, traefik
   teleport:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: dc-teleport
   # omada, traefik
   omada:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: dc-omada
   # LAN network for beszel-agent and firefox
   lan:
     driver: bridge
-  # Docker macvlan network: traefik_int
-  traefint:
-    driver: bridge
     driver_opts:
-      com.docker.network.bridge.name: br-traefint
-    enable_ipv6: true
-    ipam:
-      config:
-        - subnet: 192.168.7.0/24
-          gateway: 192.168.7.1
-        - subnet: {{ ula_prefix }}:7::/64
-  # Docker macvlan network: traefik_ext
-  traefext:
-    driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: br-traefext
-    enable_ipv6: true
-    ipam:
-      config:
-        - subnet: 192.168.8.0/24
-          gateway: 192.168.8.1
-        - subnet: {{ ula_prefix }}:8::/64
+      com.docker.network.bridge.name: dc-lan
