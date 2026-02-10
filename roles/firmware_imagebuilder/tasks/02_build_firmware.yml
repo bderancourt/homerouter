@@ -1,15 +1,4 @@
 ---
-- name: Add fantastic packages repository
-  ansible.builtin.lineinfile:
-    path: "{{ firmware_extracted_dir }}/repositories.conf"
-    line: "src/gz fantastic_packages_luci https://fantastic-packages.github.io/releases/24.10/packages/x86_64/luci/"
-
-- name: Download fantastic packages key
-  ansible.builtin.get_url:
-    url: "https://fantastic-packages.github.io/releases/24.10/53ff2b6672243d28.pub"
-    dest: "{{ firmware_extracted_dir }}/keys/53ff2b6672243d28"
-    mode: u=rw,g=r,o=r
-
 - name: Customize .config file
   ansible.builtin.lineinfile:
     path: "{{ firmware_extracted_dir }}/.config"
@@ -23,34 +12,27 @@
     dest: "{{ firmware_extracted_dir }}/files"
     mode: u=rw,g=r,o=r
 
-- name: Ensure config directories exist
+- name: Collect template files from filetree
+  ansible.builtin.set_fact:
+    firmware_template_files: >-
+      {{ query('community.general.filetree', role_path ~ '/templates')
+         | selectattr('state', 'eq', 'file')
+         | selectattr('path', 'match', '.*\.j2$')
+         | list }}
+
+- name: Ensure template directories exist
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ firmware_extracted_dir }}/files/{{ item.path | splitext | first | dirname }}"
     state: directory
     mode: u=rwx,g=rx,o=rx
-  loop:
-    - "{{ firmware_extracted_dir }}/files/etc/config"
-    - "{{ firmware_extracted_dir }}/files/etc/docker"
-    - "{{ firmware_extracted_dir }}/files/etc/uci-defaults"
-    - "{{ firmware_extracted_dir }}/files/etc/freeradius3/mods-config/files"
+  loop: "{{ firmware_template_files }}"
 
-- name: Recursively process all templates using filetree
+- name: Process all templates
   ansible.builtin.template:
-    # 'item.path' is the full path to the source template file.
-    src: '{{ template_file.src }}'
-    # The destination path is built by removing the 'templates/' prefix and the '.j2' suffix.
-    dest: "{{ firmware_extracted_dir }}/files/{{ template_file.path | splitext | first }}"
+    src: '{{ item.src }}'
+    dest: "{{ firmware_extracted_dir }}/files/{{ item.path | splitext | first }}"
     mode: u=rw,g=r,o=r
-  # Use the filetree query to recursively find all files.
-  # Use the powerful `filetree` lookup instead of `fileglob`
-  loop: "{{ query('community.general.filetree', role_path ~ '/templates') }}"
-  # Rename the loop variable for better readability
-  loop_control:
-    loop_var: template_file
-  # Only process items that are files AND match the regex for ending in '.j2'.
-  when:
-    - template_file.state == 'file'
-    - template_file.path.endswith('.j2')
+  loop: "{{ firmware_template_files }}"
 
 - name: Set make image params
   ansible.builtin.set_fact:

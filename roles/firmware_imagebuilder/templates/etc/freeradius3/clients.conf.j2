@@ -15,7 +15,7 @@ client localhost {
 # TP-Link EAP773 WiFi Access Point
 #######################################
 client eap773 {
-    ipaddr = 192.168.9.90
+    ipaddr = 192.168.{{ lan_subnet_id }}.90
     secret = {{ freeradius_shared_secret }}
     require_message_authenticator = yes
     shortname = eap773

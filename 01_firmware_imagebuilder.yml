@@ -1,8 +1,13 @@
 ---
 - name: OpenWRT build firmware
-  hosts: localhost
+  hosts: ikoolcore
   connection: local
   gather_facts: false
 
-  roles:
-    - firmware_imagebuilder
+  tasks:
+    - name: Build firmware with host-specific variables
+      delegate_to: localhost
+      block:
+        - name: Include firmware_imagebuilder role
+          ansible.builtin.include_role:
+            name: firmware_imagebuilder

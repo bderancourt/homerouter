@@ -1,8 +1,0 @@
-#!/bin/sh
-# Enable hairpin mode on docker0 bridge port (dummy0)
-# This allows containers and the host to access published ports via the host IP
-# without needing the userland proxy (docker-proxy).
-[ "$ACTION" = "add" ] && [ "$DEVICENAME" = "dummy0" ] && {
-	echo 1 > /sys/devices/virtual/net/docker0/brport/dummy0/hairpin_mode 2>/dev/null
-	logger -t docker-hairpin "Enabled hairpin mode on dummy0"
-}

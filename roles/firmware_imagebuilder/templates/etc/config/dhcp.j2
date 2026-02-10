@@ -6,11 +6,11 @@ config dnsmasq
         option localise_queries '1'
         option rebind_protection '1'
         option rebind_localhost '1'
-        option local '/lan/'
-        option domain 'lan'
+        option local '/{{ domain }}/'
+        option domain '{{ domain }}'
         option expandhosts '1'
         option nonegcache '0'
-        option cachesize '1000'
+        option cachesize '0'
         option authoritative '1'
         option readethers '1'
         option leasefile '/tmp/dhcp.leases'
@@ -20,7 +20,8 @@ config dnsmasq
         option ednspacket_max '1232'
         option filter_aaaa '0'
         option filter_a '0'
-        list server '1.1.1.1'
+        option port '54'
+        option noresolv '1'
         list interface 'lan'
         list interface 'guest'
         list interface 'iot'
@@ -38,9 +39,9 @@ config odhcpd 'odhcpd'
         option piofolder '/tmp/odhcpd-piofolder'
 
 {% for zone in [
-    {'name': 'lan', 'ip': '192.168.2.1'},
-    {'name': 'guest', 'ip': '192.168.3.1'},
-    {'name': 'iot', 'ip': '192.168.4.1'}
+    {'name': 'lan', 'ip': '192.168.' ~ lan_subnet_id ~ '.1'},
+    {'name': 'guest', 'ip': '192.168.' ~ guest_subnet_id ~ '.1'},
+    {'name': 'iot', 'ip': '192.168.' ~ iot_subnet_id ~ '.1'}
 ] %}
 config dhcp '{{ zone.name }}'
         option interface '{{ zone.name }}'
@@ -58,6 +59,7 @@ config dhcp '{{ zone.name }}'
         list ra_flags 'other-config'
         list ra_flags 'home-agent'
         list dhcp_option '6,{{ zone.ip }}'
+        list domain '{{ domain }}'
 
 {% endfor %}
 
@@ -65,37 +67,37 @@ config dhcp '{{ zone.name }}'
 config host 'eap'
         option name 'eap'
         option mac '20:36:26:D2:65:30'
-        option ip '192.168.2.90'
+        option ip '192.168.{{ lan_subnet_id }}.90'
         option hostid '90'
         option dns '1'
-        list dhcp_option '138,192.168.2.1'
+        list dhcp_option '138,192.168.{{ lan_subnet_id }}.1'
 
 config host 'shellyvr'
         option name 'shellyvr'
         option mac '98:CD:AC:2C:FB:D0'
-        option ip '192.168.4.10'
+        option ip '192.168.{{ iot_subnet_id }}.10'
         option dns '1'
 
 config host 'shellyplug1'
         option name 'shellyplug1'
         option mac 'C4:5B:BE:D6:BD:A1'
-        option ip '192.168.4.11'
+        option ip '192.168.{{ iot_subnet_id }}.11'
         option dns '1'
 
 config host 'shellyplug2'
         option name 'shellyplug2'
         option mac 'E8:68:E7:F1:8D:59'
-        option ip '192.168.4.12'
+        option ip '192.168.{{ iot_subnet_id }}.12'
         option dns '1'
 
 config host 'roborock'
         option name 'roborock'
         option mac 'B0:4A:39:2A:19:F2'
-        option ip '192.168.4.13'
+        option ip '192.168.{{ iot_subnet_id }}.13'
         option dns '1'
 
 config host 'printer'
         option name 'printer'
         option mac '40:23:43:D9:F3:A4'
-        option ip '192.168.4.14'
+        option ip '192.168.{{ iot_subnet_id }}.14'
         option dns '1'

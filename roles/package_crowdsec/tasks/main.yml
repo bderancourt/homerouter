@@ -1,8 +1,4 @@
 ---
-- name: Run post reboot
-  ansible.builtin.import_role:
-    name: common_post_reboot
-
 - name: Install CrowdSec packages
   community.general.opkg:
     name: "{{ item }}"

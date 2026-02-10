@@ -39,6 +39,7 @@ firmware_packages_to_add:
   - openssh-sftp-server
   - powertop
   - avahi-dbus-daemon
+  - logrotate
 
   # Python
   - python3-light
@@ -51,18 +52,25 @@ firmware_packages_to_add:
   - python3-cryptography
 
   # LuCI Apps
-  - luci-ssl
-  - luci-app-temp-status
-  - luci-app-disks-info
-  - luci-app-cpu-status-mini
-  - luci-app-statistics
+  - luci-ssl-nginx
   - luci-app-sqm
   - luci-app-ddns
   - luci-app-dockerman
   - luci-proto-wireguard
   - collectd-mod-sensors
+  - adguardhome
 
-  # Networking & Kubernetes Requirements
+  # ACME
+  - luci-app-acme
+  - acme-acmesh-dnsapi
+
+  # Disk resize tools (used by uci-defaults at first boot)
+  - parted
+  - sgdisk
+  - losetup
+  - resize2fs
+
+  # Networking
   - kmod-atlantic
   - kmod-dummy
 
@@ -82,7 +90,7 @@ freeradius_shared_secret: "testing123"  # TODO: Change to a secure random value 
 
 # Guest WiFi default password - any unknown MAC with this password goes to guest VLAN
 freeradius_guest_password: "testing123"  # TODO: Change to a secure random value in production
-freeradius_guest_vlan_id: 3  # Guest VLAN
+freeradius_guest_vlan_id: "{{ guest_subnet_id }}"  # Guest VLAN
 
 # WiFi clients with password authentication (PEAP-MSCHAPv2)
 # Use username/password - VLAN assigned based on username

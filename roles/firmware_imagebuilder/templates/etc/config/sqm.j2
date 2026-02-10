@@ -1,7 +1,7 @@
 
 config queue 'wan'
         option enabled '1'
-        option interface 'eth3'
+        option interface '{{ wan_interface }}'
         option download '0'
         option upload '950000'
         option qdisc 'cake'

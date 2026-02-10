@@ -16,6 +16,48 @@
   changed_when: true
   failed_when: false
 
-- name: Post reboot tasks
-  ansible.builtin.import_role:
-    name: common_post_reboot
+- name: Wait for device to come back online
+  ansible.builtin.wait_for_connection:
+    timeout: 300
+    delay: 2
+
+- name: Wait for internet access
+  # noqa: command-instead-of-module (wget is convenient here)
+  ansible.builtin.command:
+    cmd: "wget --timeout=5 --spider https://downloads.openwrt.org/releases/{{ firmware_version }}/targets/x86/64/packages/Packages.gz"
+  changed_when: false
+  register: _wget_packages_result
+  retries: 12
+  until: _wget_packages_result.rc == 0
+
+- name: Check whether opkg caches need update
+  ansible.builtin.stat:
+    path: "{{ opkg_lists_dir }}"
+  register: _opkg_lists
+
+- name: Verify there are actual cache files
+  when: _opkg_lists.stat.exists
+  ansible.builtin.command:
+    cmd: "find {{ opkg_lists_dir }} -type f"
+  changed_when: false
+  register: _opkg_list_files
+
+- name: Get current system time
+  ansible.builtin.command:
+    cmd: "date +%s"
+  register: _epoch
+  check_mode: false
+  changed_when: false
+  when: _opkg_lists.stat.exists
+
+- name: Update opkg caches
+  community.general.opkg:
+    name: opkg
+    update_cache: true
+  register: _update
+  when: not ( _opkg_lists.stat.exists and
+              _opkg_list_files.stdout is defined and
+              _opkg_list_files.stdout|length > 0) or
+      _epoch.stdout|int - _opkg_lists.stat.mtime > 86400
+  failed_when: not _opkg_lists.stat.exists and _update.failed
+  changed_when: not _update.failed

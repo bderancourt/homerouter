@@ -1,0 +1,17 @@
+#!/bin/sh
+# Action hotplug pour mettre à jour Nginx une fois les certificats ACME disponibles
+# Généré par Ansible
+
+if [ "$ACTION" = "issued" ] || [ "$ACTION" = "renewed" ]; then
+    logger -t acme-nginx-hook "Updating nginx SSL configuration with new certificate for {{ domain }}"
+
+    # Désactiver la gestion self-signed et pointer vers les certs ACME
+    uci -q delete nginx._lan.uci_manage_ssl
+    uci set nginx._lan.ssl_certificate='{{ acme_cert }}'
+    uci set nginx._lan.ssl_certificate_key='{{ acme_key }}'
+    uci commit nginx
+
+    /etc/init.d/nginx reload
+
+    logger -t acme-nginx-hook "Nginx reloaded with ACME certificates"
+fi

@@ -1,9 +1,9 @@
 
 config defaults
-        option syn_flood '1'
-        option input 'REJECT'
+        option synflood_protect '1'
+        option input 'ACCEPT'
         option output 'ACCEPT'
-        option forward 'REJECT'
+        option forward 'ACCEPT'
 
 config rule
         option name 'Allow-DHCP-Renew'
@@ -84,14 +84,6 @@ config rule
         option target 'ACCEPT'
 
 config zone
-        option name 'lan'
-        list network 'lan'
-        list network 'wg0'
-        option input 'ACCEPT'
-        option output 'ACCEPT'
-        option forward 'ACCEPT'
-
-config zone
         option name 'wan'
         list network 'wan'
         list network 'wan6'
@@ -105,30 +97,58 @@ config zone
         option log_limit '10/minute'
 
 config zone
+        option name 'lan'
+        list network 'lan'
+        list network 'wg0'
+        option input 'ACCEPT'
+        option output 'ACCEPT'
+        option forward 'ACCEPT'
+
+config zone
         option name 'guest'
         list network 'guest'
-        option input 'REJECT'
+        option input 'ACCEPT'
         option output 'ACCEPT'
         option forward 'REJECT'
 
 config zone
         option name 'iot'
         list network 'iot'
-        option input 'REJECT'
+        option input 'ACCEPT'
         option output 'ACCEPT'
         option forward 'REJECT'
 
-config zone 'docker'
-        option name 'docker'
-        list network 'docker'
-        list device 'dc-+'
+config zone
+        option name 'traefik'
+        list network 'traefik'
         option input 'REJECT'
         option output 'ACCEPT'
         option forward 'ACCEPT'
 
+config zone
+        option name 'docker'
+        list network 'docker'
+        option input 'REJECT'
+        option output 'ACCEPT'
+        option forward 'ACCEPT'
+
+config rule
+        option name 'Allow-DNS-from-traefik'
+        option src 'traefik'
+        option dest_port '53'
+        option proto 'tcp udp'
+        option target 'ACCEPT'
+
+config rule
+        option name 'Allow-DNS-from-docker'
+        option src 'docker'
+        option dest_port '53'
+        option proto 'tcp udp'
+        option target 'ACCEPT'
+
 config forwarding
         option src 'lan'
-        option dest 'docker'
+        option dest 'traefik'
 
 config forwarding
         option src 'lan'
@@ -139,7 +159,7 @@ config forwarding
         option dest 'iot'
 
 config forwarding
-        option src 'docker'
+        option src 'traefik'
         option dest 'wan'
 
 config forwarding
@@ -150,53 +170,15 @@ config forwarding
         option src 'iot'
         option dest 'wan'
 
-{% for zone in [ 'guest', 'iot'] %}
 config rule
-        option name 'Allow-{{ zone | capitalize }}-DNS'
-        option src '{{ zone }}'
-        option proto 'tcp udp'
-        option dest_port '53'
+        option name 'Allow-HTTP-WAN'
+        option src 'wan'
+        option proto 'tcp'
+        option dest_port '80'
         option target 'ACCEPT'
+        option family 'any'
 
-config rule
-        option name 'Allow-{{ zone | capitalize }}-DHCP'
-        option src '{{ zone }}'
-        option src_port '68'
-        option proto 'udp'
-        option dest_port '67'
-        option family 'ipv4'
-        option target 'ACCEPT'
-
-config rule
-        option name 'Allow-{{ zone | capitalize }}-DHCPv6'
-        option src '{{ zone }}'
-        option src_port '546'
-        option proto 'udp'
-        option dest_port '547'
-        option family 'ipv6'
-        option target 'ACCEPT'
-
-config rule
-        option name 'Allow-{{ zone | capitalize }}-ICMP'
-        option src '{{ zone }}'
-        option proto 'icmp'
-        option family 'ipv4'
-        option target 'ACCEPT'
-
-config rule
-        option name 'Allow-{{ zone | capitalize }}-ICMPv6'
-        option src '{{ zone }}'
-        option proto 'icmpv6'
-        option family 'ipv6'
-        option target 'ACCEPT'
-
-config rule
-        option name 'Allow-{{ zone | capitalize }}-NTP'
-        option src '{{ zone }}'
-        option proto 'udp'
-        option dest_port '123'
-        option target 'ACCEPT'
-
+{% for zone in ['lan', 'guest', 'iot'] %}
 config redirect
         option name 'DNS_intercept_{{ zone | capitalize }}'
         option src '{{ zone }}'
@@ -208,43 +190,25 @@ config redirect
         option family 'any'
 
 {% endfor %}
+# HTTPS redirect from WAN to traefik
 config redirect
-        option name 'DNS_intercept_LAN'
-        option src 'lan'
-        option src_dport '53'
-        option proto 'tcp udp'
-        option target 'DNAT'
-        option dest 'lan'
-        option dest_port '53'
-        option family 'any'
-
-config rule
-        option name 'Allow-DOCKER-DNS'
-        option src 'docker'
-        option proto 'tcp udp'
-        option dest_port '53'
-        option target 'ACCEPT'
-
-# HTTP/HTTPS redirect from WAN to docker
-config redirect
-        option name 'HTTP_WAN_to_Docker'
-        option src 'wan'
-        option src_dport '80'
-        option proto 'tcp'
-        option target 'DNAT'
-        option dest 'docker'
-        option dest_ip '192.168.8.2'
-        option dest_port '80'
-        option family 'ipv4'
-
-config redirect
-        option name 'HTTPS_WAN_to_Docker'
+        option name 'HTTPS_WAN_to_TRAEFIKv4'
         option src 'wan'
         option src_dport '443'
         option proto 'tcp'
         option target 'DNAT'
-        option dest 'docker'
-        option dest_ip '192.168.8.2'
+        option dest 'traefik'
+        option dest_ip '192.168.{{ docker_subnet_id }}.2'
         option dest_port '444'
         option family 'ipv4'
 
+config redirect
+        option name 'HTTPS_WAN_to_TRAEFIKv6'
+        option src 'wan'
+        option src_dport '443'
+        option proto 'tcp'
+        option target 'DNAT'
+        option dest 'traefik'
+        option dest_ip '{{ ula_prefix }}:{{ docker_subnet_id }}::2'
+        option dest_port '444'
+        option family 'ipv6'

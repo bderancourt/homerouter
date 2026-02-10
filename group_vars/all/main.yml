@@ -8,6 +8,8 @@ lan_subnet_id: 2
 guest_subnet_id: 3
 iot_subnet_id: 4
 docker_subnet_id: 9
+acme_staging: 1
+ddns_enabled: 1
 
 acme_key: /etc/acme/{{ domain }}_ecc/{{ domain }}.key
 acme_cert: /etc/acme/{{ domain }}_ecc/fullchain.cer
@@ -24,9 +26,12 @@ ddns_service_name: "{{ secret_ddns_service_name }}"
 ddns_username: "{{ secret_ddns_username }}"
 ddns_password: "{{ secret_ddns_password }}"
 
-acme_email: "{{ secret_acme_email }}"
+acme_account_email: "{{ secret_acme_account_email }}"
 acme_dns: "{{ secret_acme_dns }}"
 acme_credentials: "{{ secret_acme_credentials }}"
+acme_application_key: "{{ secret_acme_application_key }}"
+acme_application_secret: "{{ secret_acme_application_secret }}"
+acme_consumer_key: "{{ secret_acme_consumer_key }}"
 
 adguardhome_user: "{{ secret_adguardhome_user }}"
 adguardhome_password: "{{ secret_adguardhome_password }}"
@@ -38,21 +43,10 @@ smtp_host: "{{ secret_smtp_host }}"
 smtp_username: "{{ secret_smtp_username }}"
 smtp_password: "{{ secret_smtp_password }}"
 
-authelia_jwt_secret: "{{ secret_authelia_jwt_secret }}"
-authelia_session_secret: "{{ secret_authelia_session_secret }}"
-authelia_storage_encryption_key: "{{ secret_authelia_storage_encryption_key }}"
-authelia_admin_password: "{{ secret_authelia_admin_password }}"
-
-k3s_token: "{{ secret_k3s_token }}"
-
 vpn_private_key: "{{ secret_vpn_private_key }}"
 vpn_preshared_key: "{{ secret_vpn_preshared_key }}"
 vpn_peer_public_key: "{{ secret_vpn_peer_public_key }}"
 vpn_endpoint_host: "{{ secret_vpn_endpoint_host }}"
-
-acme_application_key: "{{ secret_acme_application_key }}"
-acme_application_secret: "{{ secret_acme_application_secret }}"
-acme_consumer_key: "{{ secret_acme_consumer_key }}"
 
 teleport_token: "{{ secret_teleport_token }}"
 

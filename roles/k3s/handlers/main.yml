@@ -1,9 +1,0 @@
----
-- name: Reload config
-  ansible.builtin.command: reload_config
-  changed_when: true
-
-- name: Reload dummy module
-  ansible.builtin.command:
-    cmd: sh -c 'rmmod dummy 2>/dev/null || true; modprobe dummy'
-  changed_when: true

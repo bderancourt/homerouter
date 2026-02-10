@@ -1,6 +1,6 @@
 ---
 - name: Install Docker on OpenWRT
-  hosts: virtualbox
+  hosts: ikoolcore
   gather_facts: false
 
   roles:

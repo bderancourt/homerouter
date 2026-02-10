@@ -33,46 +33,9 @@ log "Permissions set successfully"
 
 # Secure SSH access
 log "Configuring SSH access"
-mkdir -p /root/.ssh
 chmod 700 /root/.ssh
-echo {{ ssh_key }} >> /root/.ssh/authorized_keys
 chmod 600 /root/.ssh/authorized_keys
-log "SSH authorized_keys configured"
-# Restart SSH to apply configuration
-log "Restarting SSH service"
-service sshd restart
-log "SSH service restarted"
 
-log "Enabling collectd sensors"
-uci set luci_statistics.collectd_sensors.enable='1'
-log "Collectd sensors enabled"
-
-uci del uhttpd.main.listen_http || true
-uci del uhttpd.main.listen_https || true
-
-# Detect if running in virtual environment
-log "Detecting virtual environment"
-grep -qEi "virtualbox|qemu" /sys/class/dmi/id/modalias 2>/dev/null
-IS_VIRTUAL=$?
-if [ $IS_VIRTUAL -eq 0 ]; then
-    log "Virtual environment detected"
-    uci set network.wan.device="eth3"
-    uci set network.wan6.device="eth3"
-    uci set network.lan.ipaddr="192.168.99.1"
-    uci set sqm.wan.interface="eth3"
-    uci set ddns.{{ ddns_service_name | replace('.', '_') }}_v4.enabled='0'
-    uci set ddns.{{ ddns_service_name | replace('.', '_') }}_v6.enabled='0'
-    uci add_list uhttpd.main.listen_http="192.168.99.1:80"
-    uci add_list uhttpd.main.listen_https="192.168.99.1:443"
-else
-    log "Physical environment detected"
-    uci add_list uhttpd.main.listen_http="192.168.2.1:80"
-    uci add_list uhttpd.main.listen_https="192.168.2.1:443"
-fi
-
-log "Committing system configuration"
-uci commit
-reload_config
 log "90-system configuration completed successfully"
 log "======================================"
 exit 0

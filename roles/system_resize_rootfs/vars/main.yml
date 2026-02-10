@@ -1,3 +1,0 @@
----
-root_disk: /dev/nvme0n1
-root_partition: /dev/nvme0n1p2

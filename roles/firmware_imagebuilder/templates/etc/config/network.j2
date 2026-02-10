@@ -20,34 +20,34 @@ config device
         option vid '99'
 
 config device
-        option name 'eth1.3'
+        option name 'eth1.{{ guest_subnet_id }}'
         option type '8021q'
         option ifname 'eth1'
-        option vid '3'
+        option vid '{{ guest_subnet_id }}'
 
 config device
-        option name 'eth1.4'
+        option name 'eth1.{{ iot_subnet_id }}'
         option type '8021q'
         option ifname 'eth1'
-        option vid '4'
+        option vid '{{ iot_subnet_id }}'
 
 config device
-        option name 'eth2.2'
+        option name 'eth2.{{ lan_subnet_id }}'
         option type '8021q'
         option ifname 'eth2'
-        option vid '2'
+        option vid '{{ lan_subnet_id }}'
 
 config device
-        option name 'eth2.3'
+        option name 'eth2.{{ guest_subnet_id }}'
         option type '8021q'
         option ifname 'eth2'
-        option vid '3'
+        option vid '{{ guest_subnet_id }}'
 
 config device
-        option name 'eth2.4'
+        option name 'eth2.{{ iot_subnet_id }}'
         option type '8021q'
         option ifname 'eth2'
-        option vid '4'
+        option vid '{{ iot_subnet_id }}'
 
 config device
         option name 'eth3.100'
@@ -60,23 +60,23 @@ config device
         option name 'br-lan'
         option type 'bridge'
         list ports 'eth0'
-        list ports 'eth1.2'
+        list ports 'eth1.{{ lan_subnet_id }}'
         list ports 'eth2'
 
 config device
         option name 'br-guest'
         option type 'bridge'
-        list ports 'eth1.3'
-        list ports 'eth2.3'
+        list ports 'eth1.{{ guest_subnet_id }}'
+        list ports 'eth2.{{ guest_subnet_id }}'
 
 config device
         option name 'br-iot'
         option type 'bridge'
-        list ports 'eth1.4'
-        list ports 'eth2.4'
+        list ports 'eth1.{{ iot_subnet_id }}'
+        list ports 'eth2.{{ iot_subnet_id }}'
 
 config interface 'wan'
-        option device 'eth3'
+        option device '{{ wan_interface }}'
         option proto 'dhcp'
         option vendorid 'BYGTELIAD'
         option norelease '1'
@@ -85,7 +85,7 @@ config interface 'wan'
         option peerdns '0'
 
 config interface 'wan6'
-        option device 'eth3'
+        option device '{{ wan_interface }}'
         option proto 'dhcpv6'
         option norelease '1'
         option reqprefix 'auto'
@@ -107,42 +107,42 @@ config wireguard_wg0
         option endpoint_port '51820'
         option route_allowed_ips '1'
         option persistent_keepalive '25'
-        list allowed_ips '10.0.0.1/24'
+        list allowed_ips '10.0.0.1/32'
         list allowed_ips '192.168.1.0/24'
 
 config interface 'lan'
         option device 'br-lan'
         option proto 'static'
-        option ipaddr '192.168.2.1'
+        option ipaddr '192.168.{{ lan_subnet_id }}.1'
         option netmask '255.255.255.0'
         option ip6assign '64'
-        option ip6hint '2'
+        option ip6hint '{{ lan_subnet_id }}'
 
 config interface 'guest'
         option device 'br-guest'
         option proto 'static'
-        option ipaddr '192.168.3.1'
+        option ipaddr '192.168.{{ guest_subnet_id }}.1'
         option netmask '255.255.255.0'
         option ip6assign '64'
-        option ip6hint '3'
+        option ip6hint '{{ guest_subnet_id }}'
 
 config interface 'iot'
         option device 'br-iot'
         option proto 'static'
-        option ipaddr '192.168.4.1'
+        option ipaddr '192.168.{{ iot_subnet_id }}.1'
         option netmask '255.255.255.0'
         option ip6assign '64'
-        option ip6hint '4'
+        option ip6hint '{{ iot_subnet_id }}'
 
 config device
         option type 'bridge'
-        option name 'docker0'
+        option name 'br-traefik'
         list ports 'dummy0'
 
-config interface 'docker'
-        option device 'docker0'
+config interface 'traefik'
+        option device 'br-traefik'
         option proto 'static'
-        option ipaddr '192.168.9.1'
+        option ipaddr '192.168.{{ docker_subnet_id }}.1'
         option netmask '255.255.255.0'
         option ip6assign '64'
-        option ip6hint '9'
+        option ip6hint '{{ docker_subnet_id }}'

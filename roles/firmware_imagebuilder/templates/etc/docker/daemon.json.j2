@@ -1,10 +1,7 @@
 {
   "data-root": "/opt/docker/",
   "log-level": "warn",
-  "iptables": true,
-  "ip6tables": true,
-  "ipv6": true,
-  "fixed-cidr": "192.168.{{ docker_subnet_id }}.0/24",
-  "fixed-cidr-v6": "{{ ula_prefix }}:{{ docker_subnet_id }}::/80",
+  "dns": ["192.168.{{ docker_subnet_id }}.1"],
+  "dns-search": ["{{ domain }}"],
   "userland-proxy": false
 }

@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# Resize root partition and filesystem to fill the disk
+# OpenWrt ext4 images lack resize_inode, so we use losetup for offline resize2fs.
+# https://openwrt.org/docs/guide-user/advanced/expand_root
+
+LOGFILE="/root/uci-defaults.log"
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] [70-rootfs-resize] $*" >> "$LOGFILE"
+}
+
+log "======================================"
+log "Starting root partition and filesystem resize"
+log "======================================"
+
+# Detect root disk and partition using lsblk JSON
+ROOT_DEV=$(lsblk -J -o NAME,MOUNTPOINT,TYPE | jsonfilter -e '@.blockdevices[@.type="disk"].children[@.mountpoint="/"].name')
+if [ -z "$ROOT_DEV" ]; then
+    log "ERROR: Could not identify root partition"
+    exit 1
+fi
+
+ROOT_PART="/dev/$ROOT_DEV"
+ROOT_PART_NUM="${ROOT_DEV##*[^0-9]}"
+ROOT_DISK="/dev/$(lsblk -ndo PKNAME "$ROOT_PART")"
+
+log "Root disk: $ROOT_DISK"
+log "Root partition: $ROOT_PART (number: $ROOT_PART_NUM)"
+
+# Check if there is unallocated space (>3%)
+DISK_SIZE=$(lsblk -bndo SIZE "$ROOT_DISK")
+PART_SIZES=$(lsblk -bnlo FSSIZE "$ROOT_DISK" | awk '{s+=$1} END {print s+0}')
+UNALLOC=$((DISK_SIZE - PART_SIZES))
+UNALLOC_PCT=$((UNALLOC * 100 / DISK_SIZE))
+
+log "Disk size: $DISK_SIZE bytes, used: $PART_SIZES bytes, unallocated: $UNALLOC bytes ($UNALLOC_PCT%)"
+
+if [ "$UNALLOC_PCT" -le 3 ]; then
+    log "Less than 3% unallocated space, nothing to do"
+    exit 0
+fi
+
+# Phase 1: Resize partition
+log "Fixing GPT backup header"
+sgdisk -e "$ROOT_DISK" >> "$LOGFILE" 2>&1
+
+log "Running partprobe"
+partprobe >> "$LOGFILE" 2>&1
+
+log "Resizing partition $ROOT_PART_NUM to 100%"
+parted -s "$ROOT_DISK" resizepart "$ROOT_PART_NUM" 100% >> "$LOGFILE" 2>&1
+
+log "Running partprobe"
+partprobe >> "$LOGFILE" 2>&1
+
+# Phase 2: Resize filesystem via losetup (offline)
+LOOP_DEV=$(losetup -f)
+log "Setting up loop device $LOOP_DEV on $ROOT_PART"
+losetup "$LOOP_DEV" "$ROOT_PART" >> "$LOGFILE" 2>&1
+
+log "Running e2fsck on $LOOP_DEV"
+e2fsck -y -f "$LOOP_DEV" >> "$LOGFILE" 2>&1
+log "e2fsck completed with rc=$?"
+
+log "Running resize2fs on $LOOP_DEV"
+resize2fs "$LOOP_DEV" >> "$LOGFILE" 2>&1
+RESIZE_RC=$?
+
+log "Detaching loop device"
+losetup -d "$LOOP_DEV" >> "$LOGFILE" 2>&1
+
+if [ "$RESIZE_RC" -ne 0 ] && [ "$RESIZE_RC" -ne 123 ]; then
+    log "ERROR: resize2fs failed with rc=$RESIZE_RC"
+    exit 1
+fi
+
+log "resize2fs completed with rc=$RESIZE_RC"
+log "Partition and filesystem resize complete, rebooting"
+log "======================================"
+sync
+reboot

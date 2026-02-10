@@ -11,18 +11,13 @@ services:
     environment:
       - LEGO_DISABLE_CNAME_SUPPORT=true
       - OVH_ENDPOINT=ovh-eu
-      - TRAEFIK_CERTIFICATESRESOLVERS_MYRESOLVER_ACME_EMAIL={{ acme_email }}
+      - TRAEFIK_CERTIFICATESRESOLVERS_MYRESOLVER_ACME_EMAIL={{ acme_account_email }}
       - OVH_APPLICATION_KEY={{ acme_application_key }}
       - OVH_APPLICATION_SECRET={{ acme_application_secret }}
       - OVH_CONSUMER_KEY={{ acme_consumer_key }}
       - OVH_ZONE=vbox.ovh
-    dns:
-      - 192.168.{{ docker_subnet_id }}.1
     volumes:
       - /root/docker/volumes/traefik:/data
-    ports:
-      - "192.168.9.1:443:443"
-      - "192.168.9.1:444:444"
     command:
       - --api.dashboard=true
       - --api.insecure=true
@@ -58,7 +53,10 @@ services:
       start_period: 10s
       start_interval: 1s
     networks:
-      socket-proxy-traefik:
+      traefik:
+        ipv4_address: "192.168.{{ docker_subnet_id }}.2"
+        ipv6_address: "{{ ula_prefix }}:{{ docker_subnet_id }}::2"
+      sockproxy:
       teleport:
       omada:
 
@@ -90,7 +88,6 @@ services:
       start_interval: 1s
     networks:
       - teleport
-      - omada
       - lan
     labels:
       traefik.enable: "true"
@@ -250,7 +247,7 @@ services:
       start_period: 10s
       start_interval: 1s
     networks:
-      - socket-proxy-traefik
+      - sockproxy
 
   # utilisé par beszel-agent et dozzle
   socket-proxy-lan:
@@ -287,28 +284,36 @@ services:
 
 ###  Docker Networks ###
 networks:
-  # traefik et socket-proxy-traefik
-  socket-proxy-traefik:
+  # Traefik external access (dual-stack)
+  traefik:
     driver: bridge
     driver_opts:
-      com.docker.network.bridge.name: dc-sockproxy
-  # teleport, unifi, unifi-db, omada, omada-db, dozzle, beszel-hub, beszel-agent, frigate, firefox, mosquitto, socket-proxy-lan
+      com.docker.network.bridge.name: br-traefik
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "192.168.{{ docker_subnet_id }}.0/24"
+          gateway: "192.168.{{ docker_subnet_id }}.1"
+        - subnet: "{{ ula_prefix }}:{{ docker_subnet_id }}::/64"
+          gateway: "{{ ula_prefix }}:{{ docker_subnet_id }}::1"
+  # traefik et socket-proxy-traefik
+  sockproxy:
+    driver: bridge
+    enable_ipv6: true
+
+  # beszel-hub, beszel-agent, socket-proxy-lan
   beszel:
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: dc-beszel
+    enable_ipv6: true
   # teleport, traefik
   teleport:
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: dc-teleport
+    enable_ipv6: true
   # omada, traefik
   omada:
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: dc-omada
+    enable_ipv6: true
   # LAN network for beszel-agent and firefox
   lan:
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: dc-lan
+    enable_ipv6: true

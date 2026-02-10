@@ -1,4 +1,0 @@
----
-docker_omada_controller_version: 5.15.24.19
-vlan_id: 20
-service: omada

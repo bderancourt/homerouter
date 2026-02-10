@@ -1,0 +1,14 @@
+config acme
+        option account_email '{{ acme_account_email }}'
+        option debug '0'
+
+config cert '{{ domain | replace(".", "_") }}'
+        option enabled '1'
+        list domains '{{ domain }}'
+        list domains '*.{{ domain }}'
+        option validation_method 'dns'
+        option dns '{{ acme_dns }}'
+{% for credential in acme_credentials %}
+        list credentials '{{ credential }}'
+{% endfor %}
+        option staging '{{ acme_staging }}'
