@@ -14,23 +14,16 @@
     - beszel-agent
     - teleport
 
-- name: Create Docker config directory
-  ansible.builtin.file:
-    path: /root/.docker
-    state: directory
-    mode: '0700'
-
-- name: Deploy Docker config file
-  ansible.builtin.template:
-    src: config.json.j2
-    dest: /root/.docker/config.json
-    mode: '0600'
-  when: docker_registry_username is defined and docker_registry_username | length > 0
-
 - name: Deploy compose file
   ansible.builtin.template:
     src: compose.yaml.j2
     dest: /root/docker/compose.yaml
+    mode: '0644'
+
+- name: Deploy Traefik dynamic config file
+  ansible.builtin.template:
+    src: traefik-dynamic.yaml.j2
+    dest: /root/docker/volumes/traefik/dynamic.yaml
     mode: '0644'
 
 - name: Deploy teleport config file

@@ -26,6 +26,8 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.endpoint=tcp://socket-proxy-traefik:2375
+      - --providers.file.filename=/data/dynamic.yaml
+      - --providers.file.watch=true
       - --serverstransport.insecureskipverify=true
 
       # Internal entrypoints (traefik_int network)
@@ -299,21 +301,16 @@ networks:
   # traefik et socket-proxy-traefik
   sockproxy:
     driver: bridge
-    enable_ipv6: true
 
   # beszel-hub, beszel-agent, socket-proxy-lan
   beszel:
     driver: bridge
-    enable_ipv6: true
   # teleport, traefik
   teleport:
     driver: bridge
-    enable_ipv6: true
   # omada, traefik
   omada:
     driver: bridge
-    enable_ipv6: true
   # LAN network for beszel-agent and firefox
   lan:
     driver: bridge
-    enable_ipv6: true

@@ -125,7 +125,7 @@ config zone
         option output 'ACCEPT'
         option forward 'ACCEPT'
 
-config zone
+config zone 'docker'
         option name 'docker'
         list network 'docker'
         option input 'REJECT'

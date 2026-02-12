@@ -14,12 +14,6 @@ config device
         option macaddr '{{ bbox_mac }}'
 
 config device
-        option name 'eth1.99'
-        option type '8021q'
-        option ifname 'eth1'
-        option vid '99'
-
-config device
         option name 'eth1.{{ guest_subnet_id }}'
         option type '8021q'
         option ifname 'eth1'
@@ -30,12 +24,6 @@ config device
         option type '8021q'
         option ifname 'eth1'
         option vid '{{ iot_subnet_id }}'
-
-config device
-        option name 'eth2.{{ lan_subnet_id }}'
-        option type '8021q'
-        option ifname 'eth2'
-        option vid '{{ lan_subnet_id }}'
 
 config device
         option name 'eth2.{{ guest_subnet_id }}'
@@ -60,7 +48,7 @@ config device
         option name 'br-lan'
         option type 'bridge'
         list ports 'eth0'
-        list ports 'eth1.{{ lan_subnet_id }}'
+        list ports 'eth1'
         list ports 'eth2'
 
 config device
